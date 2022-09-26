@@ -36,6 +36,28 @@ func NewClient(config *config.Config) *Client {
 	}
 }
 
+// Listen Listen on incomming slack events
 func (c *Client) Listen() {
-
+	for {
+		select {
+		// inscase context cancel is called exit the goroutine
+		case event := <-c.socket.Events:
+			// We have a new Events, let's type switch the event
+			// Add more use cases here if you want to listen to other events.
+			switch event.Type {
+			case socketmode.EventTypeEventsAPI:
+				// Handle mentions
+				// NOTE: there is no user restriction for app mentions
+				// TODO: process this
+				// bot.processEventApi(event)
+			case socketmode.EventTypeSlashCommand:
+				// TODO: process this
+				// bot.processSlashCommand(event)
+			case socketmode.EventTypeInteractive:
+				// Handle interaction events i.e. user voted in our poll etc.
+				// TODO: process this
+				// bot.processEventInteractive(event)
+			}
+		}
+	}
 }
