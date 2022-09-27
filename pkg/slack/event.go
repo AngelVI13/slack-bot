@@ -1,22 +1,19 @@
 package slack
 
-type EventType int
-
-const (
-	MentionEvent EventType = iota
-	SlashCmdEvent
-	BlockActionEvent
-	ViewSubmissionEvent
+import (
+	"github.com/AngelVI13/slack-bot/pkg/event"
 )
 
-var EventNames = map[EventType]string{
+const (
+	MentionEvent event.EventType = iota
+	SlashCmdEvent
+	ViewSubmissionEvent
+	BlockActionEvent
+)
+
+var EventNames = map[event.EventType]string{
 	MentionEvent:        "Mention",
 	SlashCmdEvent:       "SlashCmd",
-	BlockActionEvent:    "BlockAction",
 	ViewSubmissionEvent: "ViewSubmission",
-}
-
-type Event interface {
-	Type() EventType
-	Data() any
+	BlockActionEvent:    "BlockAction",
 }

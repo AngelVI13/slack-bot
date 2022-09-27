@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
+	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/slack"
 )
 
@@ -26,6 +27,13 @@ func main() {
 
 	config := config.NewConfigFromEnv(".env")
 
-	slackClient := slack.NewClient(config)
+	eventManager := event.NewEventManager()
+
+	logger := event.NewEventLogger()
+	eventManager.Subscribe(logger, event.AnyEvent)
+
+	slackClient := slack.NewClient(config, eventManager)
 	go slackClient.Listen()
+
+	eventManager.ManageEvents()
 }

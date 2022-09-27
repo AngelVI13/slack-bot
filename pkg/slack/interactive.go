@@ -1,98 +1,68 @@
 package slack
 
 import (
+	"fmt"
 	"log"
 
+	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack"
 )
 
-// TODO: maybe move these to separate files
-type ViewSubmission struct {
+type Interaction struct {
+	UserName  string
+	UserId    string
+	Values    map[string]map[string]slack.BlockAction
+	Actions   []*slack.BlockAction
+	TriggerId string
+	ViewId    string
 }
 
-func (v *ViewSubmission) Type() EventType {
+func (i Interaction) String() string {
+	return fmt.Sprintf("%s(%s)", EventNames[BlockActionEvent], i.UserName)
+}
+
+type ViewSubmission struct {
+	Interaction
+}
+
+func (v *ViewSubmission) Type() event.EventType {
 	return ViewSubmissionEvent
 }
 
-func (v *ViewSubmission) Data() any {
-	return nil
+func (v ViewSubmission) String() string {
+	return fmt.Sprintf("---> %s(%s)", EventNames[ViewSubmissionEvent], v.UserName)
 }
 
 type BlockAction struct {
+	Interaction
 }
 
-func (v *BlockAction) Type() EventType {
+func (b *BlockAction) Type() event.EventType {
 	return BlockActionEvent
 }
 
-func (v *BlockAction) Data() any {
-	return nil
-}
+func handleInteractionEvent(interactionCb slack.InteractionCallback) event.Event {
+	var event event.Event
 
-func handleInteractionEvent(interaction slack.InteractionCallback) Event {
-	var event Event
+	// Collect common data used by all supported interaction types
+	interaction := Interaction{
+		UserName:  interactionCb.User.Name,
+		UserId:    interactionCb.User.ID,
+		Values:    interactionCb.View.State.Values,
+		Actions:   interactionCb.ActionCallback.BlockActions,
+		TriggerId: interactionCb.TriggerID,
+		ViewId:    interactionCb.View.ID,
+	}
 
-	switch interaction.Type {
+	switch interactionCb.Type {
 	case slack.InteractionTypeViewSubmission:
-		event = handleViewSubmission(&interaction)
+		event = &ViewSubmission{interaction}
 	case slack.InteractionTypeBlockActions:
-		event = handleBlockActions(&interaction)
+		event = &BlockAction{interaction}
 	default:
-		log.Printf("Unsupported interaction event: %v, %v", interaction.Type, interaction)
+		log.Printf("Unsupported interaction event: %v, %v", interactionCb.Type, interaction)
+		return nil
 	}
 
 	return event
-}
-
-func handleViewSubmission(interaction *slack.InteractionCallback) Event {
-	// TODO: extract the data that is needed for later processing
-	/*
-		// NOTE: we use title text to determine which modal was submitted
-		switch interaction.View.Title.Text {
-		case modals.MRestartProxyTitle:
-			restartProxySubmission(SlackClient, interaction, Data.Devices)
-		case modals.MRemoveUsersTitle:
-			removeUserSubmission(interaction, Data.Users)
-		case modals.MAddUserTitle:
-			addUserSubmission(SlackClient, interaction, Data.Users, Data.Reviewers)
-		default:
-		}
-	*/
-	return &ViewSubmission{}
-}
-
-func handleBlockActions(interaction *slack.InteractionCallback) Event {
-	// TODO: extract the data that is needed for later processing
-	/*
-			if CurrentOptionModalData.Handler == nil {
-				log.Fatalf(
-					`Did not have a valid pointer to OptionModal,
-		                    please make sure to close any open modals before restarting the bot`,
-				)
-			}
-
-			var updatedView *slack.ModalViewRequest
-
-			switch interaction.View.Title.Text {
-			case modals.MDeviceTitle:
-				updatedView = handleDeviceActions(bot, interaction)
-			case modals.MShowUsersTitle, modals.MRemoveUsersTitle, modals.MAddUserTitle:
-				updatedView = handleUserActions(bot, interaction)
-			case modals.MParkingTitle:
-				updatedView = handleParkingActions(bot, interaction)
-			case modals.MParkingBookingTitle: // TODO: Why is this not the parking release title instead?
-				updatedView = handleParkingBooking(bot, interaction)
-			default:
-			}
-
-			// Update view if a handler generated an update
-			if updatedView != nil {
-				_, err := SlackClient.UpdateView(*updatedView, "", "", interaction.View.ID)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-	*/
-
-	return &BlockAction{}
 }
