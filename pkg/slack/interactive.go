@@ -1,24 +1,19 @@
 package slack
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/socketmode"
 )
 
 type Interaction struct {
-	UserName  string
-	UserId    string
+	BaseEvent
 	Values    map[string]map[string]slack.BlockAction
 	Actions   []*slack.BlockAction
 	TriggerId string
 	ViewId    string
-}
-
-func (i Interaction) String() string {
-	return fmt.Sprintf("%s(%s)", EventNames[BlockActionEvent], i.UserName)
 }
 
 type ViewSubmission struct {
@@ -29,10 +24,6 @@ func (v *ViewSubmission) Type() event.EventType {
 	return ViewSubmissionEvent
 }
 
-func (v ViewSubmission) String() string {
-	return fmt.Sprintf("---> %s(%s)", EventNames[ViewSubmissionEvent], v.UserName)
-}
-
 type BlockAction struct {
 	Interaction
 }
@@ -41,13 +32,23 @@ func (b *BlockAction) Type() event.EventType {
 	return BlockActionEvent
 }
 
-func handleInteractionEvent(interactionCb slack.InteractionCallback) event.Event {
+func handleInteractionEvent(socketEvent socketmode.Event) event.Event {
+	interactionCb, ok := socketEvent.Data.(slack.InteractionCallback)
+	if !ok {
+		log.Fatalf(
+			"Could not type cast the message to a Interaction callback: %v\n",
+			socketEvent,
+		)
+	}
+
 	var event event.Event
 
 	// Collect common data used by all supported interaction types
 	interaction := Interaction{
-		UserName:  interactionCb.User.Name,
-		UserId:    interactionCb.User.ID,
+		BaseEvent: BaseEvent{
+			UserName: interactionCb.User.Name,
+			UserId:   interactionCb.User.ID,
+		},
 		Values:    interactionCb.View.State.Values,
 		Actions:   interactionCb.ActionCallback.BlockActions,
 		TriggerId: interactionCb.TriggerID,

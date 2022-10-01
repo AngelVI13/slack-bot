@@ -45,6 +45,11 @@ func (c *Client) Listen() {
 		select {
 		// inscase context cancel is called exit the goroutine
 		case socketEvent := <-c.socket.Events:
+			// We need to send an Acknowledge to the slack server
+			// TODO: should the ACK be done here before any processing happens?
+			c.socket.Ack(*socketEvent.Request)
+			log.Println(socketEvent)
+
 			var processedEvent event.Event
 			// We have a new Events, let's type switch the event
 			// Add more use cases here if you want to listen to other events.
@@ -52,24 +57,14 @@ func (c *Client) Listen() {
 			case socketmode.EventTypeEventsAPI:
 				// Handle mentions
 				// NOTE: there is no user restriction for app mentions
-				// TODO: process this
-				// bot.processEventApi(event)
+				processedEvent = handleApiEvent(socketEvent, c)
 			case socketmode.EventTypeSlashCommand:
 				// TODO: process this
 				// bot.processSlashCommand(event)
 			case socketmode.EventTypeInteractive:
 				// Handle interaction events i.e. user voted in our poll etc.
-				interaction, ok := socketEvent.Data.(slack.InteractionCallback)
-				if !ok {
-					log.Fatalf(
-						"Could not type cast the message to a Interaction callback: %v\n",
-						interaction,
-					)
-				}
-				processedEvent = handleInteractionEvent(interaction)
+				processedEvent = handleInteractionEvent(socketEvent)
 
-				// TODO: should the ACK be done here before any processing happens?
-				c.socket.Ack(*socketEvent.Request)
 			}
 
 			if processedEvent != nil {
