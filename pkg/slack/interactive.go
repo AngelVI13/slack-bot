@@ -21,7 +21,7 @@ type ViewSubmission struct {
 }
 
 func (v *ViewSubmission) Type() event.EventType {
-	return ViewSubmissionEvent
+	return event.ViewSubmissionEvent
 }
 
 type BlockAction struct {
@@ -29,7 +29,7 @@ type BlockAction struct {
 }
 
 func (b *BlockAction) Type() event.EventType {
-	return BlockActionEvent
+	return event.BlockActionEvent
 }
 
 func handleInteractionEvent(socketEvent socketmode.Event) event.Event {

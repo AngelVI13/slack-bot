@@ -15,8 +15,8 @@ type Mention struct {
 	Timestamp string
 }
 
-func (a *Mention) Type() event.EventType {
-	return MentionEvent
+func (m *Mention) Type() event.EventType {
+	return event.MentionEvent
 }
 
 // handleApiEvent will take an event and handle it properly based on the type of event
@@ -61,5 +61,4 @@ func handleApiEvent(socketEvent socketmode.Event, client *Client) event.Event {
 		log.Printf("unsupported api event type: %T -> %v", apiEvent.Type, apiEvent)
 		return nil
 	}
-	return nil
 }

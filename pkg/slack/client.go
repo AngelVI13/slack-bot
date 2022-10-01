@@ -33,10 +33,14 @@ func NewClient(config *config.Config, eventManager *event.EventManager) *Client 
 			log.New(log.Writer(), "socketmode: ", log.Lshortfile|log.LstdFlags),
 		),
 	)
-	return &Client{
+	c := &Client{
 		socket:       socketClient,
 		eventManager: eventManager,
 	}
+	// This actually performs the connection to slack (its blocking)
+	go c.socket.Run()
+
+	return c
 }
 
 // Listen Listen on incomming slack events
@@ -45,11 +49,6 @@ func (c *Client) Listen() {
 		select {
 		// inscase context cancel is called exit the goroutine
 		case socketEvent := <-c.socket.Events:
-			// We need to send an Acknowledge to the slack server
-			// TODO: should the ACK be done here before any processing happens?
-			c.socket.Ack(*socketEvent.Request)
-			log.Println(socketEvent)
-
 			var processedEvent event.Event
 			// We have a new Events, let's type switch the event
 			// Add more use cases here if you want to listen to other events.
@@ -57,14 +56,17 @@ func (c *Client) Listen() {
 			case socketmode.EventTypeEventsAPI:
 				// Handle mentions
 				// NOTE: there is no user restriction for app mentions
+				// TODO: should the ACK be done here before any processing happens?
+				c.socket.Ack(*socketEvent.Request)
 				processedEvent = handleApiEvent(socketEvent, c)
 			case socketmode.EventTypeSlashCommand:
 				// TODO: process this
 				// bot.processSlashCommand(event)
+				c.socket.Ack(*socketEvent.Request)
 			case socketmode.EventTypeInteractive:
 				// Handle interaction events i.e. user voted in our poll etc.
+				c.socket.Ack(*socketEvent.Request)
 				processedEvent = handleInteractionEvent(socketEvent)
-
 			}
 
 			if processedEvent != nil {

@@ -20,8 +20,9 @@ func NewEventLogger() *EventLogger {
 
 func (ev *EventLogger) Consume(event Event) {
 	log.Printf(
-		"%*s",
+		"%*s(%s)",
 		ev.padding,
-		event.String(),
+		EventNames[event.Type()],
+		event.User(),
 	)
 }

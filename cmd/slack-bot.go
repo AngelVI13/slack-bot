@@ -36,4 +36,5 @@ func main() {
 	go slackClient.Listen()
 
 	eventManager.ManageEvents()
+
 }
