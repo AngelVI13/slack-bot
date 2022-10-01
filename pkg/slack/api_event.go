@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -17,6 +18,10 @@ type Mention struct {
 
 func (m *Mention) Type() event.EventType {
 	return event.MentionEvent
+}
+
+func (m Mention) String() string {
+	return fmt.Sprintf("%s - %s", event.DefaultEventString(&m), m.Text)
 }
 
 // handleApiEvent will take an event and handle it properly based on the type of event

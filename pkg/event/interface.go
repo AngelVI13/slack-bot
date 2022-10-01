@@ -1,10 +1,13 @@
 package event
 
+import "fmt"
+
 type EventType int
 
 type Event interface {
 	Type() EventType
 	User() string
+	String() string
 }
 
 const (
@@ -23,4 +26,8 @@ var EventNames = map[EventType]string{
 	ViewSubmissionEvent: "ViewSubmission",
 	BlockActionEvent:    "BlockAction",
 	AnyEvent:            "AnyEvent",
+}
+
+func DefaultEventString(e Event) string {
+	return fmt.Sprintf("%s(%s)", EventNames[e.Type()], e.User())
 }

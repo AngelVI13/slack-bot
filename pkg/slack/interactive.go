@@ -24,12 +24,20 @@ func (v *ViewSubmission) Type() event.EventType {
 	return event.ViewSubmissionEvent
 }
 
+func (v ViewSubmission) String() string {
+	return event.DefaultEventString(&v)
+}
+
 type BlockAction struct {
 	Interaction
 }
 
 func (b *BlockAction) Type() event.EventType {
 	return event.BlockActionEvent
+}
+
+func (b BlockAction) String() string {
+	return event.DefaultEventString(&b)
 }
 
 func handleInteractionEvent(socketEvent socketmode.Event) event.Event {

@@ -55,14 +55,13 @@ func (c *Client) Listen() {
 			switch socketEvent.Type {
 			case socketmode.EventTypeEventsAPI:
 				// Handle mentions
-				// NOTE: there is no user restriction for app mentions
 				// TODO: should the ACK be done here before any processing happens?
 				c.socket.Ack(*socketEvent.Request)
 				processedEvent = handleApiEvent(socketEvent, c)
 			case socketmode.EventTypeSlashCommand:
-				// TODO: process this
-				// bot.processSlashCommand(event)
+				// Handle slash commands
 				c.socket.Ack(*socketEvent.Request)
+				processedEvent = handleSlashCommand(socketEvent)
 			case socketmode.EventTypeInteractive:
 				// Handle interaction events i.e. user voted in our poll etc.
 				c.socket.Ack(*socketEvent.Request)
