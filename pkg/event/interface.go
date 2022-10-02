@@ -8,6 +8,7 @@ type Event interface {
 	Type() EventType
 	User() string
 	String() string
+	HasContext(context string) bool
 }
 
 const (
