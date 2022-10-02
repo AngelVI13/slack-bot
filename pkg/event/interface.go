@@ -16,6 +16,7 @@ const (
 	SlashCmdEvent
 	ViewSubmissionEvent
 	BlockActionEvent
+	TimerEvent
 	AnyEvent
 )
 
@@ -25,6 +26,7 @@ var EventNames = map[EventType]string{
 	SlashCmdEvent:       "SlashCmd",
 	ViewSubmissionEvent: "ViewSubmission",
 	BlockActionEvent:    "BlockAction",
+	TimerEvent:          "TimerEvent",
 	AnyEvent:            "AnyEvent",
 }
 

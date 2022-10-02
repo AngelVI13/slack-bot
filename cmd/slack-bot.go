@@ -24,13 +24,15 @@ func setupLogging(logPath string) {
 
 func main() {
 	setupLogging("slack-bot.log")
-
 	config := config.NewConfigFromEnv(".env")
 
 	eventManager := event.NewEventManager()
 
 	logger := event.NewEventLogger()
 	eventManager.Subscribe(logger, event.AnyEvent)
+
+	timer := event.NewTimer(eventManager)
+	timer.AddDaily(17, 00, "Reset parking status")
 
 	slackClient := slack.NewClient(config, eventManager)
 	go slackClient.Listen()

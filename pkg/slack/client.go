@@ -47,7 +47,6 @@ func NewClient(config *config.Config, eventManager *event.EventManager) *Client 
 func (c *Client) Listen() {
 	for {
 		select {
-		// inscase context cancel is called exit the goroutine
 		case socketEvent := <-c.socket.Events:
 			var processedEvent event.Event
 			// We have a new Events, let's type switch the event
