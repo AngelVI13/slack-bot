@@ -21,6 +21,10 @@ func (t *TimerDone) User() string {
 	return ""
 }
 
+func (t *TimerDone) HasContext(c string) bool {
+	return true
+}
+
 type Timer struct {
 	eventManager *EventManager
 }

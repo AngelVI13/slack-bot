@@ -2,6 +2,7 @@ package slack
 
 import (
 	"log"
+	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack"
@@ -14,6 +15,12 @@ type Interaction struct {
 	Actions   []*slack.BlockAction
 	TriggerId string
 	ViewId    string
+	Title     string
+}
+
+func (i *Interaction) HasContext(c string) bool {
+	// TODO: should this be using a title instead of sth else
+	return strings.Contains(strings.ToLower(i.Title), c)
 }
 
 type ViewSubmission struct {
@@ -61,6 +68,7 @@ func handleInteractionEvent(socketEvent socketmode.Event) event.Event {
 		Actions:   interactionCb.ActionCallback.BlockActions,
 		TriggerId: interactionCb.TriggerID,
 		ViewId:    interactionCb.View.ID,
+		Title:     interactionCb.View.Title.Text,
 	}
 
 	switch interactionCb.Type {

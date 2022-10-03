@@ -7,6 +7,7 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/parking"
 	"github.com/AngelVI13/slack-bot/pkg/slack"
 )
 
@@ -33,6 +34,15 @@ func main() {
 
 	timer := event.NewTimer(eventManager)
 	timer.AddDaily(17, 00, "Reset parking status")
+
+	parkingManager := parking.NewManager(eventManager)
+	eventManager.SubscribeWithContext(
+		parkingManager,
+		event.SlashCmdEvent,
+		event.ViewSubmissionEvent,
+		event.BlockActionEvent,
+		event.TimerEvent,
+	)
 
 	slackClient := slack.NewClient(config, eventManager)
 	go slackClient.Listen()

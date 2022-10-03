@@ -9,22 +9,36 @@ type ConsumerWithContext interface {
 	Context() string
 }
 
+const NoContext = ""
+
+type ConsumerNoContext struct {
+	Consumer
+}
+
+func (c *ConsumerNoContext) Context() string {
+	return NoContext
+}
+
 type EventManager struct {
 	events      chan Event
-	subscribers map[EventType][]Consumer
+	subscribers map[EventType][]ConsumerWithContext
 }
 
 func NewEventManager() *EventManager {
 	return &EventManager{
 		events:      make(chan Event),
-		subscribers: map[EventType][]Consumer{},
+		subscribers: map[EventType][]ConsumerWithContext{},
 	}
 }
 
 func (em *EventManager) Subscribe(consumer Consumer, eventTypes ...EventType) {
+	em.subscribe(&ConsumerNoContext{consumer}, eventTypes...)
+}
+
+func (em *EventManager) subscribe(consumer ConsumerWithContext, eventTypes ...EventType) {
 	for _, eventType := range eventTypes {
 		if _, ok := em.subscribers[eventType]; !ok {
-			em.subscribers[eventType] = []Consumer{}
+			em.subscribers[eventType] = []ConsumerWithContext{}
 		}
 
 		em.subscribers[eventType] = append(em.subscribers[eventType], consumer)
@@ -34,7 +48,7 @@ func (em *EventManager) Subscribe(consumer Consumer, eventTypes ...EventType) {
 // SubscribeWithContext The same as Subscribe(...) but indicates that context will be
 // used to determine if event is forwarded to a given subscriber
 func (em *EventManager) SubscribeWithContext(consumer ConsumerWithContext, eventTypes ...EventType) {
-	em.Subscribe(consumer, eventTypes...)
+	em.subscribe(consumer, eventTypes...)
 }
 
 func (em *EventManager) Publish(event Event) {

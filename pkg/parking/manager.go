@@ -1,6 +1,10 @@
 package parking
 
-import "github.com/AngelVI13/slack-bot/pkg/event"
+import (
+	"log"
+
+	"github.com/AngelVI13/slack-bot/pkg/event"
+)
 
 const (
 	Identifier = "parking"
@@ -17,6 +21,7 @@ func NewManager(eventManager *event.EventManager) *Manager {
 }
 
 func (m *Manager) Consume(e event.Event) {
+	log.Println("PARKING: ", e)
 }
 
 func (m *Manager) Context() string {
