@@ -62,10 +62,13 @@ func (em *EventManager) ManageEvents() {
 		eventType := event.Type()
 		subs, ok := em.subscribers[eventType]
 		if ok {
-			// TODO: if subscriber implements Context() then check if the event contains
-			// this context and only then forwards it to the subscriber
 			for _, sub := range subs {
-				go sub.Consume(event)
+				// NOTE: if subscribed with context then check if the event contains
+				// this context and only then forward it to the subscriber
+				// if subscribed without context -> forward to subscriber
+				if MatchesContext(event, sub) {
+					go sub.Consume(event)
+				}
 			}
 		}
 
@@ -73,8 +76,14 @@ func (em *EventManager) ManageEvents() {
 		subs, ok = em.subscribers[AnyEvent]
 		if ok {
 			for _, sub := range subs {
-				go sub.Consume(event)
+				if MatchesContext(event, sub) {
+					go sub.Consume(event)
+				}
 			}
 		}
 	}
+}
+
+func MatchesContext(event Event, sub ConsumerWithContext) bool {
+	return (sub.Context() != "" && event.HasContext(sub.Context())) || sub.Context() == ""
 }

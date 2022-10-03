@@ -23,6 +23,10 @@ func (s Slash) String() string {
 	return fmt.Sprintf("%s - %s", event.DefaultEventString(&s), s.Command)
 }
 
+func (s *Slash) HasContext(c string) bool {
+	return true
+}
+
 func handleSlashCommand(socketEvent socketmode.Event) event.Event {
 	command, ok := socketEvent.Data.(slack.SlashCommand)
 	if !ok {

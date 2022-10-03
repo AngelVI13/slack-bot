@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	Identifier = "parking"
+	Identifier = "Parking: "
+	SlashCmd   = "/parking"
 )
 
 type Manager struct {
@@ -22,6 +23,13 @@ func NewManager(eventManager *event.EventManager) *Manager {
 
 func (m *Manager) Consume(e event.Event) {
 	log.Println("PARKING: ", e)
+	switch e.Type() {
+	case event.SlashCmdEvent:
+
+	case event.BlockActionEvent:
+
+	}
+
 }
 
 func (m *Manager) Context() string {

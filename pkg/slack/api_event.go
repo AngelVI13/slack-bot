@@ -24,6 +24,10 @@ func (m Mention) String() string {
 	return fmt.Sprintf("%s - %s", event.DefaultEventString(&m), m.Text)
 }
 
+func (m *Mention) HasContext(c string) bool {
+	return true
+}
+
 // handleApiEvent will take an event and handle it properly based on the type of event
 func handleApiEvent(socketEvent socketmode.Event, client *Client) event.Event {
 	// The Event sent on the channel is not the same as the EventAPI events so we need to type cast it
