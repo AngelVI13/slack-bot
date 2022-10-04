@@ -6,6 +6,7 @@ import (
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
 
+	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 )
@@ -69,6 +70,36 @@ func (c *Client) Listen() {
 
 			if processedEvent != nil {
 				c.eventManager.Publish(processedEvent)
+			}
+		}
+	}
+}
+
+func (c *Client) Consume(e event.Event) {
+	data, ok := e.(event.Response)
+	if !ok {
+		log.Fatalf("Slack client expected Response but got sth else: %T: %v", e, e)
+	}
+
+	for _, action := range data.Actions() {
+		switch action.Action() {
+		case event.OpenView, event.PushView:
+			view := action.(*common.ViewAction)
+			viewAction := view.Action()
+
+			var err error
+			if viewAction == event.OpenView {
+				_, err = c.socket.OpenView(view.TriggerId, view.ModalRequest)
+
+			} else if viewAction == event.PushView {
+				_, err = c.socket.PushView(view.TriggerId, view.ModalRequest)
+			} else {
+				log.Fatalf("Unsupported view action: %v", viewAction)
+			}
+
+			if err != nil {
+				// TODO: should this crash???? probably not
+				log.Fatalf("Error opening view: %s", err)
 			}
 		}
 	}

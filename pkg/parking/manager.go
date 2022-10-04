@@ -1,8 +1,7 @@
 package parking
 
 import (
-	"log"
-
+	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/slack"
@@ -38,8 +37,11 @@ func (m *Manager) Consume(e event.Event) {
 
 		spaces := m.parkingLot.GetSpacesInfo(data.UserName)
 		modal := GenerateModalRequest(data, spaces)
-		log.Println(modal)
 
+		action := common.NewViewAction(event.OpenView, data.TriggerId, modal)
+		response := common.NewResponseEvent(action)
+
+		m.eventManager.Publish(response)
 	case event.BlockActionEvent:
 
 	}

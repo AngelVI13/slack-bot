@@ -45,8 +45,9 @@ func main() {
 	)
 
 	slackClient := slack.NewClient(config, eventManager)
+	eventManager.Subscribe(slackClient, event.ResponseEvent)
+
 	go slackClient.Listen()
 
 	eventManager.ManageEvents()
-
 }

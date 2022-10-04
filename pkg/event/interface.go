@@ -11,6 +11,30 @@ type Event interface {
 	HasContext(context string) bool
 }
 
+type ResponseActionType int
+
+const (
+	OpenView ResponseActionType = iota
+	PushView
+	PostEphemeral
+)
+
+var ResponseActionNames = map[ResponseActionType]string{
+	OpenView:      "OpenView",
+	PushView:      "PushView",
+	PostEphemeral: "PostEphemeral",
+}
+
+type ResponseAction interface {
+	String() string
+	Action() ResponseActionType
+}
+
+type Response interface {
+	Event
+	Actions() []ResponseAction
+}
+
 const (
 	BasicEvent EventType = iota
 	MentionEvent
@@ -18,6 +42,7 @@ const (
 	ViewSubmissionEvent
 	BlockActionEvent
 	TimerEvent
+	ResponseEvent
 	AnyEvent
 )
 
@@ -28,6 +53,7 @@ var EventNames = map[EventType]string{
 	ViewSubmissionEvent: "ViewSubmission",
 	BlockActionEvent:    "BlockAction",
 	TimerEvent:          "TimerEvent",
+	ResponseEvent:       "ResponseEvent",
 	AnyEvent:            "AnyEvent",
 }
 
