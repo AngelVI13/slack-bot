@@ -31,6 +31,7 @@ func NewEventManager() *EventManager {
 	}
 }
 
+// Subscribe Subscribe for events of the chosen type without considering any context
 func (em *EventManager) Subscribe(consumer Consumer, eventTypes ...EventType) {
 	em.subscribe(&ConsumerNoContext{consumer}, eventTypes...)
 }
@@ -45,8 +46,8 @@ func (em *EventManager) subscribe(consumer ConsumerWithContext, eventTypes ...Ev
 	}
 }
 
-// SubscribeWithContext The same as Subscribe(...) but indicates that context will be
-// used to determine if event is forwarded to a given subscriber
+// SubscribeWithContext Subscribe for events of the chosen type provided they also
+// contain the expected context (Context()).
 func (em *EventManager) SubscribeWithContext(consumer ConsumerWithContext, eventTypes ...EventType) {
 	em.subscribe(consumer, eventTypes...)
 }
