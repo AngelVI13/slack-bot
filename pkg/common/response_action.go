@@ -10,17 +10,43 @@ import (
 type ViewAction struct {
 	action       event.ResponseActionType
 	TriggerId    string
+	ViewId       string
 	ModalRequest slack.ModalViewRequest
 }
 
-func NewViewAction(
-	action event.ResponseActionType,
+func NewUpdateViewAction(
+	triggerId string,
+	viewId string,
+	modalRequest slack.ModalViewRequest,
+) *ViewAction {
+	return &ViewAction{
+		action:       event.UpdateView,
+		TriggerId:    triggerId,
+		ViewId:       viewId,
+		ModalRequest: modalRequest,
+	}
+}
+
+func NewOpenViewAction(
 	triggerId string,
 	modalRequest slack.ModalViewRequest,
 ) *ViewAction {
 	return &ViewAction{
-		action:       action,
+		action:       event.OpenView,
 		TriggerId:    triggerId,
+		ViewId:       "",
+		ModalRequest: modalRequest,
+	}
+}
+
+func NewPushViewAction(
+	triggerId string,
+	modalRequest slack.ModalViewRequest,
+) *ViewAction {
+	return &ViewAction{
+		action:       event.PushView,
+		TriggerId:    triggerId,
+		ViewId:       "",
 		ModalRequest: modalRequest,
 	}
 }

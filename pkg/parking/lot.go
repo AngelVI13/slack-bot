@@ -25,23 +25,23 @@ func (i *ReleaseInfo) Complete() bool {
 	return i.UserId != "" && i.Space != nil && i.StartDate != nil && i.EndDate != nil
 }
 
-func (i *ReleaseInfo) Error() error {
+func (i *ReleaseInfo) Error() string {
 	if !i.Complete() {
-		return fmt.Errorf("Release info for space (%d) not complete", i.Space.Number)
+		return fmt.Sprintf("Release info for space (%d) not complete", i.Space.Number)
 	}
 
 	today := time.Now()
 	todayDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
 
 	if i.StartDate.Before(todayDate) {
-		return fmt.Errorf("Start date is in the past: %v", i.StartDate)
+		return fmt.Sprintf("Start date is in the past: %v", i.StartDate)
 	}
 
 	if i.EndDate.Before(*i.StartDate) {
-		return fmt.Errorf("End date is before start date: S(%v) - E(%v)", i.StartDate, i.EndDate)
+		return fmt.Sprintf("End date is before start date: S(%v) - E(%v)", i.StartDate, i.EndDate)
 	}
 
-	return nil
+	return ""
 }
 
 func (i ReleaseInfo) String() string {

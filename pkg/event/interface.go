@@ -16,6 +16,7 @@ type ResponseActionType int
 const (
 	OpenView ResponseActionType = iota
 	PushView
+	UpdateView
 	PostEphemeral
 	Post
 )

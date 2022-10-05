@@ -83,17 +83,19 @@ func (c *Client) Consume(e event.Event) {
 
 	for _, action := range data.Actions() {
 		switch action.Action() {
-		case event.OpenView, event.PushView:
+		case event.OpenView, event.PushView, event.UpdateView:
 			view := action.(*common.ViewAction)
 			viewAction := view.Action()
 
 			var err error
-			if viewAction == event.OpenView {
+			switch viewAction {
+			case event.OpenView:
 				_, err = c.socket.OpenView(view.TriggerId, view.ModalRequest)
-
-			} else if viewAction == event.PushView {
+			case event.PushView:
 				_, err = c.socket.PushView(view.TriggerId, view.ModalRequest)
-			} else {
+			case event.UpdateView:
+				_, err = c.socket.UpdateView(view.ModalRequest, "", "", view.ViewId)
+			default:
 				log.Fatalf("Unsupported view action: %v", viewAction)
 			}
 
@@ -101,6 +103,8 @@ func (c *Client) Consume(e event.Event) {
 				// TODO: should this crash???? probably not
 				log.Fatalf("Error opening view: %s", err)
 			}
+		default:
+			log.Fatalf("Unsupported action: %v", action.Action())
 		}
 	}
 }

@@ -2,6 +2,7 @@ package parking
 
 import (
 	"log"
+	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/config"
@@ -21,6 +22,8 @@ type Manager struct {
 	eventManager *event.EventManager
 	parkingLot   *ParkingLot
 	userManager  *user.Manager
+
+	releaseInfo *ReleaseInfo
 }
 
 func NewManager(
@@ -34,6 +37,7 @@ func NewManager(
 		eventManager: eventManager,
 		parkingLot:   &parkingLot,
 		userManager:  userManager,
+		releaseInfo:  nil,
 	}
 }
 
@@ -68,7 +72,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
 	modal := generateBookingModalRequest(data, spaces)
 
-	action := common.NewViewAction(event.OpenView, data.TriggerId, modal)
+	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
 	return response
 }
@@ -86,19 +90,20 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 		case ReleaseParkingActionId:
 			parkingSpace := action.Value
 			actions = m.handleReleaseParking(data, parkingSpace, isSpecialUser)
+		case ReleaseStartDateActionId, ReleaseEndDateActionId:
+			selectedDate := action.SelectedDate
+			isStartDate := action.ActionID == ReleaseStartDateActionId
+
+			actions = m.handleReleaseRange(data, selectedDate, isStartDate)
 		}
 	}
 
-	/*
-		case modals.MParkingBookingTitle: // TODO: Why is this not the parking release title instead?
-			updatedView = handleParkingBooking(bot, interaction)
-	*/
-
-	if actions != nil && len(actions) > 0 {
-		return common.NewResponseEvent(actions...)
+	if actions == nil || len(actions) == 0 {
+		return nil
 	}
 
-	return nil
+	log.Println(actions)
+	return common.NewResponseEvent(actions...)
 }
 
 func (m *Manager) handleReserveParking(
@@ -119,6 +124,8 @@ func (m *Manager) handleReserveParking(
 		action := common.NewPostEphemeralAction(data.UserId, data.UserId, slack.MsgOptionText(errStr, false))
 		return []event.ResponseAction{action}
 	}
+
+	// TODO: return UpdateView action with update space booking list
 	return nil
 }
 
@@ -149,49 +156,30 @@ func (m *Manager) handleReleaseParking(
 	}
 
 	releaseModal := generateReleaseModalRequest(data, chosenParkingSpace, "")
-	action := common.NewViewAction(event.PushView, data.TriggerId, releaseModal)
+	action := common.NewPushViewAction(data.TriggerId, releaseModal)
 	return []event.ResponseAction{action}
 }
 
-/*
-func handleParkingBooking(bot *SlackBot, interaction *slack.InteractionCallback) *slack.ModalViewRequest {
-	var releaseInfo *parking.ReleaseInfo
-	// handle button actions
-	for _, action := range interaction.ActionCallback.BlockActions {
-		switch action.ActionID {
-		case modals.ReleaseStartDateActionId, modals.ReleaseEndDateActionId:
-			date, err := time.Parse("2006-01-02", action.SelectedDate)
-			if err != nil {
-				// TODO: replace with proper handling
-				log.Fatal(err)
-			}
-			releaseInfo = bot.Data.ParkingLot.ToBeReleased.GetByUserId(interaction.User.ID)
-			if releaseInfo == nil {
-				log.Fatalln(bot.Data.ParkingLot.ToBeReleased)
-			}
-
-			if action.ActionID == modals.ReleaseStartDateActionId {
-				releaseInfo.StartDate = &date
-			} else {
-				releaseInfo.EndDate = &date
-			}
-
-		default:
-		}
+func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate string, isStartDate bool) []event.ResponseAction {
+	date, err := time.Parse("2006-01-02", selectedDate)
+	if err != nil {
+		// TODO: replace with proper handling
+		log.Fatal(err)
 	}
 
-	if releaseInfo != nil {
-		parkingReleaseHandler := &modals.ParkingReleaseHandler{}
-		updatedView := parkingReleaseHandler.GenerateModalRequest(
-			bot.CurrentOptionModalData.Command,
-			releaseInfo.Space,
-			releaseInfo.Error().Error(),
-		)
-		_, err := bot.SlackClient.UpdateView(updatedView, "", "", interaction.View.ID)
-		if err != nil {
-			log.Fatal(err)
-		}
+	releaseInfo := m.parkingLot.ToBeReleased.GetByUserId(data.UserId)
+	// NOTE: releaseInfo is created when the user clicks "Release" button
+	if releaseInfo == nil {
+		log.Fatalf("Expected release info to be not nil: %v", m.parkingLot.ToBeReleased)
 	}
-	return nil
+
+	if isStartDate {
+		releaseInfo.StartDate = &date
+	} else {
+		releaseInfo.EndDate = &date
+	}
+
+	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Error())
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal)
+	return []event.ResponseAction{action}
 }
-*/
