@@ -253,7 +253,7 @@ func (l *ParkingLot) AutoRelease(when time.Time) {
 	l.SynchronizeToFile()
 }
 
-func GetParkingLot(config *config.Config) (parkingLot ParkingLot) {
+func getParkingLot(config *config.Config) (parkingLot ParkingLot) {
 	path := config.ParkingFilename
 
 	fileData, err := os.ReadFile(path)

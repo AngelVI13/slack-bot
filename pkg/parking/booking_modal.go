@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	ReserveParkingActionId = "reserve"
-	ReleaseParkingActionId = "release"
+	ReserveParkingActionId = "reserveParking"
+	ReleaseParkingActionId = "releaseParking"
 )
 
 var ParkingBookingTitle = Identifier + "Booking"
 
-func GenerateModalRequest(command *slackApi.Slash, spaces SpacesInfo) slack.ModalViewRequest {
+func generateBookingModalRequest(command *slackApi.Slash, spaces SpacesInfo) slack.ModalViewRequest {
 	// TODO: highlight your parking space?
 	spacesSectionBlocks := generateParkingInfoBlocks(spaces)
 	return common.GenerateInfoModalRequest(ParkingBookingTitle, spacesSectionBlocks)

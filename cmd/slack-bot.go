@@ -9,6 +9,7 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/parking"
 	"github.com/AngelVI13/slack-bot/pkg/slack"
+	"github.com/AngelVI13/slack-bot/pkg/user"
 )
 
 func setupLogging(logPath string) {
@@ -35,7 +36,9 @@ func main() {
 	timer := event.NewTimer(eventManager)
 	timer.AddDaily(17, 00, "Reset parking status")
 
-	parkingManager := parking.NewManager(eventManager, config)
+	userManager := user.NewManager(config)
+
+	parkingManager := parking.NewManager(eventManager, config, userManager)
 	eventManager.SubscribeWithContext(
 		parkingManager,
 		event.SlashCmdEvent,

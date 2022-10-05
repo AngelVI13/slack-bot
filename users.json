@@ -1,0 +1,62 @@
+{
+    "angel.iliev": {
+        "rights": 1,
+        "id": "U03FBL3R6KU",
+        "is_reviewer": false
+    },
+    "augustas.sereika": {
+        "rights": 0,
+        "id": "U03FL491Y4S",
+        "is_reviewer": false
+    },
+    "aurimas.razmis": {
+        "rights": 1,
+        "id": "U03FEANSULC",
+        "is_reviewer": true
+    },
+    "erikas.treskovskis": {
+        "rights": 0,
+        "id": "U03F5BA9CSJ",
+        "is_reviewer": true
+    },
+    "justina.krasinskaite": {
+        "rights": 0,
+        "id": "U03F5J7EDLP",
+        "is_reviewer": false
+    },
+    "laima.strigo": {
+        "rights": 0,
+        "id": "U03F55117EJ",
+        "is_reviewer": true
+    },
+    "mantas.milieska": {
+        "rights": 0,
+        "id": "U03FC4KLLUA",
+        "is_reviewer": true
+    },
+    "marius.sutkus": {
+        "rights": 0,
+        "id": "U03F5C5RWQ6",
+        "is_reviewer": true
+    },
+    "oleg.krukovskij": {
+        "rights": 0,
+        "id": "U03FC0V579Q",
+        "is_reviewer": false
+    },
+    "regimantas.vegys": {
+        "rights": 0,
+        "id": "U03FBJ65EMR",
+        "is_reviewer": true
+    },
+    "rokas.naujalis": {
+        "rights": 0,
+        "id": "U03FBHQPWV9",
+        "is_reviewer": true
+    },
+    "ugnius.bertasius": {
+        "rights": 1,
+        "id": "U03FQJZ8XC1",
+        "is_reviewer": false
+    }
+}

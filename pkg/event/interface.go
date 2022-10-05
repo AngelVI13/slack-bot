@@ -17,12 +17,14 @@ const (
 	OpenView ResponseActionType = iota
 	PushView
 	PostEphemeral
+	Post
 )
 
 var ResponseActionNames = map[ResponseActionType]string{
 	OpenView:      "OpenView",
 	PushView:      "PushView",
 	PostEphemeral: "PostEphemeral",
+	Post:          "Post",
 }
 
 type ResponseAction interface {

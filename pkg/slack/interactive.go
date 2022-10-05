@@ -19,8 +19,7 @@ type Interaction struct {
 }
 
 func (i *Interaction) HasContext(c string) bool {
-	// TODO: should this be using a title instead of sth else
-	return strings.Contains(strings.ToLower(i.Title), c)
+	return strings.Contains(i.Title, c)
 }
 
 type ViewSubmission struct {
