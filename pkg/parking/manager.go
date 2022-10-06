@@ -15,7 +15,8 @@ import (
 const (
 	Identifier = "Parking: "
 	// SlashCmd   = "/parking"
-	SlashCmd = "/test-park"
+	SlashCmd     = "/test-park"
+	ResetParking = "Reset parking status"
 )
 
 type Manager struct {
@@ -60,6 +61,15 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		m.eventManager.Publish(response)
+
+	case event.TimerEvent:
+		data := e.(*event.TimerDone)
+		if data.Label != ResetParking {
+			return
+		}
+
+		log.Println("ReleaseSpaces")
+		m.parkingLot.ReleaseSpaces(data.Time)
 	}
 
 }
@@ -84,15 +94,15 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 	for _, action := range data.Actions {
 		switch action.ActionID {
-		case ReserveParkingActionId:
+		case reserveParkingActionId:
 			parkingSpace := action.Value
 			actions = m.handleReserveParking(data, parkingSpace, isSpecialUser)
-		case ReleaseParkingActionId:
+		case releaseParkingActionId:
 			parkingSpace := action.Value
 			actions = m.handleReleaseParking(data, parkingSpace, isSpecialUser)
-		case ReleaseStartDateActionId, ReleaseEndDateActionId:
+		case releaseStartDateActionId, releaseEndDateActionId:
 			selectedDate := action.SelectedDate
-			isStartDate := action.ActionID == ReleaseStartDateActionId
+			isStartDate := action.ActionID == releaseStartDateActionId
 
 			actions = m.handleReleaseRange(data, selectedDate, isStartDate)
 		}
@@ -156,8 +166,14 @@ func (m *Manager) handleReleaseParking(
 
 	// Special User handling
 	chosenParkingSpace := m.parkingLot.GetSpace(parkingSpace)
-	// TODO: specialUser should only be allowed to release their own place ?
-	err := m.parkingLot.ToBeReleased.Add(data.UserId, chosenParkingSpace)
+	// NOTE: here we use the original parking space reserve name and id.
+	// this allows us to restore the space to the original user after the temporary release is over.
+	err := m.parkingLot.ToBeReleased.Add(
+		data.UserId,
+		chosenParkingSpace.ReservedBy,
+		chosenParkingSpace.ReservedById,
+		chosenParkingSpace,
+	)
 	if err != nil {
 		// TODO: this should just show an error in modal but not fail the program
 		log.Fatal(err)
@@ -176,7 +192,7 @@ func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate st
 		log.Fatal(err)
 	}
 
-	releaseInfo := m.parkingLot.ToBeReleased.GetByUserId(data.UserId)
+	releaseInfo := m.parkingLot.ToBeReleased.GetByReleaserId(data.UserId)
 	// NOTE: releaseInfo is created when the user clicks "Release" button
 	if releaseInfo == nil {
 		log.Fatalf("Expected release info to be not nil: %v", m.parkingLot.ToBeReleased)

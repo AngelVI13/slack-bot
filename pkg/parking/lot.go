@@ -15,19 +15,27 @@ import (
 type SpacesInfo []*ParkingSpace
 
 type ReleaseInfo struct {
-	UserId    string
-	Space     *ParkingSpace
-	StartDate *time.Time
-	EndDate   *time.Time
+	ReleaserId string
+	OwnerId    string
+	OwnerName  string
+	Space      *ParkingSpace
+	StartDate  *time.Time
+	EndDate    *time.Time
 }
 
 func (i *ReleaseInfo) Complete() bool {
-	return i.UserId != "" && i.Space != nil && i.StartDate != nil && i.EndDate != nil
+	return (i.ReleaserId != "" &&
+		i.OwnerId != "" &&
+		i.OwnerName != "" &&
+		i.Space != nil &&
+		i.StartDate != nil &&
+		i.EndDate != nil)
 }
 
 func (i *ReleaseInfo) Error() string {
 	if !i.Complete() {
-		return fmt.Sprintf("Release info for space (%d) not complete", i.Space.Number)
+		// return fmt.Sprintf("Release info for space (%d) not complete", i.Space.Number)
+		return fmt.Sprintf("Missing date information for temporary release of space (%d)", i.Space.Number)
 	}
 
 	today := time.Now()
@@ -45,7 +53,7 @@ func (i *ReleaseInfo) Error() string {
 }
 
 func (i ReleaseInfo) String() string {
-	return fmt.Sprintf("ReleaseInfo(space=%d, userId=%s, start=%v, end=%v)", i.Space.Number, i.UserId, i.StartDate, i.EndDate)
+	return fmt.Sprintf("ReleaseInfo(space=%d, userName=%s, start=%v, end=%v)", i.Space.Number, i.OwnerName, i.StartDate, i.EndDate)
 }
 
 type ReleaseQueue struct {
@@ -61,23 +69,25 @@ func (q *ReleaseQueue) Get(space int) *ReleaseInfo {
 	return nil
 }
 
-func (q *ReleaseQueue) GetByUserId(userId string) *ReleaseInfo {
+func (q *ReleaseQueue) GetByReleaserId(userId string) *ReleaseInfo {
 	for _, item := range q.queue {
-		if item.UserId == userId {
+		if item.ReleaserId == userId {
 			return item
 		}
 	}
 	return nil
 }
 
-func (q *ReleaseQueue) Add(userId string, space *ParkingSpace) error {
+func (q *ReleaseQueue) Add(releaserId, ownerName, ownerId string, space *ParkingSpace) error {
 	if q.Get(space.Number) != nil {
 		return fmt.Errorf("Space already marked for release")
 	}
 
 	q.queue = append(q.queue, &ReleaseInfo{
-		UserId: userId,
-		Space:  space,
+		ReleaserId: releaserId,
+		OwnerName:  ownerName,
+		OwnerId:    ownerId,
+		Space:      space,
 	})
 	return nil
 }
@@ -231,6 +241,43 @@ func (l *ParkingLot) GetSpace(parkingSpace string) *ParkingSpace {
 		log.Fatalf("Incorrect parking space number %s, %+v", parkingSpace, l)
 	}
 	return space
+}
+
+// TODO: Test this
+func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
+	for _, space := range l.ParkingSpaces {
+		// Simple case
+		if space.Reserved && space.AutoRelease {
+			log.Println("AutoRelease space ", space.Number)
+			space.Reserved = false
+			space.AutoRelease = false
+			// Fall-through to check if this is also a temporary
+			// released space has to be reserved
+		}
+
+		// If a scheduled release was setup
+		releaseInfo := l.ToBeReleased.Get(space.Number)
+		log.Println("ReleaseInfo for space ", space.Number, releaseInfo)
+		if releaseInfo == nil {
+			continue
+		}
+
+		// On the day before the start of the release -> make the space
+		// available for selection
+		if releaseInfo.StartDate.Sub(cTime).Hours() < 24 && releaseInfo.StartDate.After(cTime) {
+			log.Println("TempRelease space ", space.Number, releaseInfo)
+			space.Reserved = false
+			space.AutoRelease = false
+		} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
+			// On the day of the end of release -> reserve back the space
+			// for the correct user
+			log.Println("TempReserve space ", space.Number, releaseInfo)
+			space.Reserved = true
+			space.AutoRelease = false
+			space.ReservedBy = releaseInfo.OwnerName
+			space.ReservedById = releaseInfo.OwnerId
+		}
+	}
 }
 
 func (l *ParkingLot) AutoRelease(when time.Time) {

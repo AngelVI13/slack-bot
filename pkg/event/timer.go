@@ -6,7 +6,8 @@ import (
 )
 
 type TimerDone struct {
-	label string
+	Label string
+	Time  time.Time
 }
 
 func (t *TimerDone) Type() EventType {
@@ -14,7 +15,7 @@ func (t *TimerDone) Type() EventType {
 }
 
 func (t TimerDone) String() string {
-	return fmt.Sprintf("Timer[%s] Done.", t.label)
+	return fmt.Sprintf("Timer[%s] Done.", t.Label)
 }
 
 func (t *TimerDone) User() string {
@@ -46,7 +47,8 @@ func (t *Timer) AddDaily(hour, min int, label string) {
 			if cTime.Hour() == hour && cTime.Minute() == min {
 				t.eventManager.Publish(
 					&TimerDone{
-						label: label,
+						Label: label,
+						Time:  cTime,
 					},
 				)
 			}

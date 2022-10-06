@@ -9,16 +9,16 @@ import (
 )
 
 const (
-	ReserveParkingActionId = "reserveParking"
-	ReleaseParkingActionId = "releaseParking"
+	reserveParkingActionId = "reserveParking"
+	releaseParkingActionId = "releaseParking"
 )
 
-var ParkingBookingTitle = Identifier + "Booking"
+var parkingBookingTitle = Identifier + "Booking"
 
 func generateBookingModalRequest(command event.Event, spaces SpacesInfo, userId string) slack.ModalViewRequest {
 	// TODO: highlight your parking space?
 	spacesSectionBlocks := generateParkingInfoBlocks(spaces, userId)
-	return common.GenerateInfoModalRequest(ParkingBookingTitle, spacesSectionBlocks)
+	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
 }
 
 // generateParkingInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..
@@ -46,7 +46,7 @@ func generateParkingButtons(space *ParkingSpace, userId string, alreadyReservedS
 		//       1. Button for temporary release of spot -> leads to this modal
 		//       2. Button for permament release (acts the same as release for non-special users)
 		releaseButton := slack.NewButtonBlockElement(
-			ReleaseParkingActionId,
+			releaseParkingActionId,
 			fmt.Sprint(space.Number),
 			slack.NewTextBlockObject("plain_text", "Release!", true, false),
 		)
@@ -56,7 +56,7 @@ func generateParkingButtons(space *ParkingSpace, userId string, alreadyReservedS
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
-			ReserveParkingActionId,
+			reserveParkingActionId,
 			fmt.Sprint(space.Number),
 			slack.NewTextBlockObject("plain_text", fmt.Sprintf("%s :eject:", actionButtonText), true, false),
 		)
