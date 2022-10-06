@@ -102,7 +102,6 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 		return nil
 	}
 
-	log.Println(actions)
 	return common.NewResponseEvent(actions...)
 }
 
@@ -125,8 +124,10 @@ func (m *Manager) handleReserveParking(
 		return []event.ResponseAction{action}
 	}
 
-	// TODO: return UpdateView action with update space booking list
-	return nil
+	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
+	bookingModal := generateBookingModalRequest(data, spaces)
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	return []event.ResponseAction{action}
 }
 
 func (m *Manager) handleReleaseParking(
@@ -134,16 +135,23 @@ func (m *Manager) handleReleaseParking(
 	parkingSpace string,
 	isSpecialUser bool,
 ) []event.ResponseAction {
+	actions := []event.ResponseAction{}
+
 	// Handle general case: normal user releasing a space
 	if !isSpecialUser {
 		victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName)
 		if victimId != "" {
 			log.Println(errStr)
 			action := common.NewPostEphemeralAction(victimId, victimId, slack.MsgOptionText(errStr, false))
-			return []event.ResponseAction{action}
+			actions = append(actions, action)
 		}
 
-		return nil
+		spaces := m.parkingLot.GetSpacesInfo(data.UserName)
+		bookingModal := generateBookingModalRequest(data, spaces)
+		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+		actions = append(actions, action)
+
+		return actions
 	}
 
 	// Special User handling
@@ -157,7 +165,8 @@ func (m *Manager) handleReleaseParking(
 
 	releaseModal := generateReleaseModalRequest(data, chosenParkingSpace, "")
 	action := common.NewPushViewAction(data.TriggerId, releaseModal)
-	return []event.ResponseAction{action}
+	actions = append(actions, action)
+	return actions
 }
 
 func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate string, isStartDate bool) []event.ResponseAction {
