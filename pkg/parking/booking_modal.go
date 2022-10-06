@@ -21,7 +21,7 @@ func generateBookingModalRequest(command event.Event, spaces SpacesInfo) slack.M
 	return common.GenerateInfoModalRequest(ParkingBookingTitle, spacesSectionBlocks)
 }
 
-// generateParkingInfo Generate sections of text that contain device info such as status (taken/free), ip, port, taken by etc..
+// generateParkingInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..
 func generateParkingInfo(spaces SpacesInfo) []slack.SectionBlock {
 	var sections []slack.SectionBlock
 	for _, space := range spaces {
@@ -97,7 +97,7 @@ func generateParkingPlanBlocks() []slack.Block {
 	return []slack.Block{description, plan1, plan2, plan3}
 }
 
-// generateParkingInfoBlocks Generates device block objects to be used as elements in modal
+// generateParkingInfoBlocks Generates space block objects to be used as elements in modal
 func generateParkingInfoBlocks(spaces SpacesInfo) []slack.Block {
 	descriptionBlocks := generateParkingPlanBlocks()
 
@@ -106,9 +106,9 @@ func generateParkingInfoBlocks(spaces SpacesInfo) []slack.Block {
 
 	parkingSpaceBlocks := []slack.Block{}
 	parkingSpaceBlocks = append(parkingSpaceBlocks, descriptionBlocks...)
-	for idx, device := range spaces {
+	for idx, space := range spaces {
 		sectionBlock := parkingSpaceSections[idx]
-		buttons := generateParkingButtons(device)
+		buttons := generateParkingButtons(space)
 
 		actions := slack.NewActionBlock("", buttons...)
 		parkingSpaceBlocks = append(parkingSpaceBlocks, sectionBlock, actions, div)

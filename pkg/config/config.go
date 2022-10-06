@@ -25,7 +25,7 @@ type Config struct {
 // ConfigFromEnv Creates config instance by reading corresponding ENV variables.
 // Make sure godotenv.Load is called beforehand
 func NewConfigFromEnv(envPath string) *Config {
-	// Env variables are used to configure slack client, devices & users data
+	// Env variables are used to configure slack client, devices, spaces & users data
 	godotenv.Load(envPath)
 
 	taEndpoint := os.Getenv("SL_TA_ENDPOINT")

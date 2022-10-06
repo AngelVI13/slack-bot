@@ -119,7 +119,7 @@ func (m *Manager) handleReserveParking(
 	errStr := m.parkingLot.Reserve(parkingSpace, data.UserName, data.UserId, autoRelease)
 	if errStr != "" {
 		log.Println(errStr)
-		// If there device was already taken -> inform user by personal DM message from the bot
+		// If the space was already taken -> inform user by personal DM message from the bot
 		action := common.NewPostEphemeralAction(data.UserId, data.UserId, slack.MsgOptionText(errStr, false))
 		return []event.ResponseAction{action}
 	}

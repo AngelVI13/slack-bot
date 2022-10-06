@@ -126,7 +126,7 @@ func (d *ParkingLot) synchronizeFromFile(data []byte) {
 
 // TODO: This is identical to GetDevicesInfo -> refactor it out
 func (d *ParkingLot) GetSpacesInfo(user string) SpacesInfo {
-	// Group devices in 2 groups -> belonging to given user or not
+	// Group spaces in 2 groups -> belonging to given user or not
 	// The group that doesn't belong to user will be sorted by name and by status (reserved or not)
 	userSpaces := make(SpacesInfo, 0)
 	nonUserSpaces := make(SpacesInfo, 0)
@@ -138,28 +138,28 @@ func (d *ParkingLot) GetSpacesInfo(user string) SpacesInfo {
 		}
 	}
 
-	// NOTE: This sorts the device list starting from free devices
+	// NOTE: This sorts the spaces list starting from free spaces
 	sort.Slice(nonUserSpaces, func(i, j int) bool {
 		return !nonUserSpaces[i].Reserved
 	})
 
-	firstTaken := -1 // Index of first taken device
-	for i, device := range nonUserSpaces {
-		if device.Reserved {
+	firstTaken := -1 // Index of first taken space
+	for i, space := range nonUserSpaces {
+		if space.Reserved {
 			firstTaken = i
 			break
 		}
 	}
 
-	// NOTE: this might be unnecessary but it shows devices in predicable way in UI so its nice.
-	// If all devices are free or all devices are taken, sort by name
+	// NOTE: this might be unnecessary but it shows spaces in predicable way in UI so its nice.
+	// If all spaces are free or all spaces are taken, sort by number
 	if firstTaken == -1 || firstTaken == 0 {
 		sort.Slice(nonUserSpaces, func(i, j int) bool {
 			return nonUserSpaces[i].Number < nonUserSpaces[j].Number
 		})
 	} else {
-		// split devices into 2 - free & taken
-		// sort each sub slice based on device name/port
+		// split spaces into 2 - free & taken
+		// sort each sub slice based on space number
 		free := nonUserSpaces[:firstTaken]
 		taken := nonUserSpaces[firstTaken:]
 
@@ -188,7 +188,7 @@ func (l *ParkingLot) Reserve(parkingSpace, user, userId string, autoRelease bool
 	if !ok {
 		log.Fatalf("Wrong parking space number %d, %+v", spaceNumber, l)
 	}
-	// Only inform user if it was someone else that tried to reserved his device.
+	// Only inform user if it was someone else that tried to reserved his space.
 	// This prevents an unnecessary message if you double clicked the reserve button yourself
 	if space.Reserved && space.ReservedById != userId {
 		reservedTime := space.ReservedTime.Format("Mon 15:04")
@@ -209,7 +209,7 @@ func (l *ParkingLot) Reserve(parkingSpace, user, userId string, autoRelease bool
 func (l *ParkingLot) Release(parkingSpace, user string) (victimId, errMsg string) {
 	space := l.GetSpace(parkingSpace)
 
-	log.Printf("PARKING_RELEASE: User (%s) released (%s) device.", user, parkingSpace)
+	log.Printf("PARKING_RELEASE: User (%s) released (%s) space.", user, parkingSpace)
 
 	space.Reserved = false
 	l.SynchronizeToFile()
@@ -234,7 +234,7 @@ func (l *ParkingLot) GetSpace(parkingSpace string) *ParkingSpace {
 }
 
 func (l *ParkingLot) AutoRelease(when time.Time) {
-	// Only release devices at the specified hour (hour is [0;23])
+	// Only release spaces at the specified hour (hour is [0;23])
 	now := time.Now()
 	if now.Hour() != when.Hour() {
 		return
@@ -249,7 +249,7 @@ func (l *ParkingLot) AutoRelease(when time.Time) {
 
 	// Need to synchronize changes from file otherwise the state won't be preserved after restart
 	// NOTE: This ends up synchronizing to file more than once since the function can be called
-	// multiple times within the specified auto release hour (even if nothing has changed in the devices list).
+	// multiple times within the specified auto release hour (even if nothing has changed in the spaces list).
 	l.SynchronizeToFile()
 }
 

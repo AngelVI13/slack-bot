@@ -26,8 +26,8 @@ func (p *ParkingSpace) GetStatusEmoji() string {
 	return emoji
 }
 
-// GetStatusDescription Get device status description i.e. reserved, by who, when, etc.
-// Returns empty string if device is free
+// GetStatusDescription Get space status description i.e. reserved, by who, when, etc.
+// Returns empty string if space is free
 func (p *ParkingSpace) GetStatusDescription() string {
 	status := ""
 	if p.Reserved {
