@@ -3,29 +3,29 @@
 		"1": {
 			"Number": 1,
 			"Floor": -1,
-			"Reserved": true,
-			"AutoRelease": true,
-			"ReservedBy": "angel.iliev",
-			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-06-06T09:14:56.710906413+03:00"
-		},
-		"2": {
-			"Number": 2,
-			"Floor": -1,
 			"Reserved": false,
 			"AutoRelease": true,
 			"ReservedBy": "angel.iliev",
 			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-06-04T12:52:16.610192733+03:00"
+			"ReservedTime": "2022-10-06T10:33:41.54490879+03:00"
+		},
+		"2": {
+			"Number": 2,
+			"Floor": -1,
+			"Reserved": true,
+			"AutoRelease": true,
+			"ReservedBy": "angel.iliev",
+			"ReservedById": "U03FBL3R6KU",
+			"ReservedTime": "2022-10-06T10:40:24.749865551+03:00"
 		},
 		"3": {
 			"Number": 3,
 			"Floor": -1,
 			"Reserved": false,
-			"AutoRelease": true,
+			"AutoRelease": false,
 			"ReservedBy": "angel.iliev",
 			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-06-04T12:52:19.854785778+03:00"
+			"ReservedTime": "2022-10-06T10:04:33.899301185+03:00"
 		},
 		"4": {
 			"Number": 4,
@@ -33,26 +33,26 @@
 			"Reserved": false,
 			"AutoRelease": true,
 			"ReservedBy": "angel.iliev",
-			"ReservedById": "U9K74SZT7",
-			"ReservedTime": "2022-04-23T11:40:25.427828778+03:00"
+			"ReservedById": "U03FBL3R6KU",
+			"ReservedTime": "2022-10-06T10:33:48.108859957+03:00"
 		},
 		"5": {
 			"Number": 5,
 			"Floor": -2,
 			"Reserved": false,
-			"AutoRelease": true,
+			"AutoRelease": false,
 			"ReservedBy": "angel.iliev",
-			"ReservedById": "U9K74SZT7",
-			"ReservedTime": "2022-04-23T11:40:25.427828778+03:00"
+			"ReservedById": "U03FBL3R6KU",
+			"ReservedTime": "2022-10-06T09:17:25.796789718+03:00"
 		},
 		"6": {
 			"Number": 6,
 			"Floor": -2,
-			"Reserved": false,
-			"AutoRelease": true,
-			"ReservedBy": "angel.iliev",
-			"ReservedById": "U9K74SZT7",
-			"ReservedTime": "2022-04-23T11:40:25.427828778+03:00"
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "ugnius.bertasius",
+			"ReservedById": "U03FQJZ8XC1",
+			"ReservedTime": "2022-10-06T10:38:56.646723523+03:00"
 		},
 		"7": {
 			"Number": 7,
@@ -72,5 +72,6 @@
 			"ReservedById": "U03FB4N49NE",
 			"ReservedTime": "2022-06-06T14:48:07.283313884+03:00"
 		}
-	}
+	},
+	"ToBeReleased": {}
 }

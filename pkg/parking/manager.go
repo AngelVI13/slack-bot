@@ -70,7 +70,7 @@ func (m *Manager) Context() string {
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
-	modal := generateBookingModalRequest(data, spaces)
+	modal := generateBookingModalRequest(data, spaces, data.UserId)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
@@ -125,7 +125,7 @@ func (m *Manager) handleReserveParking(
 	}
 
 	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
-	bookingModal := generateBookingModalRequest(data, spaces)
+	bookingModal := generateBookingModalRequest(data, spaces, data.UserId)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 	return []event.ResponseAction{action}
 }
@@ -147,7 +147,7 @@ func (m *Manager) handleReleaseParking(
 		}
 
 		spaces := m.parkingLot.GetSpacesInfo(data.UserName)
-		bookingModal := generateBookingModalRequest(data, spaces)
+		bookingModal := generateBookingModalRequest(data, spaces, data.UserId)
 		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 		actions = append(actions, action)
 

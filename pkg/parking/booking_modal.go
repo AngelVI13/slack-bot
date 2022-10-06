@@ -15,9 +15,9 @@ const (
 
 var ParkingBookingTitle = Identifier + "Booking"
 
-func generateBookingModalRequest(command event.Event, spaces SpacesInfo) slack.ModalViewRequest {
+func generateBookingModalRequest(command event.Event, spaces SpacesInfo, userId string) slack.ModalViewRequest {
 	// TODO: highlight your parking space?
-	spacesSectionBlocks := generateParkingInfoBlocks(spaces)
+	spacesSectionBlocks := generateParkingInfoBlocks(spaces, userId)
 	return common.GenerateInfoModalRequest(ParkingBookingTitle, spacesSectionBlocks)
 }
 
@@ -38,10 +38,10 @@ func generateParkingInfo(spaces SpacesInfo) []slack.SectionBlock {
 	return sections
 }
 
-func generateParkingButtons(space *ParkingSpace) []slack.BlockElement {
+func generateParkingButtons(space *ParkingSpace, userId string, alreadyReservedSpace bool) []slack.BlockElement {
 	var buttons []slack.BlockElement
 
-	if space.Reserved {
+	if space.Reserved && space.ReservedById == userId {
 		// TODO: Add 2 buttons for Release for Special users (on the booking page)
 		//       1. Button for temporary release of spot -> leads to this modal
 		//       2. Button for permament release (acts the same as release for non-special users)
@@ -52,8 +52,8 @@ func generateParkingButtons(space *ParkingSpace) []slack.BlockElement {
 		)
 		releaseButton = releaseButton.WithStyle(slack.StyleDanger)
 		buttons = append(buttons, releaseButton)
-	} else {
-
+	} else if !space.Reserved && !alreadyReservedSpace {
+		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
 			ReserveParkingActionId,
@@ -98,20 +98,32 @@ func generateParkingPlanBlocks() []slack.Block {
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
-func generateParkingInfoBlocks(spaces SpacesInfo) []slack.Block {
+func generateParkingInfoBlocks(spaces SpacesInfo, userId string) []slack.Block {
 	descriptionBlocks := generateParkingPlanBlocks()
 
 	div := slack.NewDividerBlock()
 	parkingSpaceSections := generateParkingInfo(spaces)
 
+	userAlreadyReservedSpace := false
+	for _, space := range spaces {
+		if space.Reserved && space.ReservedById == userId {
+			userAlreadyReservedSpace = true
+			break
+		}
+	}
+
 	parkingSpaceBlocks := []slack.Block{}
 	parkingSpaceBlocks = append(parkingSpaceBlocks, descriptionBlocks...)
 	for idx, space := range spaces {
 		sectionBlock := parkingSpaceSections[idx]
-		buttons := generateParkingButtons(space)
+		buttons := generateParkingButtons(space, userId, userAlreadyReservedSpace)
 
-		actions := slack.NewActionBlock("", buttons...)
-		parkingSpaceBlocks = append(parkingSpaceBlocks, sectionBlock, actions, div)
+		parkingSpaceBlocks = append(parkingSpaceBlocks, sectionBlock)
+		if len(buttons) > 0 {
+			actions := slack.NewActionBlock("", buttons...)
+			parkingSpaceBlocks = append(parkingSpaceBlocks, actions)
+		}
+		parkingSpaceBlocks = append(parkingSpaceBlocks, div)
 	}
 
 	return parkingSpaceBlocks
