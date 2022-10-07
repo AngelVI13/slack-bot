@@ -117,6 +117,12 @@ func (c *Client) Consume(e event.Event) {
 				// TODO: should this crash???? probably not
 				log.Fatalf("Error opening view: %s", err)
 			}
+		case event.PostEphemeral:
+			post := action.(*common.PostEphemeralAction)
+			c.socket.Client.PostEphemeral(post.ChannelId, post.UserId, post.MsgOption)
+		case event.Post:
+			post := action.(*common.PostAction)
+			c.socket.Client.PostMessage(post.ChannelId, post.MsgOption)
 		default:
 			log.Fatalf("Unsupported action: %v", action.Action())
 		}

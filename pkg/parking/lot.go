@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/config"
 )
 
@@ -21,11 +22,22 @@ type ReleaseInfo struct {
 	Space      *ParkingSpace
 	StartDate  *time.Time
 	EndDate    *time.Time
+	Submitted  bool
+
+	// These are only used while the user is choosing date range to refer
+	// between space selected and release range selected (i.e. between booking modal
+	// and corresponding release modal)
 	RootViewId string
 	ViewId     string
 }
 
-func (i *ReleaseInfo) Complete() bool {
+func (i *ReleaseInfo) MarkSubmitted() {
+	i.Submitted = true
+
+	// TODO: Synchronize to file here
+}
+
+func (i *ReleaseInfo) DataPresent() bool {
 	return (i.ReleaserId != "" &&
 		i.OwnerId != "" &&
 		i.OwnerName != "" &&
@@ -34,23 +46,12 @@ func (i *ReleaseInfo) Complete() bool {
 		i.EndDate != nil)
 }
 
-func (i *ReleaseInfo) Error() string {
-	if !i.Complete() {
+func (i *ReleaseInfo) Check() string {
+	if !i.DataPresent() {
 		return fmt.Sprintf("Missing date information for temporary release of space (%d)", i.Space.Number)
 	}
 
-	today := time.Now()
-	todayDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
-
-	if i.StartDate.Before(todayDate) {
-		return fmt.Sprintf("Start date is in the past: %v", i.StartDate)
-	}
-
-	if i.EndDate.Before(*i.StartDate) {
-		return fmt.Sprintf("End date is before start date: S(%v) - E(%v)", i.StartDate, i.EndDate)
-	}
-
-	return ""
+	return common.CheckDateRange(*i.StartDate, *i.EndDate)
 }
 
 func (i ReleaseInfo) String() string {
@@ -133,6 +134,7 @@ func (q *ReleaseQueue) Add(
 		OwnerName:  ownerName,
 		OwnerId:    ownerId,
 		Space:      space,
+		Submitted:  false,
 	}
 
 	q.queue = append(q.queue, releaseInfo)

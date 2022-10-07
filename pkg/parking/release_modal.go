@@ -65,8 +65,9 @@ func generateReleaseModalBlocks(
 	}
 
 	if errorTxt != "" {
+		txt := fmt.Sprintf(`:warning: *%s*`, errorTxt)
 		errorSection := slack.NewSectionBlock(
-			slack.NewTextBlockObject("mrkdwn", errorTxt, false, false),
+			slack.NewTextBlockObject("mrkdwn", txt, false, false),
 			nil,
 			nil,
 		)

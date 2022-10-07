@@ -1,7 +1,9 @@
 package parking
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -148,24 +150,79 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	startDateStr := submittedData[releaseStartDateActionId].SelectedDate
 	startDate, err := time.Parse("2006-01-02", startDateStr)
 	if err != nil {
-		// TODO: replace with proper handling
-		log.Fatal(err)
+		// Remote space from temporary release queue
+		spaceNum, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+
+		errTxt := fmt.Sprintf(
+			"Failed to temporary release space %d: failure to parse start date format %s: %v",
+			spaceNum,
+			startDateStr,
+			err,
+		)
+		actions = []event.ResponseAction{
+			common.NewPostEphemeralAction(
+				data.UserId,
+				data.UserId,
+				slack.MsgOptionText(errTxt, false),
+			),
+		}
+		return common.NewResponseEvent(actions...)
 	}
 
 	endDateStr := submittedData[releaseEndDateActionId].SelectedDate
 	endDate, err := time.Parse("2006-01-02", endDateStr)
 	if err != nil {
-		// TODO: replace with proper handling
-		log.Fatal(err)
+		// Remote space from temporary release queue
+		spaceNum, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+
+		errTxt := fmt.Sprintf(
+			"Failed to temporary release space %d: failure to parse end date format %s: %v",
+			spaceNum,
+			endDateStr,
+			err,
+		)
+		actions = []event.ResponseAction{
+			common.NewPostEphemeralAction(
+				data.UserId,
+				data.UserId,
+				slack.MsgOptionText(errTxt, false),
+			),
+		}
+		return common.NewResponseEvent(actions...)
 	}
 
-	// TODO: Update modal & send message to user that informs of the temporary release request
-	log.Println("ViewSubmission")
-	log.Println(startDate, endDate)
-	log.Println(data.ViewId, data.TriggerId)
-	// TODO: also change status of space if startDate is set to today
-	space := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
-	log.Println(space)
+	errorTxt := common.CheckDateRange(startDate, endDate)
+	if errorTxt != "" {
+		// Remote space from temporary release queue
+		spaceNum, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+
+		// TODO: maybe this should be a dialog window instead
+		errTxt := fmt.Sprintf("Failed to temporary release space %d: %s", spaceNum, errorTxt)
+		actions = []event.ResponseAction{
+			common.NewPostEphemeralAction(
+				data.UserId,
+				data.UserId,
+				slack.MsgOptionText(errTxt, false),
+			),
+		}
+		return common.NewResponseEvent(actions...)
+	}
+
+	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	releaseInfo.MarkSubmitted()
+	log.Println("ReleaseInfo Submitted: ", releaseInfo)
+
+	if common.EqualDate(startDate, time.Now()) {
+		m.parkingLot.Release(strconv.Itoa(releaseInfo.Space.Number), data.UserName)
+	}
+
+	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
+	modal := generateBookingModalRequest(data, spaces, data.UserId, "")
+
+	actions = append(
+		actions,
+		common.NewUpdateViewAction(data.TriggerId, releaseInfo.RootViewId, modal),
+	)
 
 	if actions == nil || len(actions) == 0 {
 		return nil
@@ -265,7 +322,7 @@ func (m *Manager) handleReleaseParking(
 		return actions
 	}
 
-	releaseModal := generateReleaseModalRequest(data, chosenParkingSpace, info.Error())
+	releaseModal := generateReleaseModalRequest(data, chosenParkingSpace, info.Check())
 	action := common.NewPushViewAction(data.TriggerId, releaseModal)
 	actions = append(actions, action)
 	return actions
@@ -274,8 +331,7 @@ func (m *Manager) handleReleaseParking(
 func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate string, isStartDate bool) []event.ResponseAction {
 	date, err := time.Parse("2006-01-02", selectedDate)
 	if err != nil {
-		// TODO: replace with proper handling
-		log.Fatal(err)
+		log.Printf("Failed to parse date format %s: %v", selectedDate, err)
 	}
 
 	releaseInfo := m.parkingLot.ToBeReleased.GetByReleaserId(data.UserId)
@@ -293,10 +349,8 @@ func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate st
 	if releaseInfo.ViewId != "" {
 		releaseInfo.ViewId = data.ViewId
 	}
-	log.Println("ReleaseAction")
-	log.Println(data.ViewId, data.TriggerId)
 
-	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Error())
+	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Check())
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal)
 	return []event.ResponseAction{action}
 }
