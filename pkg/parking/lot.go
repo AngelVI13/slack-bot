@@ -32,9 +32,15 @@ type ReleaseInfo struct {
 }
 
 func (i *ReleaseInfo) MarkSubmitted() {
+	log.Printf("ReleaseInfo Submitted: %v", i)
 	i.Submitted = true
 
-	// TODO: Synchronize to file here
+	// Need to reset view IDs as they are no longer needed.
+	// If we don't reset them and user tries to release another
+	// space without closing the parent model -> GetByViewId can return
+	// incorrect data.
+	i.RootViewId = ""
+	i.ViewId = ""
 }
 
 func (i *ReleaseInfo) DataPresent() bool {
@@ -55,24 +61,37 @@ func (i *ReleaseInfo) Check() string {
 }
 
 func (i ReleaseInfo) String() string {
-	return fmt.Sprintf("ReleaseInfo(space=%d, userName=%s, start=%v, end=%v)", i.Space.Number, i.OwnerName, i.StartDate, i.EndDate)
-}
-
-type ReleaseQueue struct {
-	queue []*ReleaseInfo
-}
-
-func (q *ReleaseQueue) Get(space int) *ReleaseInfo {
-	for _, item := range q.queue {
-		if item.Space.Number == space {
-			return item
-		}
+	startDateStr := "nil"
+	if i.StartDate != nil {
+		startDateStr = i.StartDate.Format("2006-01-02")
 	}
-	return nil
+
+	endDateStr := "nil"
+	if i.EndDate != nil {
+		endDateStr = i.EndDate.Format("2006-01-02")
+	}
+
+	return fmt.Sprintf(
+		"ReleaseInfo(space=%d, userName=%s, start=%s, end=%s)",
+		i.Space.Number,
+		i.OwnerName,
+		startDateStr,
+		endDateStr,
+	)
 }
 
-func (q *ReleaseQueue) GetByReleaserId(userId string) *ReleaseInfo {
-	for _, item := range q.queue {
+type ReleaseMap map[int]*ReleaseInfo
+
+func (q ReleaseMap) Get(space int) *ReleaseInfo {
+	releaseInfo, ok := q[space]
+	if !ok {
+		return nil
+	}
+	return releaseInfo
+}
+
+func (q ReleaseMap) GetByReleaserId(userId string) *ReleaseInfo {
+	for _, item := range q {
 		if item.ReleaserId == userId {
 			return item
 		}
@@ -80,8 +99,8 @@ func (q *ReleaseQueue) GetByReleaserId(userId string) *ReleaseInfo {
 	return nil
 }
 
-func (q *ReleaseQueue) GetByRootViewId(rootId string) *ReleaseInfo {
-	for _, item := range q.queue {
+func (q ReleaseMap) GetByRootViewId(rootId string) *ReleaseInfo {
+	for _, item := range q {
 		if item.RootViewId == rootId {
 			return item
 		}
@@ -89,8 +108,8 @@ func (q *ReleaseQueue) GetByRootViewId(rootId string) *ReleaseInfo {
 	return nil
 }
 
-func (q *ReleaseQueue) GetByViewId(viewId string) *ReleaseInfo {
-	for _, item := range q.queue {
+func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
+	for _, item := range q {
 		if item.ViewId == viewId {
 			return item
 		}
@@ -98,45 +117,35 @@ func (q *ReleaseQueue) GetByViewId(viewId string) *ReleaseInfo {
 	return nil
 }
 
-// TODO: sync to file
-func (q *ReleaseQueue) Remove(space int) bool {
-	removeIdx := -1
-	for idx, item := range q.queue {
-		if item.Space.Number == space {
-			removeIdx = idx
-			break
-		}
-	}
-	if removeIdx == -1 {
+func (q ReleaseMap) Remove(space int) bool {
+	_, ok := q[space]
+	if !ok {
 		return false
 	}
 
-	q.queue[len(q.queue)-1] = q.queue[removeIdx]
-	q.queue = q.queue[:len(q.queue)-1]
+	log.Println("Removing from release map: space ", space)
+	delete(q, space)
 	return true
 }
 
-// TODO: sync to file
-func (q *ReleaseQueue) RemoveByViewId(viewId string) (int, bool) {
+func (q ReleaseMap) RemoveByViewId(viewId string) (int, bool) {
 	spaceNum := -1
-	removeIdx := -1
-	for idx, item := range q.queue {
-		if item.ViewId == viewId {
-			removeIdx = idx
-			spaceNum = item.Space.Number
+	for space, info := range q {
+		if info.ViewId == viewId {
+			spaceNum = space
 			break
 		}
 	}
-	if removeIdx == -1 {
+	if spaceNum == -1 {
 		return spaceNum, false
 	}
 
-	q.queue[len(q.queue)-1] = q.queue[removeIdx]
-	q.queue = q.queue[:len(q.queue)-1]
+	log.Println("Removing from release map: space ", spaceNum)
+	delete(q, spaceNum)
 	return spaceNum, true
 }
 
-func (q *ReleaseQueue) Add(
+func (q ReleaseMap) Add(
 	viewId,
 	releaserId,
 	ownerName,
@@ -144,7 +153,7 @@ func (q *ReleaseQueue) Add(
 	space *ParkingSpace,
 ) (*ReleaseInfo, error) {
 	if q.Get(space.Number) != nil {
-		return nil, fmt.Errorf("Space %d already marked for release by someone else.", space.Number)
+		return nil, fmt.Errorf("Space %d already marked for release.", space.Number)
 	}
 
 	releaseInfo := &ReleaseInfo{
@@ -156,21 +165,20 @@ func (q *ReleaseQueue) Add(
 		Submitted:  false,
 	}
 
-	q.queue = append(q.queue, releaseInfo)
+	q[space.Number] = releaseInfo
 	return releaseInfo, nil
 }
 
 type ParkingLot struct {
 	ParkingSpaces
-	config *config.Config
-	// TODO: sync this info to file in case bot restarts
-	ToBeReleased ReleaseQueue
+	config       *config.Config
+	ToBeReleased ReleaseMap
 }
 
 func NewParkingLot() ParkingLot {
 	return ParkingLot{
 		ParkingSpaces: make(map[int]*ParkingSpace),
-		ToBeReleased:  ReleaseQueue{},
+		ToBeReleased:  make(map[int]*ReleaseInfo),
 	}
 }
 
@@ -200,6 +208,13 @@ func (d *ParkingLot) synchronizeFromFile(data []byte) {
 	err := json.Unmarshal(data, d)
 	if err != nil {
 		log.Fatalf("Could not parse parking file. Error: %+v", err)
+	}
+
+	// Do not load any submitted items from to be released map
+	for space, info := range d.ToBeReleased {
+		if info.Submitted != true {
+			delete(d.ToBeReleased, space)
+		}
 	}
 }
 
@@ -352,7 +367,7 @@ func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
 		}
 	}
 
-	// TODO: Synchronize spaces to file
+	l.SynchronizeToFile()
 }
 
 func getParkingLot(config *config.Config) (parkingLot ParkingLot) {

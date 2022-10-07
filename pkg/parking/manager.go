@@ -152,6 +152,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	if err != nil {
 		// Remote space from temporary release queue
 		spaceNum, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		m.parkingLot.SynchronizeToFile()
 
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %d: failure to parse start date format %s: %v",
@@ -174,6 +175,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	if err != nil {
 		// Remote space from temporary release queue
 		spaceNum, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		m.parkingLot.SynchronizeToFile()
 
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %d: failure to parse end date format %s: %v",
@@ -195,6 +197,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	if errorTxt != "" {
 		// Remote space from temporary release queue
 		spaceNum, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		m.parkingLot.SynchronizeToFile()
 
 		// TODO: maybe this should be a dialog window instead
 		errTxt := fmt.Sprintf("Failed to temporary release space %d: %s", spaceNum, errorTxt)
@@ -208,9 +211,14 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return common.NewResponseEvent(actions...)
 	}
 
+	log.Println(m.parkingLot.ToBeReleased)
 	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
+
+	log.Println(releaseInfo.Space.Number, releaseInfo.StartDate, releaseInfo.EndDate)
+	log.Println(releaseInfo, releaseInfo.RootViewId)
+	rootViewId := releaseInfo.RootViewId
 	releaseInfo.MarkSubmitted()
-	log.Println("ReleaseInfo Submitted: ", releaseInfo)
+	m.parkingLot.SynchronizeToFile()
 
 	if common.EqualDate(startDate, time.Now()) {
 		m.parkingLot.Release(strconv.Itoa(releaseInfo.Space.Number), data.UserName)
@@ -221,7 +229,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 
 	actions = append(
 		actions,
-		common.NewUpdateViewAction(data.TriggerId, releaseInfo.RootViewId, modal),
+		common.NewUpdateViewAction(data.TriggerId, rootViewId, modal),
 	)
 
 	if actions == nil || len(actions) == 0 {
@@ -244,6 +252,7 @@ func (m *Manager) handleViewClosed(data *slackApi.ViewClosed) {
 	space, success := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
 	if success {
 		log.Printf("Removed space %d from ToBeReleased queue", space)
+		m.parkingLot.SynchronizeToFile()
 	}
 }
 
@@ -340,15 +349,16 @@ func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate st
 		log.Fatalf("Expected release info to be not nil: %v", m.parkingLot.ToBeReleased)
 	}
 
+	log.Println("Before date change")
+	log.Println(m.parkingLot.ToBeReleased)
 	if isStartDate {
 		releaseInfo.StartDate = &date
 	} else {
 		releaseInfo.EndDate = &date
 	}
 
-	if releaseInfo.ViewId != "" {
-		releaseInfo.ViewId = data.ViewId
-	}
+	log.Println("After date change")
+	log.Println(m.parkingLot.ToBeReleased)
 
 	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Check())
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal)

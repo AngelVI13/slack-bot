@@ -24,6 +24,7 @@ const (
 var ResponseActionNames = map[ResponseActionType]string{
 	OpenView:      "OpenView",
 	PushView:      "PushView",
+	UpdateView:    "UpdateView",
 	PostEphemeral: "PostEphemeral",
 	Post:          "Post",
 }
