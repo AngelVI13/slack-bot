@@ -107,10 +107,6 @@ func (c *Client) Consume(e event.Event) {
 
 			if newView != nil {
 				c.eventManager.Publish(&ViewOpened{
-					BaseEvent: BaseEvent{
-						UserName: view.UserName,
-						UserId:   view.UserId,
-					},
 					Title:      view.ModalRequest.Title.Text,
 					ViewId:     newView.View.ID,
 					RootViewId: newView.View.RootViewID,

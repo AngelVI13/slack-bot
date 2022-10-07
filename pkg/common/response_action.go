@@ -9,23 +9,17 @@ import (
 
 type ViewAction struct {
 	action       event.ResponseActionType
-	UserName     string
-	UserId       string
 	TriggerId    string
 	ViewId       string
 	ModalRequest slack.ModalViewRequest
 }
 
 func NewUpdateViewAction(
-	userName,
-	userId,
 	triggerId,
 	viewId string,
 	modalRequest slack.ModalViewRequest,
 ) *ViewAction {
 	return &ViewAction{
-		UserName:     userName,
-		UserId:       userId,
 		action:       event.UpdateView,
 		TriggerId:    triggerId,
 		ViewId:       viewId,
@@ -34,14 +28,10 @@ func NewUpdateViewAction(
 }
 
 func NewOpenViewAction(
-	userName,
-	userId,
 	triggerId string,
 	modalRequest slack.ModalViewRequest,
 ) *ViewAction {
 	return &ViewAction{
-		UserName:     userName,
-		UserId:       userId,
 		action:       event.OpenView,
 		TriggerId:    triggerId,
 		ViewId:       "",
@@ -50,14 +40,10 @@ func NewOpenViewAction(
 }
 
 func NewPushViewAction(
-	userName,
-	userId,
 	triggerId string,
 	modalRequest slack.ModalViewRequest,
 ) *ViewAction {
 	return &ViewAction{
-		UserName:     userName,
-		UserId:       userId,
 		action:       event.PushView,
 		TriggerId:    triggerId,
 		ViewId:       "",

@@ -104,7 +104,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
 	modal := generateBookingModalRequest(data, spaces, data.UserId, errorTxt)
 
-	action := common.NewOpenViewAction(data.UserName, data.UserId, data.TriggerId, modal)
+	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
 	return response
 }
@@ -212,7 +212,7 @@ func (m *Manager) handleReserveParking(
 	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
 	errorTxt := ""
 	bookingModal := generateBookingModalRequest(data, spaces, data.UserId, errorTxt)
-	action := common.NewUpdateViewAction(data.UserName, data.UserId, data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 	return []event.ResponseAction{action}
 }
 
@@ -235,7 +235,7 @@ func (m *Manager) handleReleaseParking(
 		spaces := m.parkingLot.GetSpacesInfo(data.UserName)
 		errorTxt := ""
 		bookingModal := generateBookingModalRequest(data, spaces, data.UserId, errorTxt)
-		action := common.NewUpdateViewAction(data.UserName, data.UserId, data.TriggerId, data.ViewId, bookingModal)
+		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 		actions = append(actions, action)
 
 		return actions
@@ -260,13 +260,13 @@ func (m *Manager) handleReleaseParking(
 	if err != nil {
 		spaces := m.parkingLot.GetSpacesInfo(data.UserName)
 		bookingModal := generateBookingModalRequest(data, spaces, data.UserId, err.Error())
-		action := common.NewUpdateViewAction(data.UserName, data.UserId, data.TriggerId, data.ViewId, bookingModal)
+		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 		actions = append(actions, action)
 		return actions
 	}
 
 	releaseModal := generateReleaseModalRequest(data, chosenParkingSpace, info.Error())
-	action := common.NewPushViewAction(data.UserName, data.UserId, data.TriggerId, releaseModal)
+	action := common.NewPushViewAction(data.TriggerId, releaseModal)
 	actions = append(actions, action)
 	return actions
 }
@@ -297,6 +297,6 @@ func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate st
 	log.Println(data.ViewId, data.TriggerId)
 
 	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Error())
-	action := common.NewUpdateViewAction(data.UserName, data.UserId, data.TriggerId, data.ViewId, modal)
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal)
 	return []event.ResponseAction{action}
 }
