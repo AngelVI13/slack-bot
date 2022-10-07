@@ -66,6 +66,8 @@ func (c *Client) Listen() {
 				// Handle interaction events i.e. user voted in our poll etc.
 				c.socket.Ack(*socketEvent.Request)
 				processedEvent = handleInteractionEvent(socketEvent)
+			default:
+				log.Println("Unknown event", socketEvent)
 			}
 
 			if processedEvent != nil {
@@ -87,16 +89,32 @@ func (c *Client) Consume(e event.Event) {
 			view := action.(*common.ViewAction)
 			viewAction := view.Action()
 
-			var err error
+			var (
+				err     error
+				newView *slack.ViewResponse
+			)
+
 			switch viewAction {
 			case event.OpenView:
-				_, err = c.socket.OpenView(view.TriggerId, view.ModalRequest)
+				newView, err = c.socket.OpenView(view.TriggerId, view.ModalRequest)
 			case event.PushView:
-				_, err = c.socket.PushView(view.TriggerId, view.ModalRequest)
+				newView, err = c.socket.PushView(view.TriggerId, view.ModalRequest)
 			case event.UpdateView:
 				_, err = c.socket.UpdateView(view.ModalRequest, "", "", view.ViewId)
 			default:
 				log.Fatalf("Unsupported view action: %v", viewAction)
+			}
+
+			if newView != nil {
+				c.eventManager.Publish(&ViewOpened{
+					BaseEvent: BaseEvent{
+						UserName: view.UserName,
+						UserId:   view.UserId,
+					},
+					Title:      view.ModalRequest.Title.Text,
+					ViewId:     newView.View.ID,
+					RootViewId: newView.View.RootViewID,
+				})
 			}
 
 			if err != nil {

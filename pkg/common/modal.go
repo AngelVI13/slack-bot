@@ -20,6 +20,7 @@ func GenerateModalRequest(title string, blocks []slack.Block) slack.ModalViewReq
 	modalRequest.Close = closeText
 	modalRequest.Submit = submitText
 	modalRequest.Blocks = blockSet
+	modalRequest.NotifyOnClose = true
 	return modalRequest
 }
 
@@ -37,5 +38,6 @@ func GenerateInfoModalRequest(title string, blocks []slack.Block) slack.ModalVie
 	modalRequest.Title = titleText
 	modalRequest.Close = closeText
 	modalRequest.Blocks = blockSet
+	modalRequest.NotifyOnClose = true
 	return modalRequest
 }

@@ -15,9 +15,9 @@ const (
 
 var parkingBookingTitle = Identifier + "Booking"
 
-func generateBookingModalRequest(command event.Event, spaces SpacesInfo, userId string) slack.ModalViewRequest {
+func generateBookingModalRequest(command event.Event, spaces SpacesInfo, userId, errorTxt string) slack.ModalViewRequest {
 	// TODO: highlight your parking space?
-	spacesSectionBlocks := generateParkingInfoBlocks(spaces, userId)
+	spacesSectionBlocks := generateParkingInfoBlocks(spaces, userId, errorTxt)
 	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
 }
 
@@ -98,10 +98,25 @@ func generateParkingPlanBlocks() []slack.Block {
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
-func generateParkingInfoBlocks(spaces SpacesInfo, userId string) []slack.Block {
+func generateParkingInfoBlocks(spaces SpacesInfo, userId, errorTxt string) []slack.Block {
+	allBlocks := []slack.Block{}
+
 	descriptionBlocks := generateParkingPlanBlocks()
+	allBlocks = append(allBlocks, descriptionBlocks...)
+
+	if errorTxt != "" {
+		errorSection := slack.NewSectionBlock(
+			slack.NewTextBlockObject("mrkdwn", errorTxt, false, false),
+			nil,
+			nil,
+		)
+		// TODO: this should be in red color
+		allBlocks = append(allBlocks, errorSection)
+	}
 
 	div := slack.NewDividerBlock()
+	allBlocks = append(allBlocks, div)
+
 	parkingSpaceSections := generateParkingInfo(spaces)
 
 	userAlreadyReservedSpace := false
@@ -112,19 +127,17 @@ func generateParkingInfoBlocks(spaces SpacesInfo, userId string) []slack.Block {
 		}
 	}
 
-	parkingSpaceBlocks := []slack.Block{}
-	parkingSpaceBlocks = append(parkingSpaceBlocks, descriptionBlocks...)
 	for idx, space := range spaces {
 		sectionBlock := parkingSpaceSections[idx]
 		buttons := generateParkingButtons(space, userId, userAlreadyReservedSpace)
 
-		parkingSpaceBlocks = append(parkingSpaceBlocks, sectionBlock)
+		allBlocks = append(allBlocks, sectionBlock)
 		if len(buttons) > 0 {
 			actions := slack.NewActionBlock("", buttons...)
-			parkingSpaceBlocks = append(parkingSpaceBlocks, actions)
+			allBlocks = append(allBlocks, actions)
 		}
-		parkingSpaceBlocks = append(parkingSpaceBlocks, div)
+		allBlocks = append(allBlocks, div)
 	}
 
-	return parkingSpaceBlocks
+	return allBlocks
 }

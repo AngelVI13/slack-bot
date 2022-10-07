@@ -43,6 +43,8 @@ const (
 	MentionEvent
 	SlashCmdEvent
 	ViewSubmissionEvent
+	ViewOpenedEvent
+	ViewClosedEvent
 	BlockActionEvent
 	TimerEvent
 	ResponseEvent
@@ -54,6 +56,8 @@ var EventNames = map[EventType]string{
 	MentionEvent:        "Mention",
 	SlashCmdEvent:       "SlashCmd",
 	ViewSubmissionEvent: "ViewSubmission",
+	ViewOpenedEvent:     "ViewOpened",
+	ViewClosedEvent:     "ViewClosed",
 	BlockActionEvent:    "BlockAction",
 	TimerEvent:          "TimerEvent",
 	ResponseEvent:       "ResponseEvent",

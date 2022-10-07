@@ -44,6 +44,8 @@ func main() {
 		event.SlashCmdEvent,
 		event.ViewSubmissionEvent,
 		event.BlockActionEvent,
+		event.ViewOpenedEvent,
+		event.ViewClosedEvent,
 		event.TimerEvent,
 	)
 

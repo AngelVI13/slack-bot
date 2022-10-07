@@ -27,7 +27,7 @@ func generateReleaseModalRequest(
 	allBlocks := generateReleaseModalBlocks(command, space, errorTxt)
 	// NOTE: Since this is a modal thats pushed ontop of sth else,
 	// apparently the same title has to be used as the underneath modal.
-	return common.GenerateInfoModalRequest(parkingBookingTitle, allBlocks)
+	return common.GenerateModalRequest(parkingBookingTitle, allBlocks)
 }
 
 func generateReleaseModalBlocks(

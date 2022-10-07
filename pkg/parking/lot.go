@@ -21,6 +21,8 @@ type ReleaseInfo struct {
 	Space      *ParkingSpace
 	StartDate  *time.Time
 	EndDate    *time.Time
+	RootViewId string
+	ViewId     string
 }
 
 func (i *ReleaseInfo) Complete() bool {
@@ -34,7 +36,6 @@ func (i *ReleaseInfo) Complete() bool {
 
 func (i *ReleaseInfo) Error() string {
 	if !i.Complete() {
-		// return fmt.Sprintf("Release info for space (%d) not complete", i.Space.Number)
 		return fmt.Sprintf("Missing date information for temporary release of space (%d)", i.Space.Number)
 	}
 
@@ -78,23 +79,70 @@ func (q *ReleaseQueue) GetByReleaserId(userId string) *ReleaseInfo {
 	return nil
 }
 
-func (q *ReleaseQueue) Add(releaserId, ownerName, ownerId string, space *ParkingSpace) error {
-	if q.Get(space.Number) != nil {
-		return fmt.Errorf("Space already marked for release")
+func (q *ReleaseQueue) GetByRootViewId(rootId string) *ReleaseInfo {
+	for _, item := range q.queue {
+		if item.RootViewId == rootId {
+			return item
+		}
+	}
+	return nil
+}
+
+func (q *ReleaseQueue) GetByViewId(viewId string) *ReleaseInfo {
+	for _, item := range q.queue {
+		if item.ViewId == viewId {
+			return item
+		}
+	}
+	return nil
+}
+
+func (q *ReleaseQueue) RemoveByViewId(viewId string) (int, bool) {
+	spaceNum := -1
+	removeIdx := -1
+	for idx, item := range q.queue {
+		if item.ViewId == viewId {
+			removeIdx = idx
+			spaceNum = item.Space.Number
+			break
+		}
+	}
+	if removeIdx == -1 {
+		return spaceNum, false
 	}
 
-	q.queue = append(q.queue, &ReleaseInfo{
+	q.queue[len(q.queue)-1] = q.queue[removeIdx]
+	q.queue = q.queue[:len(q.queue)-1]
+	return spaceNum, true
+}
+
+func (q *ReleaseQueue) Add(
+	viewId,
+	releaserId,
+	ownerName,
+	ownerId string,
+	space *ParkingSpace,
+) (*ReleaseInfo, error) {
+	if q.Get(space.Number) != nil {
+		return nil, fmt.Errorf("Space already marked for release by someone else.")
+	}
+
+	releaseInfo := &ReleaseInfo{
+		RootViewId: viewId,
 		ReleaserId: releaserId,
 		OwnerName:  ownerName,
 		OwnerId:    ownerId,
 		Space:      space,
-	})
-	return nil
+	}
+
+	q.queue = append(q.queue, releaseInfo)
+	return releaseInfo, nil
 }
 
 type ParkingLot struct {
 	ParkingSpaces
-	config       *config.Config
+	config *config.Config
+	// TODO: sync this info to file in case bot restarts
 	ToBeReleased ReleaseQueue
 }
 
@@ -278,26 +326,6 @@ func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
 			space.ReservedById = releaseInfo.OwnerId
 		}
 	}
-}
-
-func (l *ParkingLot) AutoRelease(when time.Time) {
-	// Only release spaces at the specified hour (hour is [0;23])
-	now := time.Now()
-	if now.Hour() != when.Hour() {
-		return
-	}
-
-	for _, space := range l.ParkingSpaces {
-		if space.Reserved && space.AutoRelease {
-			space.Reserved = false
-			space.AutoRelease = false
-		}
-	}
-
-	// Need to synchronize changes from file otherwise the state won't be preserved after restart
-	// NOTE: This ends up synchronizing to file more than once since the function can be called
-	// multiple times within the specified auto release hour (even if nothing has changed in the spaces list).
-	l.SynchronizeToFile()
 }
 
 func getParkingLot(config *config.Config) (parkingLot ParkingLot) {
