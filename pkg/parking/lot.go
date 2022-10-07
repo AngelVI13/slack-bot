@@ -98,6 +98,25 @@ func (q *ReleaseQueue) GetByViewId(viewId string) *ReleaseInfo {
 	return nil
 }
 
+// TODO: sync to file
+func (q *ReleaseQueue) Remove(space int) bool {
+	removeIdx := -1
+	for idx, item := range q.queue {
+		if item.Space.Number == space {
+			removeIdx = idx
+			break
+		}
+	}
+	if removeIdx == -1 {
+		return false
+	}
+
+	q.queue[len(q.queue)-1] = q.queue[removeIdx]
+	q.queue = q.queue[:len(q.queue)-1]
+	return true
+}
+
+// TODO: sync to file
 func (q *ReleaseQueue) RemoveByViewId(viewId string) (int, bool) {
 	spaceNum := -1
 	removeIdx := -1
@@ -125,7 +144,7 @@ func (q *ReleaseQueue) Add(
 	space *ParkingSpace,
 ) (*ReleaseInfo, error) {
 	if q.Get(space.Number) != nil {
-		return nil, fmt.Errorf("Space already marked for release by someone else.")
+		return nil, fmt.Errorf("Space %d already marked for release by someone else.", space.Number)
 	}
 
 	releaseInfo := &ReleaseInfo{
@@ -307,7 +326,6 @@ func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
 
 		// If a scheduled release was setup
 		releaseInfo := l.ToBeReleased.Get(space.Number)
-		log.Println("ReleaseInfo for space ", space.Number, releaseInfo)
 		if releaseInfo == nil {
 			continue
 		}
@@ -326,8 +344,15 @@ func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
 			space.AutoRelease = false
 			space.ReservedBy = releaseInfo.OwnerName
 			space.ReservedById = releaseInfo.OwnerId
+
+			ok := l.ToBeReleased.Remove(releaseInfo.Space.Number)
+			if !ok {
+				log.Printf("Failed removing release info for space %d", releaseInfo.Space.Number)
+			}
 		}
 	}
+
+	// TODO: Synchronize spaces to file
 }
 
 func getParkingLot(config *config.Config) (parkingLot ParkingLot) {
