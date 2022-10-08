@@ -111,18 +111,24 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 }
 
 func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Response {
-	isSpecialUser := m.userManager.IsAdmin(data.UserName)
 
 	var actions []event.ResponseAction
 
 	for _, action := range data.Actions {
 		switch action.ActionID {
 		case reserveParkingActionId:
+			isSpecialUser := m.userManager.HasParking(data.UserName)
 			parkingSpace := action.Value
 			actions = m.handleReserveParking(data, parkingSpace, isSpecialUser)
 		case releaseParkingActionId:
 			parkingSpace := action.Value
-			actions = m.handleReleaseParking(data, parkingSpace, isSpecialUser)
+			actions = m.handleReleaseParking(data, parkingSpace)
+		case tempReleaseParkingActionId:
+			parkingSpace := action.Value
+			actions = m.handleTempReleaseParking(data, parkingSpace)
+		case cancelTempReleaseParkingActionId:
+			parkingSpace := action.Value
+			actions = m.handleCancelTempReleaseParking(data, parkingSpace)
 		case releaseStartDateActionId, releaseEndDateActionId:
 			selectedDate := action.SelectedDate
 			isStartDate := action.ActionID == releaseStartDateActionId
@@ -279,30 +285,11 @@ func (m *Manager) handleReserveParking(
 	return []event.ResponseAction{action}
 }
 
-func (m *Manager) handleReleaseParking(
+func (m *Manager) handleTempReleaseParking(
 	data *slackApi.BlockAction,
 	parkingSpace string,
-	isSpecialUser bool,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
-
-	// Handle general case: normal user releasing a space
-	if !isSpecialUser {
-		victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName)
-		if victimId != "" {
-			log.Println(errStr)
-			action := common.NewPostEphemeralAction(victimId, victimId, slack.MsgOptionText(errStr, false))
-			actions = append(actions, action)
-		}
-
-		errorTxt := ""
-		bookingModal := m.generateBookingModalRequest(data, data.UserId, errorTxt)
-		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
-		actions = append(actions, action)
-
-		return actions
-	}
-
 	// Special User handling
 	chosenParkingSpace := m.parkingLot.GetSpace(parkingSpace)
 
@@ -329,6 +316,53 @@ func (m *Manager) handleReleaseParking(
 	releaseModal := generateReleaseModalRequest(data, chosenParkingSpace, info.Check())
 	action := common.NewPushViewAction(data.TriggerId, releaseModal)
 	actions = append(actions, action)
+	return actions
+}
+
+func (m *Manager) handleCancelTempReleaseParking(
+	data *slackApi.BlockAction,
+	parkingSpace string,
+) []event.ResponseAction {
+	actions := []event.ResponseAction{}
+	// Special User handling
+	chosenParkingSpace := m.parkingLot.GetSpace(parkingSpace)
+
+	ok := m.parkingLot.ToBeReleased.Remove(chosenParkingSpace.Number)
+	errorTxt := ""
+	if !ok {
+		errorTxt = fmt.Sprintf(
+			"Failed to cancel temporary release for space %d. Please contact an administrator",
+			chosenParkingSpace.Number,
+		)
+	}
+	m.parkingLot.SynchronizeToFile()
+
+	bookingModal := m.generateBookingModalRequest(data, data.UserId, errorTxt)
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	actions = append(actions, action)
+	return actions
+
+}
+
+func (m *Manager) handleReleaseParking(
+	data *slackApi.BlockAction,
+	parkingSpace string,
+) []event.ResponseAction {
+	actions := []event.ResponseAction{}
+
+	// Handle general case: normal user releasing a space
+	victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName)
+	if victimId != "" {
+		log.Println(errStr)
+		action := common.NewPostEphemeralAction(victimId, victimId, slack.MsgOptionText(errStr, false))
+		actions = append(actions, action)
+	}
+
+	errorTxt := ""
+	bookingModal := m.generateBookingModalRequest(data, data.UserId, errorTxt)
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	actions = append(actions, action)
+
 	return actions
 }
 

@@ -124,6 +124,15 @@ func (m *Manager) HasParking(userName string) bool {
 	return user.HasPermanentParking
 }
 
+func (m *Manager) HasParkingById(userId string) bool {
+	for _, user := range m.users {
+		if user.Id == userId {
+			return user.HasPermanentParking
+		}
+	}
+	return false
+}
+
 func (m *Manager) GetNameFromId(userId string) string {
 	for name, user := range m.users {
 		if user.Id == userId {

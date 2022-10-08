@@ -9,10 +9,9 @@ import (
 )
 
 const (
-	tempReleaseParkingActionId = "tempReleaseParking"
-	releaseStartDateActionId   = "releaseStartDate"
-	releaseEndDateActionId     = "releaseEndDate"
-	releaseBlockId             = "releaseBlockId"
+	releaseStartDateActionId = "releaseStartDate"
+	releaseEndDateActionId   = "releaseEndDate"
+	releaseBlockId           = "releaseBlockId"
 )
 
 var parkingReleaseTitle = Identifier + "Temporary release a parking spot"
