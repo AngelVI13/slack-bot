@@ -67,7 +67,7 @@ func (c *Client) Listen() {
 				c.socket.Ack(*socketEvent.Request)
 				processedEvent = handleInteractionEvent(socketEvent)
 			default:
-				log.Println("Unknown event", socketEvent)
+				// log.Println("Unknown event", socketEvent)
 			}
 
 			if processedEvent != nil {

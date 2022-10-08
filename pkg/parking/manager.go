@@ -343,22 +343,17 @@ func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate st
 		log.Printf("Failed to parse date format %s: %v", selectedDate, err)
 	}
 
-	releaseInfo := m.parkingLot.ToBeReleased.GetByReleaserId(data.UserId)
+	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
 	// NOTE: releaseInfo is created when the user clicks "Release" button
 	if releaseInfo == nil {
 		log.Fatalf("Expected release info to be not nil: %v", m.parkingLot.ToBeReleased)
 	}
 
-	log.Println("Before date change")
-	log.Println(m.parkingLot.ToBeReleased)
 	if isStartDate {
 		releaseInfo.StartDate = &date
 	} else {
 		releaseInfo.EndDate = &date
 	}
-
-	log.Println("After date change")
-	log.Println(m.parkingLot.ToBeReleased)
 
 	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Check())
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal)
