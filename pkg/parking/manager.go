@@ -102,9 +102,8 @@ func (m *Manager) Context() string {
 }
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
-	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
 	errorTxt := ""
-	modal := generateBookingModalRequest(data, spaces, data.UserId, errorTxt)
+	modal := m.generateBookingModalRequest(data, data.UserId, errorTxt)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
@@ -112,7 +111,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 }
 
 func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Response {
-	isSpecialUser := m.userManager.IsSpecial(data.UserName)
+	isSpecialUser := m.userManager.IsAdmin(data.UserName)
 
 	var actions []event.ResponseAction
 
@@ -224,8 +223,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		m.parkingLot.Release(strconv.Itoa(releaseInfo.Space.Number), data.UserName)
 	}
 
-	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
-	modal := generateBookingModalRequest(data, spaces, data.UserId, "")
+	modal := m.generateBookingModalRequest(data, data.UserId, "")
 
 	actions = append(
 		actions,
@@ -275,9 +273,8 @@ func (m *Manager) handleReserveParking(
 		return []event.ResponseAction{action}
 	}
 
-	spaces := m.parkingLot.GetSpacesInfo(data.UserName)
 	errorTxt := ""
-	bookingModal := generateBookingModalRequest(data, spaces, data.UserId, errorTxt)
+	bookingModal := m.generateBookingModalRequest(data, data.UserId, errorTxt)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 	return []event.ResponseAction{action}
 }
@@ -298,9 +295,8 @@ func (m *Manager) handleReleaseParking(
 			actions = append(actions, action)
 		}
 
-		spaces := m.parkingLot.GetSpacesInfo(data.UserName)
 		errorTxt := ""
-		bookingModal := generateBookingModalRequest(data, spaces, data.UserId, errorTxt)
+		bookingModal := m.generateBookingModalRequest(data, data.UserId, errorTxt)
 		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 		actions = append(actions, action)
 
@@ -324,8 +320,7 @@ func (m *Manager) handleReleaseParking(
 	// If we can't add a space for temporary release queue it likely means that someone
 	// is already trying to do the same thing -> show error in modal
 	if err != nil {
-		spaces := m.parkingLot.GetSpacesInfo(data.UserName)
-		bookingModal := generateBookingModalRequest(data, spaces, data.UserId, err.Error())
+		bookingModal := m.generateBookingModalRequest(data, data.UserId, err.Error())
 		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 		actions = append(actions, action)
 		return actions

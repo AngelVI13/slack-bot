@@ -2,6 +2,7 @@ package parking
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -15,9 +16,9 @@ const (
 
 var parkingBookingTitle = Identifier + "Booking"
 
-func generateBookingModalRequest(command event.Event, spaces SpacesInfo, userId, errorTxt string) slack.ModalViewRequest {
+func (m *Manager) generateBookingModalRequest(command event.Event, userId, errorTxt string) slack.ModalViewRequest {
 	// TODO: highlight your parking space?
-	spacesSectionBlocks := generateParkingInfoBlocks(spaces, userId, errorTxt)
+	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, errorTxt)
 	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
 }
 
@@ -38,13 +39,21 @@ func generateParkingInfo(spaces SpacesInfo) []slack.SectionBlock {
 	return sections
 }
 
-func generateParkingButtons(space *ParkingSpace, userId string, alreadyReservedSpace bool) []slack.BlockElement {
+func (m *Manager) generateParkingButtons(
+	space *ParkingSpace,
+	userId string,
+	alreadyReservedSpace,
+	alreadyReleasedSpace bool,
+) []slack.BlockElement {
 	var buttons []slack.BlockElement
 
-	if space.Reserved && space.ReservedById == userId {
-		// TODO: Add 2 buttons for Release for Special users (on the booking page)
-		//       1. Button for temporary release of spot -> leads to this modal
-		//       2. Button for permament release (acts the same as release for non-special users)
+	isAdminUser := m.userManager.IsAdminId(userId)
+	// log.Println("Status", isAdminUser, alreadyReservedSpace, alreadyReleasedSpace)
+
+	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
+		// TODO: Add 2 buttons for Release for Admins users (on the booking page)
+		//       1. Button for temporary release of spot
+		//       2. Button for permament release (acts the same as release for non-special users)!
 		releaseButton := slack.NewButtonBlockElement(
 			releaseParkingActionId,
 			fmt.Sprint(space.Number),
@@ -52,7 +61,10 @@ func generateParkingButtons(space *ParkingSpace, userId string, alreadyReservedS
 		)
 		releaseButton = releaseButton.WithStyle(slack.StyleDanger)
 		buttons = append(buttons, releaseButton)
-	} else if !space.Reserved && !alreadyReservedSpace {
+	} else if (!space.Reserved &&
+		!alreadyReservedSpace &&
+		!alreadyReleasedSpace &&
+		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
@@ -98,7 +110,7 @@ func generateParkingPlanBlocks() []slack.Block {
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
-func generateParkingInfoBlocks(spaces SpacesInfo, userId, errorTxt string) []slack.Block {
+func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Block {
 	allBlocks := []slack.Block{}
 
 	descriptionBlocks := generateParkingPlanBlocks()
@@ -118,6 +130,8 @@ func generateParkingInfoBlocks(spaces SpacesInfo, userId, errorTxt string) []sla
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
+	userName := m.userManager.GetNameFromId(userId)
+	spaces := m.parkingLot.GetSpacesInfo(userName)
 	parkingSpaceSections := generateParkingInfo(spaces)
 
 	userAlreadyReservedSpace := false
@@ -127,10 +141,18 @@ func generateParkingInfoBlocks(spaces SpacesInfo, userId, errorTxt string) []sla
 			break
 		}
 	}
+	userAlreadyReleasedSpace := false
+	for _, releaseInfo := range m.parkingLot.ToBeReleased {
+		if releaseInfo.Submitted && releaseInfo.OwnerId == userId {
+			userAlreadyReleasedSpace = true
+			break
+		}
+	}
+	log.Println(userAlreadyReservedSpace, userAlreadyReleasedSpace)
 
 	for idx, space := range spaces {
 		sectionBlock := parkingSpaceSections[idx]
-		buttons := generateParkingButtons(space, userId, userAlreadyReservedSpace)
+		buttons := m.generateParkingButtons(space, userId, userAlreadyReservedSpace, userAlreadyReleasedSpace)
 
 		allBlocks = append(allBlocks, sectionBlock)
 		if len(buttons) > 0 {

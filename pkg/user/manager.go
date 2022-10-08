@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
-	"github.com/slack-go/slack"
 )
 
 type AccessRight int
@@ -18,9 +17,9 @@ const (
 )
 
 type User struct {
-	Id         string
-	Rights     AccessRight
-	IsReviewer bool `json:"is_reviewer"`
+	Id                  string
+	Rights              AccessRight
+	HasPermanentParking bool `json:"has_parking"`
 }
 
 type UsersMap map[string]*User
@@ -72,6 +71,7 @@ func (m *Manager) synchronizeToFile() {
 	log.Println("INFO: Wrote users list to file")
 }
 
+/*
 func (m *Manager) AddNewUsers(selectedManager []*slack.User, selectedOptions []slack.OptionBlockObject, accsessRightSelection string, reviewerOptionSelection string) {
 	accessRights := STANDARD
 	isReviewer := false
@@ -90,19 +90,45 @@ func (m *Manager) AddNewUsers(selectedManager []*slack.User, selectedOptions []s
 		log.Printf("Adding %s", userName)
 
 		m.users[userName] = &User{
-			Id:         userInfo.ID,
-			Rights:     accessRights,
-			IsReviewer: isReviewer,
+			Id:     userInfo.ID,
+			Rights: accessRights,
 		}
 	}
 
 	m.synchronizeToFile()
 }
+*/
 
-func (m *Manager) IsSpecial(userName string) bool {
+func (m *Manager) IsAdmin(userName string) bool {
 	user, ok := m.users[userName]
 	if !ok {
 		return false
 	}
 	return user.Rights == ADMIN
+}
+
+func (m *Manager) IsAdminId(userId string) bool {
+	for _, user := range m.users {
+		if user.Id == userId {
+			return user.Rights == ADMIN
+		}
+	}
+	return false
+}
+
+func (m *Manager) HasParking(userName string) bool {
+	user, ok := m.users[userName]
+	if !ok {
+		return false
+	}
+	return user.HasPermanentParking
+}
+
+func (m *Manager) GetNameFromId(userId string) string {
+	for name, user := range m.users {
+		if user.Id == userId {
+			return name
+		}
+	}
+	return ""
 }
