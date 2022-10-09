@@ -26,18 +26,37 @@ func (m *Manager) generateBookingModalRequest(command event.Event, userId, error
 }
 
 // generateParkingInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..
-func generateParkingInfo(spaces SpacesInfo) []slack.SectionBlock {
-	var sections []slack.SectionBlock
+func (m *Manager) generateParkingInfo(spaces SpacesInfo) []slack.Block {
+	var sections []slack.Block
 	for _, space := range spaces {
 		status := space.GetStatusDescription()
 		emoji := space.GetStatusEmoji()
 
+		releaseScheduled := ""
+		releaseInfo := m.parkingLot.ToBeReleased.Get(space.Number)
+		if releaseInfo != nil {
+			releaseScheduled = fmt.Sprintf(
+				"\tScheduled release from %s to %s",
+				releaseInfo.StartDate.Format("2006-01-02"),
+				releaseInfo.EndDate.Format("2006-01-02"),
+			)
+		}
+
 		spaceProps := space.GetPropsText()
-		text := fmt.Sprintf("%s *%s* \t%s\n\t\t%s", emoji, fmt.Sprint(space.Number), spaceProps, status)
+		text := fmt.Sprintf(
+			"%s *%s* \t%s\t %s\n\t\t%s",
+			emoji,
+			fmt.Sprint(space.Number),
+			spaceProps,
+			status,
+			releaseScheduled,
+		)
+
 		sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
 		sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
 
 		sections = append(sections, *sectionBlock)
+
 	}
 	return sections
 }
@@ -158,7 +177,7 @@ func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Blo
 
 	userName := m.userManager.GetNameFromId(userId)
 	spaces := m.parkingLot.GetSpacesInfo(userName)
-	parkingSpaceSections := generateParkingInfo(spaces)
+	parkingSpaceSections := m.generateParkingInfo(spaces)
 
 	userAlreadyReservedSpace := false
 	for _, space := range spaces {
@@ -174,7 +193,6 @@ func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Blo
 			break
 		}
 	}
-	log.Println(userAlreadyReservedSpace, userAlreadyReleasedSpace)
 
 	for idx, space := range spaces {
 		sectionBlock := parkingSpaceSections[idx]

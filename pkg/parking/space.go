@@ -31,8 +31,9 @@ func (p *ParkingSpace) GetStatusEmoji() string {
 func (p *ParkingSpace) GetStatusDescription() string {
 	status := ""
 	if p.Reserved {
-		timeStr := p.ReservedTime.Format("Mon 15:04")
-		status = fmt.Sprintf("_:bust_in_silhouette:*%s*\ton\t:clock1: *%s*_", p.ReservedBy, timeStr)
+		// timeStr := p.ReservedTime.Format("Mon 15:04")
+		// status = fmt.Sprintf("_:bust_in_silhouette:*<@%s>*\ton\t:clock1: *%s*_", p.ReservedById, timeStr)
+		status = fmt.Sprintf("<@%s>", p.ReservedById)
 	}
 	return status
 }

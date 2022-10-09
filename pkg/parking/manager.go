@@ -216,11 +216,8 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return common.NewResponseEvent(actions...)
 	}
 
-	log.Println(m.parkingLot.ToBeReleased)
 	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
 
-	log.Println(releaseInfo.Space.Number, releaseInfo.StartDate, releaseInfo.EndDate)
-	log.Println(releaseInfo, releaseInfo.RootViewId)
 	rootViewId := releaseInfo.RootViewId
 	releaseInfo.MarkSubmitted()
 	m.parkingLot.SynchronizeToFile()
