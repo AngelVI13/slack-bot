@@ -2,7 +2,6 @@ package parking
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -36,7 +35,7 @@ func (m *Manager) generateParkingInfo(spaces SpacesInfo) []slack.Block {
 		releaseInfo := m.parkingLot.ToBeReleased.Get(space.Number)
 		if releaseInfo != nil {
 			releaseScheduled = fmt.Sprintf(
-				"\tScheduled release from %s to %s",
+				"\n\t\tScheduled release from %s to %s",
 				releaseInfo.StartDate.Format("2006-01-02"),
 				releaseInfo.EndDate.Format("2006-01-02"),
 			)
@@ -44,7 +43,7 @@ func (m *Manager) generateParkingInfo(spaces SpacesInfo) []slack.Block {
 
 		spaceProps := space.GetPropsText()
 		text := fmt.Sprintf(
-			"%s *%s* \t%s\t %s\n\t\t%s",
+			"%s *%s* \t%s\t %s%s",
 			emoji,
 			fmt.Sprint(space.Number),
 			spaceProps,
