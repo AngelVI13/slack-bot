@@ -270,15 +270,8 @@ func (m *Manager) handleReserveParking(
 	}
 
 	errStr := m.parkingLot.Reserve(parkingSpace, data.UserName, data.UserId, autoRelease)
-	if errStr != "" {
-		log.Println(errStr)
-		// If the space was already taken -> inform user by personal DM message from the bot
-		action := common.NewPostEphemeralAction(data.UserId, data.UserId, slack.MsgOptionText(errStr, false))
-		return []event.ResponseAction{action}
-	}
 
-	errorTxt := ""
-	bookingModal := m.generateBookingModalRequest(data, data.UserId, errorTxt)
+	bookingModal := m.generateBookingModalRequest(data, data.UserId, errStr)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
 	return []event.ResponseAction{action}
 }
@@ -399,6 +392,17 @@ func (m *Manager) handleReleaseParking(
 		log.Println(errStr)
 		action := common.NewPostEphemeralAction(victimId, victimId, slack.MsgOptionText(errStr, false))
 		actions = append(actions, action)
+	}
+
+	if m.userManager.IsAdminId(data.UserId) {
+		spaceNum, err := strconv.Atoi(parkingSpace)
+		if err != nil {
+			log.Printf("Failed to convert parking space from str to int: %s", parkingSpace)
+		}
+		ok := m.parkingLot.ToBeReleased.Remove(spaceNum)
+		if !ok {
+			log.Printf("Failed to remove release info for space %d", spaceNum)
+		}
 	}
 
 	errorTxt := ""

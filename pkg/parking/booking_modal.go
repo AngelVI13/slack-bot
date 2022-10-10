@@ -84,15 +84,18 @@ func (m *Manager) generateParkingButtons(
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
 		// space reserved but hasn't yet been schedule for release
 		if (isAdminUser || hasPermanentParkingUser) && releaseInfo == nil {
-			// Only allow the temporary parking button if the correct user is using
-			// the modal and the space hasn't already been released
-			tempReleaseButton := slack.NewButtonBlockElement(
-				tempReleaseParkingActionId,
-				fmt.Sprint(space.Number),
-				slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
-			)
-			tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
-			buttons = append(buttons, tempReleaseButton)
+			permanentSpace := m.userManager.HasParkingById(space.ReservedById)
+			if permanentSpace {
+				// Only allow the temporary parking button if the correct user is using
+				// the modal and the space hasn't already been released
+				tempReleaseButton := slack.NewButtonBlockElement(
+					tempReleaseParkingActionId,
+					fmt.Sprint(space.Number),
+					slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
+				)
+				tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
+				buttons = append(buttons, tempReleaseButton)
+			}
 		}
 
 		if isAdminUser || !hasPermanentParkingUser {
