@@ -2,7 +2,6 @@ package parking
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -71,39 +70,39 @@ func (m *Manager) generateParkingButtons(
 	isAdminUser := m.userManager.IsAdminId(userId)
 	hasPermanentParkingUser := m.userManager.HasParkingById(userId)
 
-	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
-		releaseInfo := m.parkingLot.ToBeReleased.Get(space.Number)
-		// Only show cancel button before the temprary release is in effect
-		if releaseInfo != nil && releaseInfo.StartDate.After(time.Now()) {
-			cancelTempReleaseButton := slack.NewButtonBlockElement(
-				cancelTempReleaseParkingActionId,
-				fmt.Sprint(space.Number),
-				slack.NewTextBlockObject("plain_text", "Cancel Scheduled Release!", true, false),
-			)
-			cancelTempReleaseButton = cancelTempReleaseButton.WithStyle(slack.StyleDanger)
-			buttons = append(buttons, cancelTempReleaseButton)
-		} else { // space reserved but hasn't yet been schedule for release
-			if (isAdminUser || hasPermanentParkingUser) && releaseInfo == nil {
-				// Only allow the temporary parking button if the correct user is using
-				// the modal and the space hasn't already been released
-				tempReleaseButton := slack.NewButtonBlockElement(
-					tempReleaseParkingActionId,
-					fmt.Sprint(space.Number),
-					slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
-				)
-				tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
-				buttons = append(buttons, tempReleaseButton)
-			}
+	releaseInfo := m.parkingLot.ToBeReleased.Get(space.Number)
+	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) && !releaseInfo.Cancelled {
+		cancelTempReleaseButton := slack.NewButtonBlockElement(
+			cancelTempReleaseParkingActionId,
+			fmt.Sprint(space.Number),
+			slack.NewTextBlockObject("plain_text", "Cancel Scheduled Release!", true, false),
+		)
+		cancelTempReleaseButton = cancelTempReleaseButton.WithStyle(slack.StyleDanger)
+		buttons = append(buttons, cancelTempReleaseButton)
+	}
 
-			if isAdminUser || !hasPermanentParkingUser {
-				releaseButton := slack.NewButtonBlockElement(
-					releaseParkingActionId,
-					fmt.Sprint(space.Number),
-					slack.NewTextBlockObject("plain_text", "Release!", true, false),
-				)
-				releaseButton = releaseButton.WithStyle(slack.StyleDanger)
-				buttons = append(buttons, releaseButton)
-			}
+	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
+		// space reserved but hasn't yet been schedule for release
+		if (isAdminUser || hasPermanentParkingUser) && releaseInfo == nil {
+			// Only allow the temporary parking button if the correct user is using
+			// the modal and the space hasn't already been released
+			tempReleaseButton := slack.NewButtonBlockElement(
+				tempReleaseParkingActionId,
+				fmt.Sprint(space.Number),
+				slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
+			)
+			tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
+			buttons = append(buttons, tempReleaseButton)
+		}
+
+		if isAdminUser || !hasPermanentParkingUser {
+			releaseButton := slack.NewButtonBlockElement(
+				releaseParkingActionId,
+				fmt.Sprint(space.Number),
+				slack.NewTextBlockObject("plain_text", "Release!", true, false),
+			)
+			releaseButton = releaseButton.WithStyle(slack.StyleDanger)
+			buttons = append(buttons, releaseButton)
 		}
 	} else if (!space.Reserved &&
 		!alreadyReservedSpace &&

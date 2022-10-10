@@ -23,6 +23,7 @@ type ReleaseInfo struct {
 	StartDate  *time.Time
 	EndDate    *time.Time
 	Submitted  bool
+	Cancelled  bool
 
 	// These are only used while the user is choosing date range to refer
 	// between space selected and release range selected (i.e. between booking modal
@@ -41,6 +42,11 @@ func (i *ReleaseInfo) MarkSubmitted() {
 	// incorrect data.
 	i.RootViewId = ""
 	i.ViewId = ""
+}
+
+func (i *ReleaseInfo) MarkCancelled() {
+	log.Printf("ReleaseInfo Cancelled: %v", i)
+	i.Cancelled = true
 }
 
 func (i *ReleaseInfo) DataPresent() bool {

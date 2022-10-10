@@ -2,7 +2,12 @@
     "angel.iliev": {
         "rights": 0,
         "id": "U03FBL3R6KU",
-        "has_parking": false
+        "has_parking": true
+    },
+    "evelina.bernataviciute": {
+        "rights": 1,
+        "id": "U03ENHGR7U4",
+        "has_parking": true
     },
     "ugnius.bertasius": {
         "rights": 1,

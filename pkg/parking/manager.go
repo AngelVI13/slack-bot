@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	Identifier = "Parking: "
-	// SlashCmd   = "/parking"
-	SlashCmd     = "/test-park"
+	Identifier   = "Parking: "
+	SlashCmd     = "/parking"
 	ResetParking = "Reset parking status"
+	ResetHour    = 17
+	ResetMin     = 0
 )
 
 type Manager struct {
@@ -323,14 +324,59 @@ func (m *Manager) handleCancelTempReleaseParking(
 	actions := []event.ResponseAction{}
 	// Special User handling
 	chosenParkingSpace := m.parkingLot.GetSpace(parkingSpace)
-
-	ok := m.parkingLot.ToBeReleased.Remove(chosenParkingSpace.Number)
 	errorTxt := ""
-	if !ok {
+
+	releaseInfo := m.parkingLot.ToBeReleased.Get(chosenParkingSpace.Number)
+	if releaseInfo == nil {
 		errorTxt = fmt.Sprintf(
-			"Failed to cancel temporary release for space %d. Please contact an administrator",
+			"Couldn't find release info for space %d",
 			chosenParkingSpace.Number,
 		)
+	} else if releaseInfo.StartDate.After(time.Now()) {
+		ok := m.parkingLot.ToBeReleased.Remove(chosenParkingSpace.Number)
+		if !ok {
+			errorTxt = fmt.Sprintf(
+				"Failed to cancel temporary release for space %d. Please contact an administrator",
+				chosenParkingSpace.Number,
+			)
+		}
+	} else {
+		now := time.Now()
+		// If user cancelled before the daily reset -> just update end date and
+		// auto release of spaces will handle the returning of space to permanent owner
+		if now.Hour() <= ResetHour && now.Minute() < ResetMin {
+			releaseInfo.EndDate = &now
+			releaseInfo.MarkCancelled()
+			errorTxt = fmt.Sprintf(
+				"Temporary release cancelled. The space %d will be returned tomorrow",
+				chosenParkingSpace.Number,
+			)
+		} else if !chosenParkingSpace.Reserved {
+			// if parking space was not already reserved for the next day
+			// transfer it to owner
+			log.Println("TempReserve chosenParkingSpace ", chosenParkingSpace.Number, releaseInfo)
+			chosenParkingSpace.Reserved = true
+			chosenParkingSpace.AutoRelease = false
+			chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
+			chosenParkingSpace.ReservedById = releaseInfo.OwnerId
+
+			ok := m.parkingLot.ToBeReleased.Remove(releaseInfo.Space.Number)
+			if !ok {
+				log.Printf("Failed removing release info for space %d", releaseInfo.Space.Number)
+			}
+		} else if chosenParkingSpace.Reserved {
+			// if parking space was already reserved by someone else -> transfer back to owner
+			// on the day after tomorrow
+			errorTxt = fmt.Sprintf(
+				`Temporary release cancelled but someone already reserved the space 
+for tomorrow. The space %d will be returned to you on the day after tomorrow.`,
+				chosenParkingSpace.Number,
+			)
+			hoursTillMidnight := 24 - now.Hour()
+			tomorrow := now.Add(time.Duration(hoursTillMidnight) * time.Hour)
+			releaseInfo.EndDate = &tomorrow
+			releaseInfo.MarkCancelled()
+		}
 	}
 	m.parkingLot.SynchronizeToFile()
 

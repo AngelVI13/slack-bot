@@ -34,7 +34,7 @@ func main() {
 	eventManager.Subscribe(logger, event.AnyEvent)
 
 	timer := event.NewTimer(eventManager)
-	timer.AddDaily(17, 00, "Reset parking status")
+	timer.AddDaily(parking.ResetHour, parking.ResetMin, parking.ResetParking)
 
 	userManager := user.NewManager(config)
 
