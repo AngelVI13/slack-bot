@@ -87,7 +87,10 @@ func (m *Manager) generateParkingButtons(
 			permanentSpace := m.userManager.HasParkingById(space.ReservedById)
 			if permanentSpace {
 				// Only allow the temporary parking button if the correct user is using
-				// the modal and the space hasn't already been released
+				// the modal and the space hasn't already been released.
+				// For example, an admin can only temporary release a space if either he
+				// owns the space & has permanent parking rights or if he is releasing
+				// the space on behalf of somebody that has a permanent parking rights
 				tempReleaseButton := slack.NewButtonBlockElement(
 					tempReleaseParkingActionId,
 					fmt.Sprint(space.Number),

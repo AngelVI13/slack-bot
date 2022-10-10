@@ -394,6 +394,7 @@ func (m *Manager) handleReleaseParking(
 		actions = append(actions, action)
 	}
 
+	// Only remove release info from a space if an Admin is permanently releasing the space
 	if m.userManager.IsAdminId(data.UserId) {
 		spaceNum, err := strconv.Atoi(parkingSpace)
 		if err != nil {
