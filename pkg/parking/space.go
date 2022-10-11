@@ -6,13 +6,13 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/common"
 )
 
+type ParkingKey string
+
 type ParkingSpace struct {
 	Number int
 	Floor  int
 	common.ReservedProps
 }
-
-type ParkingSpaces map[int]*ParkingSpace
 
 func (p *ParkingSpace) GetPropsText() string {
 	return fmt.Sprintf("(%d floor)", p.Floor)
@@ -37,3 +37,28 @@ func (p *ParkingSpace) GetStatusDescription() string {
 	}
 	return status
 }
+
+func (p *ParkingSpace) ParkingKey() ParkingKey {
+	return MakeParkingKey(p.Number, p.Floor)
+}
+
+func MakeParkingKey(number, floor int) ParkingKey {
+	postfix := "th"
+
+	postfixes := []string{"st", "nd", "rd"}
+	absFloor := abs(floor)
+	if 1 <= absFloor && absFloor <= 3 {
+		postfix = postfixes[absFloor-1]
+	}
+
+	return ParkingKey(fmt.Sprintf("%d%s floor %d", floor, postfix, number))
+}
+
+func abs(n int) int {
+	if n >= 0 {
+		return n
+	}
+	return n * -1
+}
+
+type ParkingSpaces map[ParkingKey]*ParkingSpace

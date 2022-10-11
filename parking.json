@@ -1,76 +1,76 @@
 {
 	"ParkingSpaces": {
-		"1": {
+		"-1st floor 1": {
 			"Number": 1,
-			"Floor": -1,
-			"Reserved": false,
-			"AutoRelease": true,
-			"ReservedBy": "angel.iliev",
-			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-10-06T10:33:41.54490879+03:00"
-		},
-		"2": {
-			"Number": 2,
 			"Floor": -1,
 			"Reserved": true,
 			"AutoRelease": true,
-			"ReservedBy": "angel.iliev",
-			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-10-06T10:40:24.749865551+03:00"
+			"ReservedBy": "ugnius.bertasius",
+			"ReservedById": "U03FQJZ8XC1",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
-		"3": {
+		"-1st floor 2": {
+			"Number": 2,
+			"Floor": -1,
+			"Reserved": false,
+			"AutoRelease": true,
+			"ReservedBy": "ugnius.bertasius",
+			"ReservedById": "U03FQJZ8XC1",
+			"ReservedTime": "2022-10-10T13:51:14.80024961+03:00"
+		},
+		"-1st floor 3": {
 			"Number": 3,
+			"Floor": -1,
+			"Reserved": false,
+			"AutoRelease": true,
+			"ReservedBy": "ugnius.bertasius",
+			"ReservedById": "U03FQJZ8XC1",
+			"ReservedTime": "2022-10-10T13:51:21.754251058+03:00"
+		},
+		"-1st floor 4": {
+			"Number": 4,
 			"Floor": -1,
 			"Reserved": false,
 			"AutoRelease": false,
 			"ReservedBy": "angel.iliev",
 			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-10-06T10:04:33.899301185+03:00"
+			"ReservedTime": "2022-10-10T13:51:43.265486245+03:00"
 		},
-		"4": {
-			"Number": 4,
-			"Floor": -1,
-			"Reserved": false,
-			"AutoRelease": true,
-			"ReservedBy": "angel.iliev",
-			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-10-06T10:33:48.108859957+03:00"
-		},
-		"5": {
+		"-2nd floor 5": {
 			"Number": 5,
 			"Floor": -2,
 			"Reserved": false,
 			"AutoRelease": false,
 			"ReservedBy": "angel.iliev",
 			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-10-06T09:17:25.796789718+03:00"
+			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
-		"6": {
+		"-2nd floor 6": {
 			"Number": 6,
 			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "ugnius.bertasius",
-			"ReservedById": "U03FQJZ8XC1",
-			"ReservedTime": "2022-10-06T10:38:56.646723523+03:00"
+			"Reserved": false,
+			"AutoRelease": true,
+			"ReservedBy": "angel.iliev",
+			"ReservedById": "U03FBL3R6KU",
+			"ReservedTime": "2022-10-11T10:25:46.961673315+03:00"
 		},
-		"7": {
+		"-2nd floor 7": {
 			"Number": 7,
 			"Floor": -2,
 			"Reserved": false,
 			"AutoRelease": true,
-			"ReservedBy": "justina.adamkaviciene",
-			"ReservedById": "U03FB4N49NE",
-			"ReservedTime": "2022-06-06T14:48:09.680953313+03:00"
+			"ReservedBy": "ugnius.bertasius",
+			"ReservedById": "U03FQJZ8XC1",
+			"ReservedTime": "2022-10-10T10:38:58.460672668+03:00"
 		},
-		"8": {
+		"-2nd floor 8": {
 			"Number": 8,
 			"Floor": -2,
 			"Reserved": false,
 			"AutoRelease": true,
-			"ReservedBy": "justina.adamkaviciene",
-			"ReservedById": "U03FB4N49NE",
-			"ReservedTime": "2022-06-06T14:48:07.283313884+03:00"
+			"ReservedBy": "angel.iliev",
+			"ReservedById": "U03FBL3R6KU",
+			"ReservedTime": "2022-10-11T10:25:58.368259516+03:00"
 		}
 	},
 	"ToBeReleased": {}

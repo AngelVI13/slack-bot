@@ -53,7 +53,10 @@ func (i *ReleaseInfo) DataPresent() bool {
 
 func (i *ReleaseInfo) Check() string {
 	if !i.DataPresent() {
-		return fmt.Sprintf("Missing date information for temporary release of space (%d)", i.Space.Number)
+		return fmt.Sprintf(
+			"Missing date information for temporary release of space (%s)",
+			i.Space.ParkingKey(),
+		)
 	}
 
 	return common.CheckDateRange(*i.StartDate, *i.EndDate)
@@ -71,18 +74,18 @@ func (i ReleaseInfo) String() string {
 	}
 
 	return fmt.Sprintf(
-		"ReleaseInfo(space=%d, userName=%s, start=%s, end=%s)",
-		i.Space.Number,
+		"ReleaseInfo(space=%s, userName=%s, start=%s, end=%s)",
+		i.Space.ParkingKey(),
 		i.OwnerName,
 		startDateStr,
 		endDateStr,
 	)
 }
 
-type ReleaseMap map[int]*ReleaseInfo
+type ReleaseMap map[ParkingKey]*ReleaseInfo
 
-func (q ReleaseMap) Get(space int) *ReleaseInfo {
-	releaseInfo, ok := q[space]
+func (q ReleaseMap) Get(spaceKey ParkingKey) *ReleaseInfo {
+	releaseInfo, ok := q[spaceKey]
 	if !ok {
 		return nil
 	}
@@ -116,32 +119,32 @@ func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
 	return nil
 }
 
-func (q ReleaseMap) Remove(space int) bool {
-	_, ok := q[space]
+func (q ReleaseMap) Remove(spaceKey ParkingKey) bool {
+	_, ok := q[spaceKey]
 	if !ok {
 		return false
 	}
 
-	log.Println("Removing from release map: space ", space)
-	delete(q, space)
+	log.Println("Removing from release map: space ", spaceKey)
+	delete(q, spaceKey)
 	return true
 }
 
-func (q ReleaseMap) RemoveByViewId(viewId string) (int, bool) {
-	spaceNum := -1
+func (q ReleaseMap) RemoveByViewId(viewId string) (ParkingKey, bool) {
+	spaceKey := ParkingKey("")
 	for space, info := range q {
 		if info.ViewId == viewId {
-			spaceNum = space
+			spaceKey = space
 			break
 		}
 	}
-	if spaceNum == -1 {
-		return spaceNum, false
+	if spaceKey == "" {
+		return spaceKey, false
 	}
 
-	log.Println("Removing from release map: space ", spaceNum)
-	delete(q, spaceNum)
-	return spaceNum, true
+	log.Println("Removing from release map: space ", spaceKey)
+	delete(q, spaceKey)
+	return spaceKey, true
 }
 
 func (q ReleaseMap) Add(
@@ -151,8 +154,9 @@ func (q ReleaseMap) Add(
 	ownerId string,
 	space *ParkingSpace,
 ) (*ReleaseInfo, error) {
-	if q.Get(space.Number) != nil {
-		return nil, fmt.Errorf("Space %d already marked for release.", space.Number)
+	spaceKey := space.ParkingKey()
+	if q.Get(spaceKey) != nil {
+		return nil, fmt.Errorf("Space %s already marked for release.", spaceKey)
 	}
 
 	releaseInfo := &ReleaseInfo{
@@ -164,6 +168,6 @@ func (q ReleaseMap) Add(
 		Submitted:  false,
 	}
 
-	q[space.Number] = releaseInfo
+	q[spaceKey] = releaseInfo
 	return releaseInfo, nil
 }

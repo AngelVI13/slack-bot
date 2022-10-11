@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
@@ -22,8 +21,8 @@ type ParkingLot struct {
 
 func NewParkingLot() ParkingLot {
 	return ParkingLot{
-		ParkingSpaces: make(map[int]*ParkingSpace),
-		ToBeReleased:  make(map[int]*ReleaseInfo),
+		ParkingSpaces: make(ParkingSpaces),
+		ToBeReleased:  make(ReleaseMap),
 	}
 }
 
@@ -63,14 +62,13 @@ func (d *ParkingLot) synchronizeFromFile(data []byte) {
 	}
 }
 
-// TODO: This is identical to GetDevicesInfo -> refactor it out
-func (d *ParkingLot) GetSpacesInfo(user string) SpacesInfo {
+func (d *ParkingLot) GetSpacesInfo(userId string) SpacesInfo {
 	// Group spaces in 2 groups -> belonging to given user or not
 	// The group that doesn't belong to user will be sorted by name and by status (reserved or not)
 	userSpaces := make(SpacesInfo, 0)
 	nonUserSpaces := make(SpacesInfo, 0)
 	for _, d := range d.ParkingSpaces {
-		if d.Reserved && d.ReservedBy == user {
+		if d.Reserved && d.ReservedById == userId {
 			userSpaces = append(userSpaces, d)
 		} else {
 			nonUserSpaces = append(nonUserSpaces, d)
@@ -94,7 +92,7 @@ func (d *ParkingLot) GetSpacesInfo(user string) SpacesInfo {
 	// If all spaces are free or all spaces are taken, sort by number
 	if firstTaken == -1 || firstTaken == 0 {
 		sort.Slice(nonUserSpaces, func(i, j int) bool {
-			return nonUserSpaces[i].Number < nonUserSpaces[j].Number
+			return nonUserSpaces[i].ParkingKey() < nonUserSpaces[j].ParkingKey()
 		})
 	} else {
 		// split spaces into 2 - free & taken
@@ -103,11 +101,11 @@ func (d *ParkingLot) GetSpacesInfo(user string) SpacesInfo {
 		taken := nonUserSpaces[firstTaken:]
 
 		sort.Slice(free, func(i, j int) bool {
-			return free[i].Number < free[j].Number
+			return free[i].ParkingKey() < free[j].ParkingKey()
 		})
 
 		sort.Slice(taken, func(i, j int) bool {
-			return taken[i].Number < taken[j].Number
+			return taken[i].ParkingKey() < taken[j].ParkingKey()
 		})
 	}
 
@@ -117,23 +115,26 @@ func (d *ParkingLot) GetSpacesInfo(user string) SpacesInfo {
 	return allSpaces
 }
 
-func (l *ParkingLot) Reserve(parkingSpace, user, userId string, autoRelease bool) (errMsg string) {
-	spaceNumber, err := strconv.Atoi(parkingSpace)
-	if err != nil {
-		log.Fatalf("Could not convert parkingSpace %+v to int", parkingSpace)
-	}
+func (l *ParkingLot) Reserve(parkingSpace ParkingKey, user, userId string, autoRelease bool) (errMsg string) {
+	space := l.GetSpace(parkingSpace)
 
-	space, ok := l.ParkingSpaces[spaceNumber]
-	if !ok {
-		log.Fatalf("Wrong parking space number %d, %+v", spaceNumber, l)
-	}
 	// Only inform user if it was someone else that tried to reserved his space.
 	// This prevents an unnecessary message if you double clicked the reserve button yourself
 	if space.Reserved && space.ReservedById != userId {
 		reservedTime := space.ReservedTime.Format("Mon 15:04")
-		return fmt.Sprintf("*Error*: Could not reserve *%d*. *%s* has just reserved it (at *%s*)", spaceNumber, space.ReservedBy, reservedTime)
+		return fmt.Sprintf(
+			"*Error*: Could not reserve *%s*. *%s* has just reserved it (at *%s*)",
+			parkingSpace,
+			space.ReservedBy,
+			reservedTime,
+		)
 	}
-	log.Printf("PARKING_RESERVE: User (%s) reserved space (%d) with auto release (%v)", user, spaceNumber, autoRelease)
+	log.Printf(
+		"PARKING_RESERVE: User (%s) reserved space (%s) with auto release (%v)",
+		user,
+		parkingSpace,
+		autoRelease,
+	)
 
 	space.Reserved = true
 	space.ReservedBy = user
@@ -145,7 +146,7 @@ func (l *ParkingLot) Reserve(parkingSpace, user, userId string, autoRelease bool
 	return ""
 }
 
-func (l *ParkingLot) Release(parkingSpace, user string) (victimId, errMsg string) {
+func (l *ParkingLot) Release(parkingSpace ParkingKey, user string) (victimId, errMsg string) {
 	space := l.GetSpace(parkingSpace)
 
 	log.Printf("PARKING_RELEASE: User (%s) released (%s) space.", user, parkingSpace)
@@ -154,30 +155,32 @@ func (l *ParkingLot) Release(parkingSpace, user string) (victimId, errMsg string
 	l.SynchronizeToFile()
 
 	if space.ReservedBy != user {
-		return space.ReservedById, fmt.Sprintf(":warning: *%s* released your (*%s*) space (*%d*)", user, space.ReservedBy, space.Number)
+		return space.ReservedById,
+			fmt.Sprintf(
+				":warning: *%s* released your (*%s*) space (*%s*)",
+				user,
+				space.ReservedBy,
+				parkingSpace,
+			)
+
 	}
 	return "", ""
 }
 
-func (l *ParkingLot) GetSpace(parkingSpace string) *ParkingSpace {
-	spaceNumber, err := strconv.Atoi(parkingSpace)
-	if err != nil {
-		log.Fatalf("Could not convert parkingSpace %+v to int", parkingSpace)
-	}
-
-	space, ok := l.ParkingSpaces[spaceNumber]
+func (l *ParkingLot) GetSpace(parkingSpace ParkingKey) *ParkingSpace {
+	space, ok := l.ParkingSpaces[parkingSpace]
 	if !ok {
-		log.Fatalf("Incorrect parking space number %s, %+v", parkingSpace, l)
+		log.Fatalf("Incorrect parking space number %s", parkingSpace)
 	}
 	return space
 }
 
 // TODO: Test this
 func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
-	for _, space := range l.ParkingSpaces {
+	for spaceKey, space := range l.ParkingSpaces {
 		// Simple case
 		if space.Reserved && space.AutoRelease {
-			log.Println("AutoRelease space ", space.Number)
+			log.Println("AutoRelease space ", spaceKey)
 			space.Reserved = false
 			space.AutoRelease = false
 			// Fall-through to check if this is also a temporary
@@ -185,7 +188,7 @@ func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
 		}
 
 		// If a scheduled release was setup
-		releaseInfo := l.ToBeReleased.Get(space.Number)
+		releaseInfo := l.ToBeReleased.Get(spaceKey)
 		if releaseInfo == nil {
 			continue
 		}
@@ -193,21 +196,21 @@ func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
 		// On the day before the start of the release -> make the space
 		// available for selection
 		if releaseInfo.StartDate.Sub(cTime).Hours() < 24 && releaseInfo.StartDate.After(cTime) {
-			log.Println("TempRelease space ", space.Number, releaseInfo)
+			log.Println("TempRelease space ", spaceKey, releaseInfo)
 			space.Reserved = false
 			space.AutoRelease = false
 		} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
 			// On the day of the end of release -> reserve back the space
 			// for the correct user
-			log.Println("TempReserve space ", space.Number, releaseInfo)
+			log.Println("TempReserve space ", spaceKey, releaseInfo)
 			space.Reserved = true
 			space.AutoRelease = false
 			space.ReservedBy = releaseInfo.OwnerName
 			space.ReservedById = releaseInfo.OwnerId
 
-			ok := l.ToBeReleased.Remove(releaseInfo.Space.Number)
+			ok := l.ToBeReleased.Remove(spaceKey)
 			if !ok {
-				log.Printf("Failed removing release info for space %d", releaseInfo.Space.Number)
+				log.Printf("Failed removing release info for space %s", spaceKey)
 			}
 		}
 	}
@@ -230,6 +233,9 @@ func getParkingLot(config *config.Config) (parkingLot ParkingLot) {
 		log.Fatalf("No spaces found in (%s).", path)
 	}
 
-	log.Printf("INIT: Parking spaces list loaded successfully (%d spaces configured)", loadedSpacesNum)
+	log.Printf(
+		"INIT: Parking spaces list loaded successfully (%d spaces configured)",
+		loadedSpacesNum,
+	)
 	return parkingLot
 }

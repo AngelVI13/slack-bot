@@ -31,7 +31,7 @@ func (m *Manager) generateParkingInfo(spaces SpacesInfo) []slack.Block {
 		emoji := space.GetStatusEmoji()
 
 		releaseScheduled := ""
-		releaseInfo := m.parkingLot.ToBeReleased.Get(space.Number)
+		releaseInfo := m.parkingLot.ToBeReleased.Get(space.ParkingKey())
 		if releaseInfo != nil {
 			releaseScheduled = fmt.Sprintf(
 				"\n\t\tScheduled release from %s to %s",
@@ -70,11 +70,11 @@ func (m *Manager) generateParkingButtons(
 	isAdminUser := m.userManager.IsAdminId(userId)
 	hasPermanentParkingUser := m.userManager.HasParkingById(userId)
 
-	releaseInfo := m.parkingLot.ToBeReleased.Get(space.Number)
+	releaseInfo := m.parkingLot.ToBeReleased.Get(space.ParkingKey())
 	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) && !releaseInfo.Cancelled {
 		cancelTempReleaseButton := slack.NewButtonBlockElement(
 			cancelTempReleaseParkingActionId,
-			fmt.Sprint(space.Number),
+			string(space.ParkingKey()),
 			slack.NewTextBlockObject("plain_text", "Cancel Scheduled Release!", true, false),
 		)
 		cancelTempReleaseButton = cancelTempReleaseButton.WithStyle(slack.StyleDanger)
@@ -93,7 +93,7 @@ func (m *Manager) generateParkingButtons(
 				// the space on behalf of somebody that has a permanent parking rights
 				tempReleaseButton := slack.NewButtonBlockElement(
 					tempReleaseParkingActionId,
-					fmt.Sprint(space.Number),
+					string(space.ParkingKey()),
 					slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
 				)
 				tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
@@ -104,7 +104,7 @@ func (m *Manager) generateParkingButtons(
 		if isAdminUser || !hasPermanentParkingUser {
 			releaseButton := slack.NewButtonBlockElement(
 				releaseParkingActionId,
-				fmt.Sprint(space.Number),
+				string(space.ParkingKey()),
 				slack.NewTextBlockObject("plain_text", "Release!", true, false),
 			)
 			releaseButton = releaseButton.WithStyle(slack.StyleDanger)
@@ -118,7 +118,7 @@ func (m *Manager) generateParkingButtons(
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
 			reserveParkingActionId,
-			fmt.Sprint(space.Number),
+			string(space.ParkingKey()),
 			slack.NewTextBlockObject("plain_text", fmt.Sprintf("%s :eject:", actionButtonText), true, false),
 		)
 		reserveWithAutoButton = reserveWithAutoButton.WithStyle(slack.StylePrimary)
@@ -128,8 +128,16 @@ func (m *Manager) generateParkingButtons(
 }
 
 func generateParkingPlanBlocks() []slack.Block {
-	// TODO: should 1 user only be allowed to book 1 parking space ?
-	description := slack.NewSectionBlock(slack.NewTextBlockObject("mrkdwn", "In the pictures below you can find the parking plan so you can locate your parking space.", false, false), nil, nil)
+	description := slack.NewSectionBlock(
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			"In the pictures below you can find the parking plan so you can locate your parking space.",
+			false,
+			false,
+		),
+		nil,
+		nil,
+	)
 	imgLink := "https://w7.pngwing.com/pngs/610/377/png-transparent-parking-parking-lot-car-park.png"
 	parkingPlanImage := slack.NewImageBlockElement(imgLink, "parking plan")
 
@@ -150,11 +158,6 @@ func generateParkingPlanBlocks() []slack.Block {
 		// TODO: Use image element instead
 		slack.NewAccessory(parkingPlanImage),
 	)
-	// TODO: figure out the difference between image block element and image element
-	// img1 := slack.NewImageBlock(imgLink, "parking plan", "img1", slack.NewTextBlockObject("mrkdwn", "Parking Plan (Floor 1)", false, false))
-	// img1 := slack.NewImageBlock(imgLink, "parking plan", "", nil)
-
-	// return []slack.Block{description, plan1, plan2, plan3, img1}
 	return []slack.Block{description, plan1, plan2, plan3}
 }
 
@@ -179,8 +182,7 @@ func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Blo
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	userName := m.userManager.GetNameFromId(userId)
-	spaces := m.parkingLot.GetSpacesInfo(userName)
+	spaces := m.parkingLot.GetSpacesInfo(userId)
 	parkingSpaceSections := m.generateParkingInfo(spaces)
 
 	userAlreadyReservedSpace := false
