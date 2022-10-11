@@ -88,3 +88,17 @@
 			"AutoRelease": false,
 			"ReservedBy": "jevgenijus.popovas",
 			"ReservedById": "U03F19CF4BH",
+			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+		},
+		"1st floor 129": {
+			"Number": 129,
+			"Floor": 1,
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "jevgenijus.popovas",
+			"ReservedById": "U03F19CF4BH",
+			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+		}
+	},
+	"ToBeReleased": {}
+}
