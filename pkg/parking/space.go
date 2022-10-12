@@ -42,6 +42,16 @@ func (p *ParkingSpace) ParkingKey() ParkingKey {
 	return MakeParkingKey(p.Number, p.Floor)
 }
 
+func (p *ParkingSpace) Smaller(other *ParkingSpace) bool {
+	if p.Floor < other.Floor {
+		return true
+	} else if p.Floor > other.Floor {
+		return false
+	} else { // p.Floor == other.Floor
+		return p.Number < other.Number
+	}
+}
+
 func MakeParkingKey(number, floor int) ParkingKey {
 	postfix := "th"
 

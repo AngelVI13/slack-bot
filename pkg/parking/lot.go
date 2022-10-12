@@ -92,7 +92,7 @@ func (d *ParkingLot) GetSpacesInfo(userId string) SpacesInfo {
 	// If all spaces are free or all spaces are taken, sort by number
 	if firstTaken == -1 || firstTaken == 0 {
 		sort.Slice(nonUserSpaces, func(i, j int) bool {
-			return nonUserSpaces[i].ParkingKey() < nonUserSpaces[j].ParkingKey()
+			return nonUserSpaces[i].Smaller(nonUserSpaces[j])
 		})
 	} else {
 		// split spaces into 2 - free & taken
@@ -101,11 +101,11 @@ func (d *ParkingLot) GetSpacesInfo(userId string) SpacesInfo {
 		taken := nonUserSpaces[firstTaken:]
 
 		sort.Slice(free, func(i, j int) bool {
-			return free[i].ParkingKey() < free[j].ParkingKey()
+			return free[i].Smaller(free[j])
 		})
 
 		sort.Slice(taken, func(i, j int) bool {
-			return taken[i].ParkingKey() < taken[j].ParkingKey()
+			return taken[i].Smaller(taken[j])
 		})
 	}
 
