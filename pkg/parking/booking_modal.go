@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	floorActionId                    = "floorActionId"
+	floorOptionId                    = "floorOptionId"
 	reserveParkingActionId           = "reserveParking"
 	releaseParkingActionId           = "releaseParking"
 	tempReleaseParkingActionId       = "tempReleaseParking"
@@ -168,6 +170,9 @@ func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Blo
 	descriptionBlocks := generateParkingPlanBlocks()
 	allBlocks = append(allBlocks, descriptionBlocks...)
 
+	floorOptionBlocks := m.generateFloorOptions()
+	allBlocks = append(allBlocks, floorOptionBlocks...)
+
 	if errorTxt != "" {
 		txt := fmt.Sprintf(`:warning: *%s*`, errorTxt)
 		errorSection := slack.NewSectionBlock(
@@ -211,6 +216,37 @@ func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Blo
 		}
 		allBlocks = append(allBlocks, div)
 	}
+
+	return allBlocks
+}
+
+func (m *Manager) generateFloorOptions() []slack.Block {
+	floors := []string{"-2 floor", "-1 floor", "1 floor"}
+
+	var allBlocks []slack.Block
+
+	// Options
+	var optionBlocks []*slack.OptionBlockObject
+
+	for _, floor := range floors {
+		optionBlock := slack.NewOptionBlockObject(
+			floor,
+			slack.NewTextBlockObject("plain_text", floor, false, false),
+			slack.NewTextBlockObject("plain_text", " ", false, false),
+		)
+		optionBlocks = append(optionBlocks, optionBlock)
+	}
+
+	// Text shown as title when option box is opened/expanded
+	optionLabel := slack.NewTextBlockObject("plain_text", "Choose a parking floor", false, false)
+	// Default option shown for option box
+	defaultOption := slack.NewTextBlockObject("plain_text", floors[0], false, false)
+
+	optionGroupBlockObject := slack.NewOptionGroupBlockElement(optionLabel, optionBlocks...)
+	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupSelectBlockElement("static_select", defaultOption, floorOptionId, optionGroupBlockObject)
+
+	actionBlock := slack.NewActionBlock(floorActionId, newOptionsGroupSelectBlockElement)
+	allBlocks = append(allBlocks, actionBlock)
 
 	return allBlocks
 }
