@@ -106,7 +106,12 @@ func (m *Manager) Context() string {
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
-	modal := m.generateBookingModalRequest(data, data.UserId, defaultFloorOption, errorTxt)
+	selectedFloor := defaultFloorOption
+	selected, ok := m.selectedFloor[data.UserId]
+	if ok {
+		selectedFloor = selected
+	}
+	modal := m.generateBookingModalRequest(data, data.UserId, selectedFloor, errorTxt)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)

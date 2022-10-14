@@ -25,7 +25,6 @@ var (
 var parkingBookingTitle = Identifier + "Booking"
 
 func (m *Manager) generateBookingModalRequest(command event.Event, userId, selectedFloor, errorTxt string) slack.ModalViewRequest {
-	// TODO: highlight your parking space?
 	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, selectedFloor, errorTxt)
 	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
 }
