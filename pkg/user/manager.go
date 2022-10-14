@@ -71,34 +71,6 @@ func (m *Manager) synchronizeToFile() {
 	log.Println("INFO: Wrote users list to file")
 }
 
-/*
-func (m *Manager) AddNewUsers(selectedManager []*slack.User, selectedOptions []slack.OptionBlockObject, accsessRightSelection string, reviewerOptionSelection string) {
-	accessRights := STANDARD
-	isReviewer := false
-
-	for _, selection := range selectedOptions {
-		switch selection.Value {
-		case accsessRightSelection:
-			accessRights = ADMIN
-		case reviewerOptionSelection:
-			isReviewer = true
-		}
-	}
-
-	for _, userInfo := range selectedManager {
-		userName := userInfo.Name
-		log.Printf("Adding %s", userName)
-
-		m.users[userName] = &User{
-			Id:     userInfo.ID,
-			Rights: accessRights,
-		}
-	}
-
-	m.synchronizeToFile()
-}
-*/
-
 func (m *Manager) IsAdmin(userName string) bool {
 	user, ok := m.users[userName]
 	if !ok {

@@ -33,7 +33,8 @@ func handleApiEvent(socketEvent socketmode.Event, client *Client) event.Event {
 	// The Event sent on the channel is not the same as the EventAPI events so we need to type cast it
 	apiEvent, ok := socketEvent.Data.(slackevents.EventsAPIEvent)
 	if !ok {
-		log.Fatalf("Could not type cast the event to the EventsAPIEvent: %v\n", socketEvent)
+		log.Printf("Could not type cast the event to the EventsAPIEvent: %v\n", socketEvent)
+		return nil
 	}
 
 	var processedEvent event.Event

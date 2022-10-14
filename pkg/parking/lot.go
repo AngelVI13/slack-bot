@@ -157,6 +157,9 @@ func (d *ParkingLot) GetSpacesInfo(userId string) SpacesInfo {
 
 func (l *ParkingLot) Reserve(parkingSpace ParkingKey, user, userId string, autoRelease bool) (errMsg string) {
 	space := l.GetSpace(parkingSpace)
+	if space == nil {
+		return fmt.Sprintf("Failed to reserve space: couldn't find the space %s", parkingSpace)
+	}
 
 	// Only inform user if it was someone else that tried to reserved his space.
 	// This prevents an unnecessary message if you double clicked the reserve button yourself
@@ -188,6 +191,9 @@ func (l *ParkingLot) Reserve(parkingSpace ParkingKey, user, userId string, autoR
 
 func (l *ParkingLot) Release(parkingSpace ParkingKey, userName, userId string) (victimId, errMsg string) {
 	space := l.GetSpace(parkingSpace)
+	if space == nil {
+		return userId, fmt.Sprintf("Failed to release space: couldn't find the space %s", parkingSpace)
+	}
 
 	log.Printf("PARKING_RELEASE: User (%s) released (%s) space.", userName, parkingSpace)
 
@@ -210,7 +216,8 @@ func (l *ParkingLot) Release(parkingSpace ParkingKey, userName, userId string) (
 func (l *ParkingLot) GetSpace(parkingSpace ParkingKey) *ParkingSpace {
 	space, ok := l.ParkingSpaces[parkingSpace]
 	if !ok {
-		log.Fatalf("Incorrect parking space number %s", parkingSpace)
+		log.Printf("Incorrect parking space number %s", parkingSpace)
+		return nil
 	}
 	return space
 }

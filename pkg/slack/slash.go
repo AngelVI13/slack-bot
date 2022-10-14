@@ -30,7 +30,8 @@ func (s *Slash) HasContext(c string) bool {
 func handleSlashCommand(socketEvent socketmode.Event) event.Event {
 	command, ok := socketEvent.Data.(slack.SlashCommand)
 	if !ok {
-		log.Fatalf("Could not type cast the message to a SlashCommand: %v\n", command)
+		log.Printf("ERROR: Could not type cast the message to a SlashCommand: %v\n", command)
+		return nil
 	}
 
 	return &Slash{

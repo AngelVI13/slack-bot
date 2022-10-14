@@ -80,10 +80,11 @@ func (v *ViewOpened) HasContext(c string) bool {
 func handleInteractionEvent(socketEvent socketmode.Event) event.Event {
 	interactionCb, ok := socketEvent.Data.(slack.InteractionCallback)
 	if !ok {
-		log.Fatalf(
-			"Could not type cast the message to a Interaction callback: %v\n",
+		log.Printf(
+			"ERROR: Could not type cast the message to a Interaction callback: %v\n",
 			socketEvent,
 		)
+		return nil
 	}
 
 	var event event.Event

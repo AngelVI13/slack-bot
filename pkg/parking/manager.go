@@ -292,6 +292,9 @@ func (m *Manager) handleTempReleaseParking(
 	actions := []event.ResponseAction{}
 	// Special User handling
 	chosenParkingSpace := m.parkingLot.GetSpace(parkingSpace)
+	if chosenParkingSpace == nil {
+		return nil
+	}
 
 	// NOTE: here we use the original parking space reserve name and id.
 	// this allows us to restore the space to the original user after the temporary release is over.
@@ -327,6 +330,10 @@ func (m *Manager) handleCancelTempReleaseParking(
 	actions := []event.ResponseAction{}
 	// Special User handling
 	chosenParkingSpace := m.parkingLot.GetSpace(parkingSpace)
+	if chosenParkingSpace == nil {
+		return nil
+	}
+
 	errorTxt := ""
 
 	releaseInfo := m.parkingLot.ToBeReleased.Get(parkingSpace)
@@ -427,7 +434,8 @@ func (m *Manager) handleReleaseRange(data *slackApi.BlockAction, selectedDate st
 	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
 	// NOTE: releaseInfo is created when the user clicks "Release" button
 	if releaseInfo == nil {
-		log.Fatalf("Expected release info to be not nil: %v", m.parkingLot.ToBeReleased)
+		log.Printf("ERROR: Expected release info to be not nil: %v", m.parkingLot.ToBeReleased)
+		return nil
 	}
 
 	if isStartDate {

@@ -80,7 +80,8 @@ func (c *Client) Listen() {
 func (c *Client) Consume(e event.Event) {
 	data, ok := e.(event.Response)
 	if !ok {
-		log.Fatalf("Slack client expected Response but got sth else: %T: %v", e, e)
+		log.Printf("Slack client expected Response but got sth else: %T: %v", e, e)
+		return
 	}
 
 	for _, action := range data.Actions() {
@@ -102,7 +103,7 @@ func (c *Client) Consume(e event.Event) {
 			case event.UpdateView:
 				_, err = c.socket.UpdateView(view.ModalRequest, "", "", view.ViewId)
 			default:
-				log.Fatalf("Unsupported view action: %v", viewAction)
+				log.Printf("Unsupported view action: %v", viewAction)
 			}
 
 			if newView != nil {
@@ -114,8 +115,7 @@ func (c *Client) Consume(e event.Event) {
 			}
 
 			if err != nil {
-				// TODO: should this crash???? probably not
-				log.Fatalf("Error opening view: %s", err)
+				log.Printf("Error opening view: %s", err)
 			}
 		case event.PostEphemeral:
 			post := action.(*common.PostEphemeralAction)
@@ -124,7 +124,7 @@ func (c *Client) Consume(e event.Event) {
 			post := action.(*common.PostAction)
 			c.socket.Client.PostMessage(post.ChannelId, post.MsgOption)
 		default:
-			log.Fatalf("Unsupported action: %v", action.Action())
+			log.Printf("Unsupported action: %v", action.Action())
 		}
 	}
 }
