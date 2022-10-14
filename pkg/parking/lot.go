@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
@@ -60,6 +61,22 @@ func (d *ParkingLot) synchronizeFromFile(data []byte) {
 			delete(d.ToBeReleased, space)
 		}
 	}
+}
+
+func (d *ParkingLot) GetSpacesByFloor(userId, floor string) SpacesInfo {
+	floorSpaces := make(SpacesInfo, 0)
+	allSpaces := d.GetSpacesInfo(userId)
+
+	if floor == "" {
+		return allSpaces
+	}
+
+	for _, space := range allSpaces {
+		if strings.HasPrefix(string(space.ParkingKey()), floor) {
+			floorSpaces = append(floorSpaces, space)
+		}
+	}
+	return floorSpaces
 }
 
 func (d *ParkingLot) GetSpacesInfo(userId string) SpacesInfo {

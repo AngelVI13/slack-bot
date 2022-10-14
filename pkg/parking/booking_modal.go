@@ -17,11 +17,16 @@ const (
 	cancelTempReleaseParkingActionId = "cancelTempReleaseParking"
 )
 
+var (
+	floors             = [3]string{"-2nd floor", "-1st floor", "1st floor"}
+	defaultFloorOption = floors[0]
+)
+
 var parkingBookingTitle = Identifier + "Booking"
 
-func (m *Manager) generateBookingModalRequest(command event.Event, userId, errorTxt string) slack.ModalViewRequest {
+func (m *Manager) generateBookingModalRequest(command event.Event, userId, selectedFloor, errorTxt string) slack.ModalViewRequest {
 	// TODO: highlight your parking space?
-	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, errorTxt)
+	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, selectedFloor, errorTxt)
 	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
 }
 
@@ -164,13 +169,13 @@ func generateParkingPlanBlocks() []slack.Block {
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
-func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Block {
+func (m *Manager) generateParkingInfoBlocks(userId, selectedFloor, errorTxt string) []slack.Block {
 	allBlocks := []slack.Block{}
 
 	descriptionBlocks := generateParkingPlanBlocks()
 	allBlocks = append(allBlocks, descriptionBlocks...)
 
-	floorOptionBlocks := m.generateFloorOptions()
+	floorOptionBlocks := m.generateFloorOptions(userId)
 	allBlocks = append(allBlocks, floorOptionBlocks...)
 
 	if errorTxt != "" {
@@ -187,7 +192,7 @@ func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Blo
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	spaces := m.parkingLot.GetSpacesInfo(userId)
+	spaces := m.parkingLot.GetSpacesByFloor(userId, selectedFloor)
 	parkingSpaceSections := m.generateParkingInfo(spaces)
 
 	userAlreadyReservedSpace := false
@@ -220,9 +225,7 @@ func (m *Manager) generateParkingInfoBlocks(userId, errorTxt string) []slack.Blo
 	return allBlocks
 }
 
-func (m *Manager) generateFloorOptions() []slack.Block {
-	floors := []string{"-2 floor", "-1 floor", "1 floor"}
-
+func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 	var allBlocks []slack.Block
 
 	// Options
@@ -237,10 +240,16 @@ func (m *Manager) generateFloorOptions() []slack.Block {
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
 
+	selectedFloor := defaultFloorOption
+	selected, ok := m.selectedFloor[userId]
+	if ok {
+		selectedFloor = selected
+	}
+
 	// Text shown as title when option box is opened/expanded
 	optionLabel := slack.NewTextBlockObject("plain_text", "Choose a parking floor", false, false)
 	// Default option shown for option box
-	defaultOption := slack.NewTextBlockObject("plain_text", floors[0], false, false)
+	defaultOption := slack.NewTextBlockObject("plain_text", selectedFloor, false, false)
 
 	optionGroupBlockObject := slack.NewOptionGroupBlockElement(optionLabel, optionBlocks...)
 	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupSelectBlockElement("static_select", defaultOption, floorOptionId, optionGroupBlockObject)
