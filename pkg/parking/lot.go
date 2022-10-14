@@ -186,19 +186,19 @@ func (l *ParkingLot) Reserve(parkingSpace ParkingKey, user, userId string, autoR
 	return ""
 }
 
-func (l *ParkingLot) Release(parkingSpace ParkingKey, user string) (victimId, errMsg string) {
+func (l *ParkingLot) Release(parkingSpace ParkingKey, userName, userId string) (victimId, errMsg string) {
 	space := l.GetSpace(parkingSpace)
 
-	log.Printf("PARKING_RELEASE: User (%s) released (%s) space.", user, parkingSpace)
+	log.Printf("PARKING_RELEASE: User (%s) released (%s) space.", userName, parkingSpace)
 
 	space.Reserved = false
 	l.SynchronizeToFile()
 
-	if space.ReservedBy != user {
+	if space.ReservedById != userId {
 		return space.ReservedById,
 			fmt.Sprintf(
 				":warning: *%s* released your (*%s*) space (*%s*)",
-				user,
+				userName,
 				space.ReservedBy,
 				parkingSpace,
 			)

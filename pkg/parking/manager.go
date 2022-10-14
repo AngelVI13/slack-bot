@@ -231,7 +231,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	m.parkingLot.SynchronizeToFile()
 
 	if common.EqualDate(startDate, time.Now()) {
-		m.parkingLot.Release(releaseInfo.Space.ParkingKey(), data.UserName)
+		m.parkingLot.Release(releaseInfo.Space.ParkingKey(), data.UserName, data.UserId)
 	}
 
 	modal := m.generateBookingModalRequest(data, data.UserId, m.selectedFloor[data.UserId], "")
@@ -395,7 +395,7 @@ func (m *Manager) handleReleaseParking(
 	actions := []event.ResponseAction{}
 
 	// Handle general case: normal user releasing a space
-	victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName)
+	victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName, data.UserId)
 	if victimId != "" {
 		log.Println(errStr)
 		action := common.NewPostEphemeralAction(victimId, victimId, slack.MsgOptionText(errStr, false))
