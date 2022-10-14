@@ -136,34 +136,29 @@ func generateParkingPlanBlocks() []slack.Block {
 	description := slack.NewSectionBlock(
 		slack.NewTextBlockObject(
 			"mrkdwn",
-			"In the pictures below you can find the parking plan so you can locate your parking space.",
+			"In the links below you can find the parking plans for each floor so you can locate your parking space.",
 			false,
 			false,
 		),
 		nil,
 		nil,
 	)
-	imgLink := "https://w7.pngwing.com/pngs/610/377/png-transparent-parking-parking-lot-car-park.png"
-	parkingPlanImage := slack.NewImageBlockElement(imgLink, "parking plan")
-
-	plan1 := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "Parking Plan (Floor 1)", false, false),
+	outsideParking := slack.NewSectionBlock(
+		slack.NewTextBlockObject("mrkdwn", "<https://google.com|1st floor plan>", false, false),
 		nil,
-		slack.NewAccessory(parkingPlanImage),
-	)
-	plan2 := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "Parking Plan (Floor -1)", false, false),
 		nil,
-		slack.NewAccessory(parkingPlanImage),
 	)
-
-	plan3 := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "Parking Plan (Floor -2)", false, false),
+	minusOneParking := slack.NewSectionBlock(
+		slack.NewTextBlockObject("mrkdwn", "<https://google.com|-1st floor plan>", false, false),
 		nil,
-		// TODO: Use image element instead
-		slack.NewAccessory(parkingPlanImage),
+		nil,
 	)
-	return []slack.Block{description, plan1, plan2, plan3}
+	minusTwoParking := slack.NewSectionBlock(
+		slack.NewTextBlockObject("mrkdwn", "<https://google.com|-2nd floor plan>", false, false),
+		nil,
+		nil,
+	)
+	return []slack.Block{description, outsideParking, minusOneParking, minusTwoParking}
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
