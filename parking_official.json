@@ -147,10 +147,10 @@
 		"1st floor 123": {
 			"Number": 123,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "auguste.navickaite",
+			"ReservedById": "U041R29BGKS",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 124": {
@@ -165,19 +165,19 @@
 		"1st floor 125": {
 			"Number": 125,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "gediminas.kasputis",
+			"ReservedById": "U03FHMWFJQP",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 126": {
 			"Number": 126,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "ilya.kustov",
+			"ReservedById": "U042GHQA51V",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 127": {
@@ -365,8 +365,8 @@
 			"Floor": -2,
 			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "dovile.ramanauskaite",
-			"ReservedById": "U03F8HU7GLD",
+			"ReservedBy": "kiryl.shmarlouski",
+			"ReservedById": "U03KP2U6J4V",
 			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
 		"-2nd floor 116": {
@@ -374,8 +374,8 @@
 			"Floor": -2,
 			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "nerijus.kondrotas",
-			"ReservedById": "U03EBM4LNH5",
+			"ReservedBy": "einaras.daujotas",
+			"ReservedById": "U03FPUQNF0R",
 			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
 		"-2nd floor 117": {
@@ -383,8 +383,8 @@
 			"Floor": -2,
 			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "andrejus.daskevicius",
-			"ReservedById": "U03FBFHQWP5",
+			"ReservedBy": "ignas.ragaisis",
+			"ReservedById": "U03FUQEADB2",
 			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
 		"-2nd floor 118": {
@@ -435,10 +435,10 @@
 		"-2nd floor 128": {
 			"Number": 128,
 			"Floor": -2,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "dovile.ramanauskaite",
+			"ReservedById": "U03F8HU7GLD",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"-2nd floor 129": {
@@ -480,19 +480,19 @@
 		"-1st floor 38": {
 			"Number": 38,
 			"Floor": -1,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "evelina.bernataviciute",
-			"ReservedById": "U03ENHGR7U4",
+			"ReservedBy": "",
+			"ReservedById": "",
 			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
 		"-1st floor 61": {
 			"Number": 61,
 			"Floor": -1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "evelina.bernataviciute",
+			"ReservedById": "U03ENHGR7U4",
 			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
 		"-1st floor 62": {
