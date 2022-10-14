@@ -144,17 +144,17 @@ func generateParkingPlanBlocks() []slack.Block {
 		nil,
 	)
 	outsideParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "<https://google.com|1st floor plan>", false, false),
+		slack.NewTextBlockObject("mrkdwn", "<https://ibb.co/PFNyGsn|1st floor plan>", false, false),
 		nil,
 		nil,
 	)
 	minusOneParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "<https://google.com|-1st floor plan>", false, false),
+		slack.NewTextBlockObject("mrkdwn", "<https://ibb.co/zHw2T9w|-1st floor plan>", false, false),
 		nil,
 		nil,
 	)
 	minusTwoParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "<https://google.com|-2nd floor plan>", false, false),
+		slack.NewTextBlockObject("mrkdwn", "<https://ibb.co/mt15xrz|-2nd floor plan>", false, false),
 		nil,
 		nil,
 	)
