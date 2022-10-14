@@ -69,8 +69,6 @@ func (m *Manager) generateParkingInfo(spaces SpacesInfo) []slack.Block {
 func (m *Manager) generateParkingButtons(
 	space *ParkingSpace,
 	userId string,
-	alreadyReservedSpace,
-	alreadyReleasedSpace bool,
 ) []slack.BlockElement {
 	var buttons []slack.BlockElement
 
@@ -118,8 +116,8 @@ func (m *Manager) generateParkingButtons(
 			buttons = append(buttons, releaseButton)
 		}
 	} else if (!space.Reserved &&
-		!alreadyReservedSpace &&
-		!alreadyReleasedSpace &&
+		!m.parkingLot.HasSpace(userId) &&
+		!m.parkingLot.HasTempRelease(userId) &&
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
@@ -195,24 +193,9 @@ func (m *Manager) generateParkingInfoBlocks(userId, selectedFloor, errorTxt stri
 	spaces := m.parkingLot.GetSpacesByFloor(userId, selectedFloor)
 	parkingSpaceSections := m.generateParkingInfo(spaces)
 
-	userAlreadyReservedSpace := false
-	for _, space := range spaces {
-		if space.Reserved && space.ReservedById == userId {
-			userAlreadyReservedSpace = true
-			break
-		}
-	}
-	userAlreadyReleasedSpace := false
-	for _, releaseInfo := range m.parkingLot.ToBeReleased {
-		if releaseInfo.Submitted && releaseInfo.OwnerId == userId {
-			userAlreadyReleasedSpace = true
-			break
-		}
-	}
-
 	for idx, space := range spaces {
 		sectionBlock := parkingSpaceSections[idx]
-		buttons := m.generateParkingButtons(space, userId, userAlreadyReservedSpace, userAlreadyReleasedSpace)
+		buttons := m.generateParkingButtons(space, userId)
 
 		allBlocks = append(allBlocks, sectionBlock)
 		if len(buttons) > 0 {

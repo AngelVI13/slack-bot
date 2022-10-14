@@ -63,6 +63,29 @@ func (d *ParkingLot) synchronizeFromFile(data []byte) {
 	}
 }
 
+func (d *ParkingLot) HasSpace(userId string) bool {
+	userAlreadyReservedSpace := false
+	for _, space := range d.ParkingSpaces {
+		if space.Reserved && space.ReservedById == userId {
+			userAlreadyReservedSpace = true
+			break
+		}
+	}
+	return userAlreadyReservedSpace
+}
+
+func (d *ParkingLot) HasTempRelease(userId string) bool {
+	userAlreadyReleasedSpace := false
+	for _, releaseInfo := range d.ToBeReleased {
+		if releaseInfo.Submitted && releaseInfo.OwnerId == userId {
+			userAlreadyReleasedSpace = true
+			break
+		}
+	}
+
+	return userAlreadyReleasedSpace
+}
+
 func (d *ParkingLot) GetSpacesByFloor(userId, floor string) SpacesInfo {
 	floorSpaces := make(SpacesInfo, 0)
 	allSpaces := d.GetSpacesInfo(userId)
