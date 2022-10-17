@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -31,7 +32,12 @@ func (v *ViewSubmission) Type() event.EventType {
 }
 
 func (v ViewSubmission) String() string {
-	return event.DefaultEventString(&v) + " " + v.ViewId
+	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
+		event.DefaultEventString(&v),
+		v.Title,
+		v.ViewId,
+		v.TriggerId,
+	)
 }
 
 type BlockAction struct {
@@ -43,7 +49,12 @@ func (b *BlockAction) Type() event.EventType {
 }
 
 func (b BlockAction) String() string {
-	return event.DefaultEventString(&b)
+	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
+		event.DefaultEventString(&b),
+		b.Title,
+		b.ViewId,
+		b.TriggerId,
+	)
 }
 
 type ViewClosed struct {
@@ -55,7 +66,12 @@ func (v *ViewClosed) Type() event.EventType {
 }
 
 func (v ViewClosed) String() string {
-	return event.DefaultEventString(&v) + " " + v.ViewId
+	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
+		event.DefaultEventString(&v),
+		v.Title,
+		v.ViewId,
+		v.TriggerId,
+	)
 }
 
 type ViewOpened struct {
@@ -70,7 +86,13 @@ func (v *ViewOpened) Type() event.EventType {
 }
 
 func (v ViewOpened) String() string {
-	return event.DefaultEventString(&v) + " " + v.ViewId
+	return fmt.Sprintf(
+		"%s |Title: %s |RootViewId: %s |ViewId: %s",
+		event.DefaultEventString(&v),
+		v.Title,
+		v.RootViewId,
+		v.ViewId,
+	)
 }
 
 func (v *ViewOpened) HasContext(c string) bool {

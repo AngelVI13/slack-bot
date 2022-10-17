@@ -171,7 +171,7 @@ func (m *Manager) generateParkingInfoBlocks(userId, selectedFloor, errorTxt stri
 	allBlocks = append(allBlocks, floorOptionBlocks...)
 
 	if errorTxt != "" {
-		txt := fmt.Sprintf(`:warning: *%s*`, errorTxt)
+		txt := fmt.Sprintf(`:warning: %s`, errorTxt)
 		errorSection := slack.NewSectionBlock(
 			slack.NewTextBlockObject("mrkdwn", txt, false, false),
 			nil,

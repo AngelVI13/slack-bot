@@ -52,7 +52,12 @@ func NewPushViewAction(
 }
 
 func (v ViewAction) String() string {
-	return fmt.Sprintf("%s, TriggerID: %s", event.ResponseActionNames[v.Action()], v.TriggerId)
+	return fmt.Sprintf(
+		"%s, TriggerID: %s ViewId: %s",
+		event.ResponseActionNames[v.Action()],
+		v.TriggerId,
+		v.ViewId,
+	)
 }
 
 func (v *ViewAction) Action() event.ResponseActionType {

@@ -121,6 +121,10 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Response {
 	var actions []event.ResponseAction
 
+	if _, ok := m.selectedFloor[data.UserId]; !ok {
+		m.selectedFloor[data.UserId] = defaultFloorOption
+	}
+
 	for _, action := range data.Actions {
 		switch action.ActionID {
 		case floorOptionId:
@@ -129,19 +133,24 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			errorTxt := ""
 			modal := m.generateBookingModalRequest(data, data.UserId, selectedFloor, errorTxt)
 			actions = append(actions, common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal))
+
 		case reserveParkingActionId:
 			isSpecialUser := m.userManager.HasParking(data.UserName)
 			parkingSpace := ParkingKey(action.Value)
 			actions = m.handleReserveParking(data, parkingSpace, m.selectedFloor[data.UserId], isSpecialUser)
+
 		case releaseParkingActionId:
 			parkingSpace := ParkingKey(action.Value)
 			actions = m.handleReleaseParking(data, parkingSpace, m.selectedFloor[data.UserId])
+
 		case tempReleaseParkingActionId:
 			parkingSpace := ParkingKey(action.Value)
 			actions = m.handleTempReleaseParking(data, parkingSpace, m.selectedFloor[data.UserId])
+
 		case cancelTempReleaseParkingActionId:
 			parkingSpace := ParkingKey(action.Value)
 			actions = m.handleCancelTempReleaseParking(data, parkingSpace, m.selectedFloor[data.UserId])
+
 		case releaseStartDateActionId, releaseEndDateActionId:
 			selectedDate := action.SelectedDate
 			isStartDate := action.ActionID == releaseStartDateActionId
@@ -166,6 +175,22 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	}
 
 	startDateStr := submittedData[releaseStartDateActionId].SelectedDate
+	if startDateStr == "" {
+		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		errTxt := fmt.Sprintf(
+			"Failed to temporary release space %s: no start date provided",
+			spaceKey,
+		)
+		actions = []event.ResponseAction{
+			common.NewPostEphemeralAction(
+				data.UserId,
+				data.UserId,
+				slack.MsgOptionText(errTxt, false),
+			),
+		}
+		return common.NewResponseEvent(actions...)
+	}
+
 	startDate, err := time.Parse("2006-01-02", startDateStr)
 	if err != nil {
 		// Remote space from temporary release queue
@@ -189,6 +214,21 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	}
 
 	endDateStr := submittedData[releaseEndDateActionId].SelectedDate
+	if endDateStr == "" {
+		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		errTxt := fmt.Sprintf(
+			"Failed to temporary release space %s: no end date provided",
+			spaceKey,
+		)
+		actions = []event.ResponseAction{
+			common.NewPostEphemeralAction(
+				data.UserId,
+				data.UserId,
+				slack.MsgOptionText(errTxt, false),
+			),
+		}
+		return common.NewResponseEvent(actions...)
+	}
 	endDate, err := time.Parse("2006-01-02", endDateStr)
 	if err != nil {
 		// Remote space from temporary release queue
