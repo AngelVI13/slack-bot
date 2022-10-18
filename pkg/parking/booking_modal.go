@@ -2,6 +2,7 @@ package parking
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -157,7 +158,31 @@ func generateParkingPlanBlocks() []slack.Block {
 		nil,
 		nil,
 	)
-	return []slack.Block{description, outsideParking, minusOneParking, minusTwoParking}
+
+	now := time.Now()
+
+	todayYear, todayMonth, todayDay := now.Date()
+	if now.Hour() >= ResetHour && now.Minute() > ResetMin {
+		todayDay++
+	}
+
+	selectionEffectTime := slack.NewSectionBlock(
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			fmt.Sprintf("_Reservation is valid for %d-%d-%d_", todayYear, todayMonth, todayDay),
+			false,
+			false,
+		),
+		nil,
+		nil,
+	)
+	return []slack.Block{
+		description,
+		outsideParking,
+		minusOneParking,
+		minusTwoParking,
+		selectionEffectTime,
+	}
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
