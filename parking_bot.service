@@ -1,11 +1,10 @@
-[Unit]
-Description=Parking slack bot
+[Unit]                                                                                                                                                               [0/312]
+Description=Parking slack bot               
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target                                                             
 
-[Service]
-Restart=always
-WorkingDirectory=/home/tmt/Downloads/slack-bot
-ExecStart=./slack-bot
-
+[Service]                                   
+Restart=always                                                                         
+WorkingDirectory=/home/tmt/Downloads/slack-bot                                         
+ExecStart=/bin/bash -c "/home/tmt/Downloads/slack-bot/slack-bot"
