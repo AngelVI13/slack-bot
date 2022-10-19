@@ -93,10 +93,10 @@
 		"1st floor 102": {
 			"Number": 102,
 			"Floor": 1,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "jevgenijus.popovas",
-			"ReservedById": "U03F19CF4BH",
+			"ReservedBy": "",
+			"ReservedById": "",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 103": {
@@ -174,10 +174,10 @@
 		"1st floor 126": {
 			"Number": 126,
 			"Floor": 1,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "ilya.kustov",
-			"ReservedById": "U042GHQA51V",
+			"ReservedBy": "",
+			"ReservedById": "",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 127": {
@@ -228,19 +228,19 @@
 		"1st floor 134": {
 			"Number": 134,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "ilya.kustov",
+			"ReservedById": "U042GHQA51V",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 135": {
 			"Number": 135,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "kristijonas.jakas",
+			"ReservedById": "U044D49EU8N",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 136": {
@@ -390,10 +390,10 @@
 		"-2nd floor 118": {
 			"Number": 118,
 			"Floor": -2,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "vytautas.butkevicius",
-			"ReservedById": "U03FDFJHENQ",
+			"ReservedBy": "",
+			"ReservedById": "",
 			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
 		"-2nd floor 119": {
@@ -471,10 +471,10 @@
 		"-2nd floor 136": {
 			"Number": 136,
 			"Floor": -2,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "laima.strigo",
+			"ReservedById": "U03F55117EJ",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"-1st floor 38": {
@@ -498,10 +498,10 @@
 		"-1st floor 62": {
 			"Number": 62,
 			"Floor": -1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "vytautas.butkevicius",
+			"ReservedById": "U03FDFJHENQ",
 			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
 		"-1st floor 63": {

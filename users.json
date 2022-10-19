@@ -1,6 +1,6 @@
 {
     "angel.iliev": {
-        "rights": 1,
+        "rights": 0,
         "id": "U03FBL3R6KU",
         "has_parking": true
     },
@@ -188,6 +188,16 @@
       "rights":0,
       "id":"U03F8NLPR1T",
       "has_parking": true
+   },
+   "kristijonas.jakas":{
+	   "rights":0,
+	   "id":"U044D49EU8N",
+	   "has_parking": true
+   },
+   "laima.strigo":{
+	   "rights":0,
+	   "id":"U03F55117EJ",
+	   "has_parking": true
    },
    "ernestas.luza":{
       "rights":0,
