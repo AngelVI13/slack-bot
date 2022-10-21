@@ -93,10 +93,10 @@
 		"1st floor 102": {
 			"Number": 102,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "lukas.elenbergas",
+			"ReservedById": "U044FFNS10U",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 103": {
