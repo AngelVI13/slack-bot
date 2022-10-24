@@ -201,10 +201,10 @@
 		"1st floor 129": {
 			"Number": 129,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "zanas.kovaliovas",
+			"ReservedById": "U047RT091PD",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 132": {
