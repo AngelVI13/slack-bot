@@ -3,19 +3,19 @@
 		"1st floor 69": {
 			"Number": 69,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "augustas.sereika",
+			"ReservedById": "U03FL491Y4S",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 70": {
 			"Number": 70,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "julius.tumas",
+			"ReservedById": "U049RC3PY1Y",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 71": {
@@ -84,10 +84,10 @@
 		"1st floor 88": {
 			"Number": 88,
 			"Floor": 1,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "augustas.sereika",
-			"ReservedById": "U03FL491Y4S",
+			"ReservedBy": "",
+			"ReservedById": "",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 102": {
