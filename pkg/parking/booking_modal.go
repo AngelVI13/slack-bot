@@ -23,7 +23,7 @@ var (
 	defaultFloorOption = floors[0]
 )
 
-var parkingBookingTitle = Identifier + "Booking"
+var parkingBookingTitle = ParkingIdentifier + "Booking"
 
 func (m *Manager) generateBookingModalRequest(command event.Event, userId, selectedFloor, errorTxt string) slack.ModalViewRequest {
 	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, selectedFloor, errorTxt)
