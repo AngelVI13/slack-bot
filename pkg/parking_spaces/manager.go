@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	ParkingIdentifier = "Parking: "
-	// ParkingSlashCmd   = "/parking"
-	ParkingSlashCmd = "/test-park"
+	Identifier = "Parking: "
+	// SlashCmd   = "/parking"
+	SlashCmd = "/test-park"
 
 	ResetParking = "Reset parking status"
 	ResetHour    = 17
@@ -53,21 +53,11 @@ func (m *Manager) Consume(e event.Event) {
 	switch e.Type() {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
-
-		var response event.Event
-		switch data.Command {
-		case ParkingSlashCmd:
-			response = m.handleParkingSlashCmd(data)
-		case UsersSlashCmd:
-			response = m.handleUsersSlashCmd(data)
-		default:
+		if data.Command != SlashCmd {
 			return
 		}
+		response := m.handleSlashCmd(data)
 
-		if response == nil {
-			log.Printf("Unhandled slash command (no response) '%s'", data.Command)
-			return
-		}
 		m.eventManager.Publish(response)
 	case event.BlockActionEvent:
 		data := e.(*slackApi.BlockAction)
@@ -113,10 +103,10 @@ func (m *Manager) Consume(e event.Event) {
 }
 
 func (m *Manager) Context() string {
-	return ParkingIdentifier
+	return Identifier
 }
 
-func (m *Manager) handleParkingSlashCmd(data *slackApi.Slash) *common.Response {
+func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
 	selectedFloor := defaultFloorOption
 	selected, ok := m.selectedFloor[data.UserId]
@@ -124,20 +114,6 @@ func (m *Manager) handleParkingSlashCmd(data *slackApi.Slash) *common.Response {
 		selectedFloor = selected
 	}
 	modal := m.generateBookingModalRequest(data, data.UserId, selectedFloor, errorTxt)
-
-	action := common.NewOpenViewAction(data.TriggerId, modal)
-	response := common.NewResponseEvent(action)
-	return response
-}
-
-func (m *Manager) handleUsersSlashCmd(data *slackApi.Slash) *common.Response {
-	if !m.userManager.IsAdminId(data.UserId) {
-		errTxt := fmt.Sprintf("You don't have permission to execute '%s' command", UsersSlashCmd)
-		action := common.NewPostEphemeralAction(data.UserId, data.UserId, slack.MsgOptionText(errTxt, false))
-		return common.NewResponseEvent(action)
-	}
-
-	modal := m.generateUsersModalRequest(data, data.UserId)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
@@ -182,8 +158,6 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			isStartDate := action.ActionID == releaseStartDateActionId
 
 			actions = m.handleReleaseRange(data, selectedDate, isStartDate)
-		case userActionId:
-			log.Println("----------", action.SelectedUser)
 		}
 	}
 

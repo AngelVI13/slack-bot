@@ -7,7 +7,8 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
-	"github.com/AngelVI13/slack-bot/pkg/parking"
+	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
+	"github.com/AngelVI13/slack-bot/pkg/parking_users"
 	"github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/user"
 )
@@ -34,13 +35,24 @@ func main() {
 	eventManager.Subscribe(logger, event.AnyEvent)
 
 	timer := event.NewTimer(eventManager)
-	timer.AddDaily(parking.ResetHour, parking.ResetMin, parking.ResetParking)
+	timer.AddDaily(parking_spaces.ResetHour, parking_spaces.ResetMin, parking_spaces.ResetParking)
 
 	userManager := user.NewManager(config)
 
-	parkingManager := parking.NewManager(eventManager, config, userManager)
+	parkingSpacesManager := parking_spaces.NewManager(eventManager, config, userManager)
 	eventManager.SubscribeWithContext(
-		parkingManager,
+		parkingSpacesManager,
+		event.SlashCmdEvent,
+		event.ViewSubmissionEvent,
+		event.BlockActionEvent,
+		event.ViewOpenedEvent,
+		event.ViewClosedEvent,
+		event.TimerEvent,
+	)
+
+	parkingUsersManager := parking_users.NewManager(eventManager, userManager, parkingSpacesManager)
+	eventManager.SubscribeWithContext(
+		parkingUsersManager,
 		event.SlashCmdEvent,
 		event.ViewSubmissionEvent,
 		event.BlockActionEvent,

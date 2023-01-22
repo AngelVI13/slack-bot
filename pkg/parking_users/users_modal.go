@@ -16,7 +16,7 @@ const (
 	userPermanentSpaceOption = userPreffix + "PermanentSpaceOption"
 )
 
-var usersManagementTitle = UsersIdentifier + "Settings"
+var usersManagementTitle = Identifier + "Settings"
 
 func (m *Manager) generateUsersModalRequest(command event.Event, userId string) slack.ModalViewRequest {
 	// TODO: is userId actually needed here ?

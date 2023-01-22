@@ -14,7 +14,7 @@ const (
 	releaseBlockId           = "releaseBlockId"
 )
 
-var parkingReleaseTitle = ParkingIdentifier + "Temporary release a parking spot"
+var parkingReleaseTitle = Identifier + "Temporary release a parking spot"
 
 // NOTE: this is triggered by a block action (i.e. when user presses the
 // release button for a parking space)
