@@ -1,4 +1,4 @@
-package parking
+package parking_spaces
 
 import (
 	"encoding/json"

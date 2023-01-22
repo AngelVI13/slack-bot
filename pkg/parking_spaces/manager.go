@@ -1,4 +1,4 @@
-package parking
+package parking_spaces
 
 import (
 	"fmt"
@@ -15,12 +15,8 @@ import (
 
 const (
 	ParkingIdentifier = "Parking: "
-	ParkingSlashCmd   = "/parking"
-	// ParkingSlashCmd = "/test-park"
-
-	UsersIdentifier = "Users: "
-	UsersSlashCmd   = "/users"
-	// UsersSlashCmd = "/test-users"
+	// ParkingSlashCmd   = "/parking"
+	ParkingSlashCmd = "/test-park"
 
 	ResetParking = "Reset parking status"
 	ResetHour    = 17
@@ -57,8 +53,6 @@ func (m *Manager) Consume(e event.Event) {
 	switch e.Type() {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
-		log.Println(data)
-		log.Println(data.Command)
 
 		var response event.Event
 		switch data.Command {
@@ -188,6 +182,8 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			isStartDate := action.ActionID == releaseStartDateActionId
 
 			actions = m.handleReleaseRange(data, selectedDate, isStartDate)
+		case userActionId:
+			log.Println("----------", action.SelectedUser)
 		}
 	}
 

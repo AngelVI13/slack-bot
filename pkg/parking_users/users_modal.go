@@ -1,4 +1,4 @@
-package parking
+package parking_users
 
 import (
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -7,12 +7,13 @@ import (
 )
 
 const (
-	userActionId             = "userActionId"
-	userBlockId              = "userBlockId"
-	userOptionId             = "userOptionId"
-	userCheckboxActionId     = "userCheckboxActionId"
-	userRightsOption         = "userRightsOption"
-	userPermanentSpaceOption = "userPermanentSpaceOption"
+	userPreffix              = "user"
+	userActionId             = userPreffix + "ActionId"
+	userBlockId              = userPreffix + "BlockId"
+	userOptionId             = userPreffix + "OptionId"
+	userCheckboxActionId     = userPreffix + "CheckboxActionId"
+	userRightsOption         = userPreffix + "RightsOption"
+	userPermanentSpaceOption = userPreffix + "PermanentSpaceOption"
 )
 
 var usersManagementTitle = UsersIdentifier + "Settings"
