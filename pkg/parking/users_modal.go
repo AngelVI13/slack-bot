@@ -21,7 +21,6 @@ func (m *Manager) generateUsersModalRequest(command event.Event, userId string) 
 	// TODO: is userId actually needed here ?
 	// maybe it makes sense to disable user to change their own settings ?
 	sectionBlocks := m.generateUsersBlocks(userId)
-	// return common.GenerateInfoModalRequest(usersManagementTitle, sectionBlocks)
 	return common.GenerateModalRequest(usersManagementTitle, sectionBlocks)
 }
 
@@ -36,16 +35,15 @@ func (m *Manager) generateUsersBlocks(userId string) []slack.Block {
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	userText := slack.NewTextBlockObject(slack.PlainTextType, "Invitee from static list", false, false)
+	userText := slack.NewTextBlockObject(slack.PlainTextType, "User", false, false)
 	userOption := slack.NewOptionsSelectBlockElement(slack.OptTypeUser, userText, userActionId)
-	userBlock := slack.NewInputBlock(userBlockId, userText, nil, userOption)
+	userSection := slack.NewSectionBlock(userText, nil, slack.NewAccessory(userOption))
 
-	allBlocks = append(allBlocks, userBlock)
+	allBlocks = append(allBlocks, userSection)
 
-	// NOTE:
-	// Input with users select - this input will be included in the view_submission's view.state.values
-	// It can be fetched as for example "payload.View.State.Values["user"]["user"].SelectedUser"
-
+	// TODO: 1. only show checkboxes after user has been selected
+	// TODO: 2. their values should be taken from db/json files and prefilled
+	// TODO: 3. update value in db/json as soon as user selects/deselects a checkbox
 	var sectionBlocks []*slack.OptionBlockObject
 
 	adminOptionSectionBlock := slack.NewOptionBlockObject(
