@@ -65,7 +65,7 @@ func (c *Client) Listen() {
 			case socketmode.EventTypeInteractive:
 				// Handle interaction events i.e. user voted in our poll etc.
 				c.socket.Ack(*socketEvent.Request)
-				processedEvent = handleInteractionEvent(socketEvent)
+				processedEvent = handleInteractionEvent(socketEvent, c)
 			default:
 				// log.Println("Unknown event", socketEvent)
 			}

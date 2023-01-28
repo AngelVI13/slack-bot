@@ -20,11 +20,17 @@ const (
 	defaultUserOption = ""
 )
 
+type selectedUser struct {
+	UserId   string
+	UserName string
+}
+
 type Manager struct {
 	eventManager   *event.EventManager
 	userManager    *user.Manager
 	parkingManager *parking_spaces.Manager
-	selectedUser   map[string]string
+	slackClient    *slack.Client
+	selectedUser   map[string]*selectedUser
 }
 
 func NewManager(
@@ -36,7 +42,7 @@ func NewManager(
 		eventManager:   eventManager,
 		userManager:    userManager,
 		parkingManager: parkingManager,
-		selectedUser:   map[string]string{},
+		selectedUser:   map[string]*selectedUser{},
 	}
 }
 
@@ -69,7 +75,7 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		// Reset selected user
-		m.selectedUser[data.UserId] = defaultUserOption
+		m.selectedUser[data.UserId] = nil
 
 		// Changes take place as soon as user clicks checkbox
 		// There is nothing to do on view submission
@@ -88,21 +94,12 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 		return common.NewResponseEvent(action)
 	}
 
-	if m.selectedUser[data.UserId] != defaultUserOption {
-		errTxt := fmt.Sprintf(
-			"You already have a '%s' window opened."+
-				"Please close it first before openening a new one.",
-			SlashCmd,
-		)
-		action := common.NewPostEphemeralAction(data.UserId, data.UserId, slack.MsgOptionText(errTxt, false))
-		return common.NewResponseEvent(action)
-	}
-
+	selectedUserId := defaultUserOption
 	selectedUser, ok := m.selectedUser[data.UserId]
-	if !ok {
-		selectedUser = defaultUserOption
+	if ok && selectedUser != nil {
+		selectedUserId = selectedUser.UserId
 	}
-	modal := m.generateUsersModalRequest(data, selectedUser)
+	modal := m.generateUsersModalRequest(data, selectedUserId)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
@@ -113,14 +110,17 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	var actions []event.ResponseAction
 
 	if _, ok := m.selectedUser[data.UserId]; !ok {
-		m.selectedUser[data.UserId] = defaultUserOption
+		m.selectedUser[data.UserId] = nil
 	}
 
 	for _, action := range data.Actions {
 		switch action.ActionID {
 		case userActionId:
 			selectedUserId := action.SelectedUser
-			m.selectedUser[data.UserId] = selectedUserId
+			m.selectedUser[data.UserId] = &selectedUser{
+				UserId:   selectedUserId,
+				UserName: data.SelectedUserName,
+			}
 
 			// NOTE: In theory i should not need an empty modal but when we
 			// click a checkbox and then select a different user slack fails
@@ -149,18 +149,25 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				}
 			}
 
-			selectedUserId := m.selectedUser[data.UserId]
-			if !m.userManager.Exists(selectedUserId) {
-				// TODO: get username from slack
-				userName := ""
-				m.userManager.InsertUser(selectedUserId, userName)
+			selectedUser := m.selectedUser[data.UserId]
+			if !m.userManager.Exists(selectedUser.UserId) {
+				m.userManager.InsertUser(selectedUser.UserId, selectedUser.UserName)
 			}
 
-			m.userManager.SetAccessRights(selectedUserId, isAdmin)
-			m.userManager.SetParkingPermission(selectedUserId, hasParkingSpace)
+			userHadParking := m.userManager.HasParkingById(selectedUser.UserId)
+
+			m.userManager.SetAccessRights(selectedUser.UserId, isAdmin)
+			m.userManager.SetParkingPermission(selectedUser.UserId, hasParkingSpace)
 			m.userManager.SynchronizeToFile()
 
-			modal := m.generateUsersModalRequest(data, selectedUserId)
+			// TODO: add automatic handling for these cases
+			if userHadParking && !hasParkingSpace {
+				// TODO: Make his space reservation to auto release
+			} else if !userHadParking && hasParkingSpace {
+				// TODO: make his space reservation to permanent
+			}
+
+			modal := m.generateUsersModalRequest(data, selectedUser.UserId)
 			actions = append(actions, common.NewUpdateViewAction(
 				data.TriggerId, data.ViewId, modal,
 			))

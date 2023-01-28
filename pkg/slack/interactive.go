@@ -42,6 +42,7 @@ func (v ViewSubmission) String() string {
 
 type BlockAction struct {
 	Interaction
+	SelectedUserName string
 }
 
 func (b *BlockAction) Type() event.EventType {
@@ -99,7 +100,7 @@ func (v *ViewOpened) HasContext(c string) bool {
 	return strings.Contains(v.Title, c)
 }
 
-func handleInteractionEvent(socketEvent socketmode.Event) event.Event {
+func handleInteractionEvent(socketEvent socketmode.Event, c *Client) event.Event {
 	interactionCb, ok := socketEvent.Data.(slack.InteractionCallback)
 	if !ok {
 		log.Printf(
@@ -128,7 +129,10 @@ func handleInteractionEvent(socketEvent socketmode.Event) event.Event {
 	case slack.InteractionTypeViewSubmission:
 		event = &ViewSubmission{interaction}
 	case slack.InteractionTypeBlockActions:
-		event = &BlockAction{interaction}
+		event = &BlockAction{
+			Interaction:      interaction,
+			SelectedUserName: userNameForSelectedUser(interaction, c),
+		}
 	case slack.InteractionTypeViewClosed:
 		event = &ViewClosed{interaction}
 	default:
@@ -137,4 +141,19 @@ func handleInteractionEvent(socketEvent socketmode.Event) event.Event {
 	}
 
 	return event
+}
+
+func userNameForSelectedUser(interaction Interaction, c *Client) string {
+	if len(interaction.Actions) <= 0 {
+		return ""
+	}
+	userId := interaction.Actions[0].SelectedUser
+	if userId == "" {
+		return ""
+	}
+	userData, err := c.socket.Client.GetUserInfo(userId)
+	if err != nil || userData == nil {
+		return ""
+	}
+	return userData.Name
 }
