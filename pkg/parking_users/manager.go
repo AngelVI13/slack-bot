@@ -68,6 +68,9 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
+		// Reset selected user
+		m.selectedUser[data.UserId] = defaultUserOption
+
 		// Changes take place as soon as user clicks checkbox
 		// There is nothing to do on view submission
 		log.Println("Modal closed")
@@ -81,6 +84,16 @@ func (m *Manager) Context() string {
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	if !m.userManager.IsAdminId(data.UserId) {
 		errTxt := fmt.Sprintf("You don't have permission to execute '%s' command", SlashCmd)
+		action := common.NewPostEphemeralAction(data.UserId, data.UserId, slack.MsgOptionText(errTxt, false))
+		return common.NewResponseEvent(action)
+	}
+
+	if m.selectedUser[data.UserId] != defaultUserOption {
+		errTxt := fmt.Sprintf(
+			"You already have a '%s' window opened."+
+				"Please close it first before openening a new one.",
+			SlashCmd,
+		)
 		action := common.NewPostEphemeralAction(data.UserId, data.UserId, slack.MsgOptionText(errTxt, false))
 		return common.NewResponseEvent(action)
 	}
@@ -106,10 +119,51 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	for _, action := range data.Actions {
 		switch action.ActionID {
 		case userActionId:
-			m.selectedUser[data.UserId] = action.SelectedUser
+			selectedUserId := action.SelectedUser
+			m.selectedUser[data.UserId] = selectedUserId
 
-			modal := m.generateUsersModalRequest(data, action.SelectedUser)
-			actions = append(actions, common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal))
+			// NOTE: In theory i should not need an empty modal but when we
+			// click a checkbox and then select a different user slack fails
+			// to update the existing checkboxes with their new values.
+			// Thats why we update the view with a clean modal
+			// and then just load the modal with actual data afterwards
+			clearedModal := m.generateUsersModalRequest(data, defaultUserOption)
+			actions = append(actions, common.NewUpdateViewAction(
+				data.TriggerId, data.ViewId, clearedModal,
+			))
+
+			modalWithData := m.generateUsersModalRequest(data, selectedUserId)
+			actions = append(actions, common.NewUpdateViewAction(
+				data.TriggerId, data.ViewId, modalWithData,
+			))
+		case userOptionId:
+			isAdmin := user.STANDARD
+			hasParkingSpace := false
+
+			for _, option := range action.SelectedOptions {
+				if option.Value == userRightsOption {
+					isAdmin = user.ADMIN
+				}
+				if option.Value == userPermanentSpaceOption {
+					hasParkingSpace = true
+				}
+			}
+
+			selectedUserId := m.selectedUser[data.UserId]
+			if !m.userManager.Exists(selectedUserId) {
+				// TODO: get username from slack
+				userName := ""
+				m.userManager.InsertUser(selectedUserId, userName)
+			}
+
+			m.userManager.SetAccessRights(selectedUserId, isAdmin)
+			m.userManager.SetParkingPermission(selectedUserId, hasParkingSpace)
+			// TODO: sync updated data to file
+
+			modal := m.generateUsersModalRequest(data, selectedUserId)
+			actions = append(actions, common.NewUpdateViewAction(
+				data.TriggerId, data.ViewId, modal,
+			))
 		}
 	}
 

@@ -137,7 +137,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			actions = append(actions, common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal))
 
 		case reserveParkingActionId:
-			isSpecialUser := m.userManager.HasParking(data.UserName)
+			isSpecialUser := m.userManager.HasParkingById(data.UserId)
 			parkingSpace := ParkingKey(action.Value)
 			actions = m.handleReserveParking(data, parkingSpace, m.selectedFloor[data.UserId], isSpecialUser)
 

@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -71,14 +72,6 @@ func (m *Manager) synchronizeToFile() {
 	log.Println("INFO: Wrote users list to file")
 }
 
-func (m *Manager) IsAdmin(userName string) bool {
-	user, ok := m.users[userName]
-	if !ok {
-		return false
-	}
-	return user.Rights == ADMIN
-}
-
 func (m *Manager) IsAdminId(userId string) bool {
 	for _, user := range m.users {
 		if user.Id == userId {
@@ -88,12 +81,46 @@ func (m *Manager) IsAdminId(userId string) bool {
 	return false
 }
 
-func (m *Manager) HasParking(userName string) bool {
-	user, ok := m.users[userName]
-	if !ok {
-		return false
+func (m *Manager) SetAccessRights(userId string, rights AccessRight) {
+	for _, user := range m.users {
+		if user.Id == userId {
+			user.Rights = rights
+			return
+		}
 	}
-	return user.HasPermanentParking
+}
+
+func (m *Manager) SetParkingPermission(userId string, hasParking bool) {
+	for _, user := range m.users {
+		if user.Id == userId {
+			user.HasPermanentParking = hasParking
+			return
+		}
+	}
+}
+
+// InsertUser Inserts new user to user table with default
+// permissions: simple user with no parking.
+func (m *Manager) InsertUser(userId, userName string) error {
+	if m.Exists(userId) {
+		return fmt.Errorf("UserId (%s) already exists", userId)
+	}
+
+	if _, ok := m.users[userName]; ok {
+		return fmt.Errorf("UserName (%s) already exists", userName)
+	}
+
+	m.users[userName] = &User{Id: userId}
+	return nil
+}
+
+func (m *Manager) Exists(userId string) bool {
+	for _, user := range m.users {
+		if user.Id == userId {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Manager) HasParkingById(userId string) bool {

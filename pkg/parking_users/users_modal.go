@@ -18,14 +18,12 @@ const (
 
 var usersManagementTitle = Identifier + "Settings"
 
-func (m *Manager) generateUsersModalRequest(command event.Event, userId string) slack.ModalViewRequest {
-	// TODO: is userId actually needed here ?
-	// maybe it makes sense to disable user to change their own settings ?
-	sectionBlocks := m.generateUsersBlocks(userId)
+func (m *Manager) generateUsersModalRequest(command event.Event, selectedUserId string) slack.ModalViewRequest {
+	sectionBlocks := m.generateUsersBlocks(selectedUserId)
 	return common.GenerateModalRequest(usersManagementTitle, sectionBlocks)
 }
 
-func (m *Manager) generateUsersBlocks(userId string) []slack.Block {
+func (m *Manager) generateUsersBlocks(selectedUserId string) []slack.Block {
 	allBlocks := []slack.Block{}
 
 	text := "Select user for which to change settings"
@@ -38,17 +36,19 @@ func (m *Manager) generateUsersBlocks(userId string) []slack.Block {
 
 	userText := slack.NewTextBlockObject(slack.PlainTextType, "User", false, false)
 	userOption := slack.NewOptionsSelectBlockElement(slack.OptTypeUser, userText, userActionId)
-	if userId != defaultUserOption {
-		userOption.InitialUser = userId
+	if selectedUserId != defaultUserOption {
+		userOption.InitialUser = selectedUserId
 	}
 
 	userSection := slack.NewSectionBlock(userText, nil, slack.NewAccessory(userOption))
 
 	allBlocks = append(allBlocks, userSection)
 
-	// TODO: 1. only show checkboxes after user has been selected
-	// TODO: 2. their values should be taken from db/json files and prefilled
-	// TODO: 3. update value in db/json as soon as user selects/deselects a checkbox
+	// Do not add checkboxes if user is not selected
+	if selectedUserId == defaultUserOption {
+		return allBlocks
+	}
+
 	var sectionBlocks []*slack.OptionBlockObject
 
 	adminOptionSectionBlock := slack.NewOptionBlockObject(
@@ -66,13 +66,13 @@ func (m *Manager) generateUsersBlocks(userId string) []slack.Block {
 
 	deviceCheckboxGroup := slack.NewCheckboxGroupsBlockElement(userOptionId, sectionBlocks...)
 
-	if userId != defaultUserOption && m.userManager.IsAdminId(userId) {
+	if selectedUserId != defaultUserOption && m.userManager.IsAdminId(selectedUserId) {
 		deviceCheckboxGroup.InitialOptions = append(
 			deviceCheckboxGroup.InitialOptions, adminOptionSectionBlock,
 		)
 	}
 
-	if userId != defaultUserOption && m.userManager.HasParkingById(userId) {
+	if selectedUserId != defaultUserOption && m.userManager.HasParkingById(selectedUserId) {
 		deviceCheckboxGroup.InitialOptions = append(
 			deviceCheckboxGroup.InitialOptions, hasParkingOptionSectionBlock,
 		)
