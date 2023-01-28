@@ -85,7 +85,11 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 		return common.NewResponseEvent(action)
 	}
 
-	modal := m.generateUsersModalRequest(data, data.UserId)
+	selectedUser, ok := m.selectedUser[data.UserId]
+	if !ok {
+		selectedUser = defaultUserOption
+	}
+	modal := m.generateUsersModalRequest(data, selectedUser)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
@@ -103,6 +107,9 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 		switch action.ActionID {
 		case userActionId:
 			m.selectedUser[data.UserId] = action.SelectedUser
+
+			modal := m.generateUsersModalRequest(data, action.SelectedUser)
+			actions = append(actions, common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal))
 		}
 	}
 
