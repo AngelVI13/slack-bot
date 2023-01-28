@@ -38,7 +38,7 @@ func (m *Manager) generateParkingInfo(spaces SpacesInfo) []slack.Block {
 		emoji := space.GetStatusEmoji()
 
 		releaseScheduled := ""
-		releaseInfo := m.ParkingLot.ToBeReleased.Get(space.ParkingKey())
+		releaseInfo := m.parkingLot.ToBeReleased.Get(space.ParkingKey())
 		if releaseInfo != nil {
 			releaseScheduled = fmt.Sprintf(
 				"\n\t\tScheduled release from %s to %s",
@@ -75,7 +75,7 @@ func (m *Manager) generateParkingButtons(
 	isAdminUser := m.userManager.IsAdminId(userId)
 	hasPermanentParkingUser := m.userManager.HasParkingById(userId)
 
-	releaseInfo := m.ParkingLot.ToBeReleased.Get(space.ParkingKey())
+	releaseInfo := m.parkingLot.ToBeReleased.Get(space.ParkingKey())
 	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) && !releaseInfo.Cancelled {
 		cancelTempReleaseButton := slack.NewButtonBlockElement(
 			cancelTempReleaseParkingActionId,
@@ -116,8 +116,8 @@ func (m *Manager) generateParkingButtons(
 			buttons = append(buttons, releaseButton)
 		}
 	} else if (!space.Reserved &&
-		!m.ParkingLot.HasSpace(userId) &&
-		!m.ParkingLot.HasTempRelease(userId) &&
+		!m.parkingLot.HasSpace(userId) &&
+		!m.parkingLot.HasTempRelease(userId) &&
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
@@ -209,7 +209,7 @@ func (m *Manager) generateParkingInfoBlocks(userId, selectedFloor, errorTxt stri
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	spaces := m.ParkingLot.GetSpacesByFloor(userId, selectedFloor)
+	spaces := m.parkingLot.GetSpacesByFloor(userId, selectedFloor)
 	parkingSpaceSections := m.generateParkingInfo(spaces)
 
 	for idx, space := range spaces {
