@@ -59,7 +59,7 @@ func NewManager(config *config.Config) *Manager {
 	}
 }
 
-func (m *Manager) synchronizeToFile() {
+func (m *Manager) SynchronizeToFile() {
 	data, err := json.MarshalIndent(m.users, "", "\t")
 	if err != nil {
 		log.Fatal(err)

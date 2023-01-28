@@ -158,7 +158,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 			m.userManager.SetAccessRights(selectedUserId, isAdmin)
 			m.userManager.SetParkingPermission(selectedUserId, hasParkingSpace)
-			// TODO: sync updated data to file
+			m.userManager.SynchronizeToFile()
 
 			modal := m.generateUsersModalRequest(data, selectedUserId)
 			actions = append(actions, common.NewUpdateViewAction(
