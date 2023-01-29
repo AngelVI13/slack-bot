@@ -13,7 +13,7 @@ import (
 
 const (
 	Identifier = "Users: "
-	SlashCmd   = "/parking-users"
+	SlashCmd   = "/users-parking"
 	// SlashCmd = "/test-users"
 
 	defaultUserOption = ""
