@@ -2,7 +2,6 @@ package parking_users
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -14,8 +13,8 @@ import (
 
 const (
 	Identifier = "Users: "
-	// SlashCmd   = "/users"
-	SlashCmd = "/test-users"
+	SlashCmd   = "/parking-users"
+	// SlashCmd = "/test-users"
 
 	defaultUserOption = ""
 )

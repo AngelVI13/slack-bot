@@ -15,8 +15,8 @@ import (
 
 const (
 	Identifier = "Parking: "
-	// SlashCmd   = "/parking"
-	SlashCmd = "/test-park"
+	SlashCmd   = "/parking"
+	// SlashCmd = "/test-park"
 
 	ResetParking = "Reset parking status"
 	ResetHour    = 17
