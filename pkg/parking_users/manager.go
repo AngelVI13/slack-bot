@@ -2,6 +2,7 @@ package parking_users
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -49,6 +50,7 @@ func (m *Manager) Consume(e event.Event) {
 	switch e.Type() {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
+		log.Println(data.Command, SlashCmd)
 		if data.Command != SlashCmd {
 			return
 		}
