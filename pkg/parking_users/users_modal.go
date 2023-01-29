@@ -49,6 +49,12 @@ func (m *Manager) generateUsersBlocks(selectedUserId string) []slack.Block {
 		return allBlocks
 	}
 
+	warningText := ":warning: *Before changing parking rights " +
+		"make sure the user has NOT booked any parking space!*"
+	warningSectionText := slack.NewTextBlockObject("mrkdwn", warningText, false, false)
+	warningSectionBlock := slack.NewSectionBlock(warningSectionText, nil, nil)
+	allBlocks = append(allBlocks, warningSectionBlock)
+
 	var sectionBlocks []*slack.OptionBlockObject
 
 	adminOptionSectionBlock := slack.NewOptionBlockObject(

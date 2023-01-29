@@ -79,7 +79,6 @@ func (m *Manager) Consume(e event.Event) {
 
 		// Changes take place as soon as user clicks checkbox
 		// There is nothing to do on view submission
-		log.Println("Modal closed")
 	}
 }
 
