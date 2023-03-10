@@ -1,99 +1,279 @@
 {
 	"ParkingSpaces": {
-		"1st floor 69": {
-			"Number": 69,
-			"Floor": 1,
+		"-1st floor 38": {
+			"Number": 38,
+			"Floor": -1,
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"ReservedBy": "justina.krasinskaite-",
+			"ReservedById": "U03F5J7EDLP",
+			"ReservedTime": "2023-03-08T20:52:34.340513856+02:00"
 		},
-		"1st floor 70": {
-			"Number": 70,
-			"Floor": 1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"1st floor 71": {
-			"Number": 71,
-			"Floor": 1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"1st floor 72": {
-			"Number": 72,
-			"Floor": 1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"1st floor 73": {
-			"Number": 73,
-			"Floor": 1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"1st floor 84": {
-			"Number": 84,
-			"Floor": 1,
+		"-1st floor 61": {
+			"Number": 61,
+			"Floor": -1,
 			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "rokas.naujalis",
-			"ReservedById": "U03FBHQPWV9",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+			"ReservedBy": "evelina.bernataviciut",
+			"ReservedById": "U03ENHGR7U4",
+			"ReservedTime": "2023-02-16T22:06:21.740954352+02:00"
 		},
-		"1st floor 85": {
-			"Number": 85,
-			"Floor": 1,
+		"-1st floor 62": {
+			"Number": 62,
+			"Floor": -1,
+			"Reserved": true,
+			"AutoRelease": true,
+			"ReservedBy": "sandra.aleksieje",
+			"ReservedById": "U03E6NZQVTR",
+			"ReservedTime": "2023-03-10T09:26:17.889004464+02:00"
+		},
+		"-1st floor 63": {
+			"Number": 63,
+			"Floor": -1,
 			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "aurimas.razmis",
-			"ReservedById": "U03FEANSULC",
-			"ReservedTime": "2022-10-10T13:51:14.80024961+03:00"
+			"ReservedBy": "linas.ramanauskas",
+			"ReservedById": "U03F8EGKV0D",
+			"ReservedTime": "2023-01-13T10:07:50.183937572+02:00"
 		},
-		"1st floor 86": {
-			"Number": 86,
-			"Floor": 1,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "lina.vasiliauskiene",
-			"ReservedById": "U03F5998DDL",
-			"ReservedTime": "2022-10-10T13:51:21.754251058+03:00"
-		},
-		"1st floor 87": {
-			"Number": 87,
-			"Floor": 1,
+		"-1st floor 64": {
+			"Number": 64,
+			"Floor": -1,
 			"Reserved": true,
 			"AutoRelease": false,
 			"ReservedBy": "dmitrij.zylkov",
 			"ReservedById": "U03FEAQ3N3W",
-			"ReservedTime": "2022-10-10T13:51:43.265486245+03:00"
+			"ReservedTime": "2022-12-13T13:12:35.018051189+02:00"
 		},
-		"1st floor 88": {
-			"Number": 88,
-			"Floor": 1,
+		"-2nd floor 100": {
+			"Number": 100,
+			"Floor": -2,
 			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "augustas.sereika",
-			"ReservedById": "U03FL491Y4S",
+			"ReservedBy": "daniel.klioc",
+			"ReservedById": "U03F8U4B4LV",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 101": {
+			"Number": 101,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "vygintas.simonavicius",
+			"ReservedById": "U03EJD1FLR3",
+			"ReservedTime": "2023-01-18T17:02:54.60234142+02:00"
+		},
+		"-2nd floor 102": {
+			"Number": 102,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "mantas.kuncevicius",
+			"ReservedById": "U03F87PP1QD",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 103": {
+			"Number": 103,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "andrius.genys",
+			"ReservedById": "U03TT195MNX",
+			"ReservedTime": "2023-01-31T11:09:26.970564389+02:00"
+		},
+		"-2nd floor 104": {
+			"Number": 104,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "vidas.mikulskis",
+			"ReservedById": "U045QKVTY2K",
+			"ReservedTime": "2023-01-06T08:45:23.965488354+02:00"
+		},
+		"-2nd floor 105": {
+			"Number": 105,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "gintaras.vaira",
+			"ReservedById": "U03FBUSCHK8",
+			"ReservedTime": "2023-02-10T11:59:53.597394432+02:00"
+		},
+		"-2nd floor 106": {
+			"Number": 106,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "vytautas.aukstikalnis",
+			"ReservedById": "U03FBB7ATAP",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 107": {
+			"Number": 107,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "mirga.abramavice",
+			"ReservedById": "U03EDHQ4RQW",
+			"ReservedTime": "2022-12-27T08:08:07.095184722+02:00"
+		},
+		"-2nd floor 114": {
+			"Number": 114,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "andrius.vaitkunas",
+			"ReservedById": "U03EXKV281M",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 115": {
+			"Number": 115,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "kiryl.shmarlouski742",
+			"ReservedById": "U03KP2U6J4V",
+			"ReservedTime": "2023-02-27T14:46:50.566357722+02:00"
+		},
+		"-2nd floor 116": {
+			"Number": 116,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "einaras.daujotas",
+			"ReservedById": "U03FPUQNF0R",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 117": {
+			"Number": 117,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "ignas.ragaisis",
+			"ReservedById": "U03FUQEADB2",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 118": {
+			"Number": 118,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "ingrida.navickiene",
+			"ReservedById": "U03F5HR66H4",
+			"ReservedTime": "2023-01-30T09:50:08.135682666+02:00"
+		},
+		"-2nd floor 119": {
+			"Number": 119,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "vytautas.gliaudelis",
+			"ReservedById": "U046V3F78DN",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 120": {
+			"Number": 120,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "aurimas.razmis",
+			"ReservedById": "U03FEANSULC",
+			"ReservedTime": "2022-12-19T13:33:13.529598894+02:00"
+		},
+		"-2nd floor 121": {
+			"Number": 121,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "angel.iliev",
+			"ReservedById": "U03FBL3R6KU",
+			"ReservedTime": "2023-02-28T06:41:36.484947744+02:00"
+		},
+		"-2nd floor 122": {
+			"Number": 122,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "anupras.laureckis",
+			"ReservedById": "U03LPJ6HB9P",
+			"ReservedTime": "2023-02-13T08:52:19.27217344+02:00"
+		},
+		"-2nd floor 128": {
+			"Number": 128,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "dovile.ramanauskaite",
+			"ReservedById": "U03F8HU7GLD",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+		},
+		"-2nd floor 129": {
+			"Number": 129,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "anastasia.kovalchuk",
+			"ReservedById": "U045VFB5E9J",
+			"ReservedTime": "2023-03-03T08:29:07.56806306+02:00"
+		},
+		"-2nd floor 134": {
+			"Number": 134,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "dmitrij.vlasov",
+			"ReservedById": "U03F8NLPR1T",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 135": {
+			"Number": 135,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "ernestas.luza",
+			"ReservedById": "U03FDFJU28L",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"-2nd floor 136": {
+			"Number": 136,
+			"Floor": -2,
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "laima.strigo",
+			"ReservedById": "U03F55117EJ",
+			"ReservedTime": "2023-02-23T10:14:31.977044703+02:00"
+		},
+		"-2nd floor 70": {
+			"Number": 70,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "ieva.sukyte",
+			"ReservedById": "U03PNFFGMGE",
+			"ReservedTime": "2023-01-17T08:41:35.488027533+02:00"
+		},
+		"-2nd floor 71": {
+			"Number": 71,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": true,
+			"ReservedBy": "donatas.gustaitis",
+			"ReservedById": "U03FB4P069Z",
+			"ReservedTime": "2023-03-09T21:09:14.355547935+02:00"
+		},
+		"-2nd floor 99": {
+			"Number": 99,
+			"Floor": -2,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "sergey.berezko",
+			"ReservedById": "U03FCDYFN03",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
 		},
 		"1st floor 102": {
 			"Number": 102,
 			"Floor": 1,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
 			"ReservedBy": "lukas.elenbergas",
 			"ReservedById": "U044FFNS10U",
@@ -140,9 +320,9 @@
 			"Floor": 1,
 			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "andrius.genys",
-			"ReservedById": "U03TT195MNX",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"ReservedBy": "vakaris.vaitulevicius",
+			"ReservedById": "U04NL5VG7TL",
+			"ReservedTime": "2023-02-08T15:32:05.903010362+02:00"
 		},
 		"1st floor 123": {
 			"Number": 123,
@@ -174,354 +354,275 @@
 		"1st floor 126": {
 			"Number": 126,
 			"Floor": 1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"Reserved": true,
+			"AutoRelease": true,
+			"ReservedBy": "mindaugas.ramonas",
+			"ReservedById": "U03EX9E5YLF",
+			"ReservedTime": "2023-03-10T12:44:52.418422934+02:00"
 		},
 		"1st floor 127": {
 			"Number": 127,
 			"Floor": 1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"Reserved": true,
+			"AutoRelease": true,
+			"ReservedBy": "danielius.kuoja",
+			"ReservedById": "U03V2TV86LF",
+			"ReservedTime": "2023-03-10T09:08:18.041024674+02:00"
 		},
 		"1st floor 128": {
 			"Number": 128,
 			"Floor": 1,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "ingrida.navickiene",
-			"ReservedById": "U03F5HR66H4",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"ReservedBy": "zhenekas",
+			"ReservedById": "U03F19CF4BH",
+			"ReservedTime": "2023-03-06T09:23:14.589941174+02:00"
 		},
 		"1st floor 129": {
 			"Number": 129,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
+			"ReservedBy": "zanas.kovaliovas",
+			"ReservedById": "U047RT091PD",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
 		"1st floor 132": {
 			"Number": 132,
 			"Floor": 1,
-			"Reserved": false,
+			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"ReservedBy": "kristijonas.jakas",
+			"ReservedById": "U044D49EU8N",
+			"ReservedTime": "2023-02-21T08:59:33.774172254+02:00"
 		},
 		"1st floor 133": {
 			"Number": 133,
 			"Floor": 1,
 			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"AutoRelease": true,
+			"ReservedBy": "jonas.zilionis",
+			"ReservedById": "U04MS1M7CQG",
+			"ReservedTime": "2023-03-09T17:08:48.185040456+02:00"
 		},
-		"1st floor 134": {
-			"Number": 134,
+		"1st floor 95": {
+			"Number": 95,
 			"Floor": 1,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "ilya.kustov",
-			"ReservedById": "U042GHQA51V",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"ReservedBy": "ugnius.smidtas",
+			"ReservedById": "U04RCA59EF5",
+			"ReservedTime": "2023-03-09T08:56:35.772373048+02:00"
 		},
-		"1st floor 135": {
-			"Number": 135,
+		"1st floor 96": {
+			"Number": 96,
 			"Floor": 1,
-			"Reserved": true,
+			"Reserved": false,
 			"AutoRelease": false,
 			"ReservedBy": "kristijonas.jakas",
 			"ReservedById": "U044D49EU8N",
 			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
 		},
-		"1st floor 136": {
-			"Number": 136,
+		"1st floor 110": {
+			"Number": 110,
 			"Floor": 1,
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"ReservedBy": "simonas.neliubsys",
+			"ReservedById": "U04K9EJR532",
+			"ReservedTime": "2023-01-13T08:52:59.694240232+02:00"
 		},
-		"-2nd floor 70": {
+		"1st floor 69": {
+			"Number": 69,
+			"Floor": 1,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "augustas.sereika",
+			"ReservedById": "U03FL491Y4S",
+			"ReservedTime": "2022-11-09T14:34:04.719911469+02:00"
+		},
+		"1st floor 70": {
 			"Number": 70,
-			"Floor": -2,
+			"Floor": 1,
 			"Reserved": true,
 			"AutoRelease": false,
-			"ReservedBy": "ieva.sukyte",
-			"ReservedById": "U03PNFFGMGE",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+			"ReservedBy": "julius.tumas",
+			"ReservedById": "U049RC3PY1Y",
+			"ReservedTime": "2022-11-08T07:28:46.958265537+02:00"
 		},
-		"-2nd floor 71": {
+		"1st floor 71": {
 			"Number": 71,
-			"Floor": -2,
+			"Floor": 1,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "ilya.kustov",
+			"ReservedById": "U042GHQA51V",
+			"ReservedTime": "2023-02-02T13:26:07.521796954+02:00"
+		},
+		"1st floor 72": {
+			"Number": 72,
+			"Floor": 1,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "lina.vasiliauskiene",
+			"ReservedById": "U03F5998DDL",
+			"ReservedTime": "2022-12-14T09:29:55.194150451+02:00"
+		},
+		"1st floor 73": {
+			"Number": 73,
+			"Floor": 1,
+			"Reserved": false,
+			"AutoRelease": true,
+			"ReservedBy": "ugnius.smidtas",
+			"ReservedById": "U04RCA59EF5",
+			"ReservedTime": "2023-03-09T08:53:17.807818656+02:00"
+		},
+		"1st floor 84": {
+			"Number": 84,
+			"Floor": 1,
+			"Reserved": true,
+			"AutoRelease": false,
+			"ReservedBy": "rokas.naujalis",
+			"ReservedById": "U03FBHQPWV9",
+			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+		},
+		"1st floor 85": {
+			"Number": 85,
+			"Floor": 1,
+			"Reserved": false,
+			"AutoRelease": true,
+			"ReservedBy": "ugnius.smidtas",
+			"ReservedById": "U04RCA59EF5",
+			"ReservedTime": "2023-03-06T09:08:14.797056695+02:00"
+		},
+		"1st floor 86": {
+			"Number": 86,
+			"Floor": 1,
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"ReservedBy": "kestutis.zaltauskas",
+			"ReservedById": "U03FBAZ9D0S",
+			"ReservedTime": "2023-01-09T08:37:28.30560464+02:00"
 		},
-		"-2nd floor 99": {
-			"Number": 99,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "sergey.berezko",
-			"ReservedById": "U03FCDYFN03",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 100": {
-			"Number": 100,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "daniel.klioc",
-			"ReservedById": "U03F8U4B4LV",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 101": {
-			"Number": 101,
-			"Floor": -2,
+		"1st floor 87": {
+			"Number": 87,
+			"Floor": 1,
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
+			"ReservedBy": "dmitrij.zylkov",
+			"ReservedById": "U03FEAQ3N3W",
+			"ReservedTime": "2022-10-10T13:51:43.265486245+03:00"
 		},
-		"-2nd floor 102": {
-			"Number": 102,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "mantas.kuncevicius",
-			"ReservedById": "U03F87PP1QD",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 103": {
-			"Number": 103,
-			"Floor": -2,
+		"1st floor 88": {
+			"Number": 88,
+			"Floor": 1,
 			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"-2nd floor 104": {
-			"Number": 104,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "vidas.mikulskis",
-			"ReservedById": "U045QKVTY2K",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 105": {
-			"Number": 105,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "gintaras.vaira",
-			"ReservedById": "U03FBUSCHK8",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 106": {
-			"Number": 106,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "vytautas.aukstikalnis",
-			"ReservedById": "U03FBB7ATAP",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 107": {
-			"Number": 107,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "mirga.abramavice",
-			"ReservedById": "U03EDHQ4RQW",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 114": {
-			"Number": 114,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "andrius.vaitkunas",
-			"ReservedById": "U03EXKV281M",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 115": {
-			"Number": 115,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "kiryl.shmarlouski",
-			"ReservedById": "U03KP2U6J4V",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 116": {
-			"Number": 116,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "einaras.daujotas",
-			"ReservedById": "U03FPUQNF0R",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 117": {
-			"Number": 117,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "ignas.ragaisis",
-			"ReservedById": "U03FUQEADB2",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 118": {
-			"Number": 118,
-			"Floor": -2,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 119": {
-			"Number": 119,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "vytautas.gliaudelis",
-			"ReservedById": "U046V3F78DN",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 120": {
-			"Number": 120,
-			"Floor": -2,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"-2nd floor 121": {
-			"Number": 121,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "angel.iliev",
-			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 122": {
-			"Number": 122,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "anupras.laureckis",
-			"ReservedById": "U03LPJ6HB9P",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 128": {
-			"Number": 128,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "dovile.ramanauskaite",
-			"ReservedById": "U03F8HU7GLD",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"-2nd floor 129": {
-			"Number": 129,
-			"Floor": -2,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"-2nd floor 134": {
-			"Number": 134,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "dmitrij.vlasov",
-			"ReservedById": "U03F8NLPR1T",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 135": {
-			"Number": 135,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "ernestas.luza",
-			"ReservedById": "U03FDFJU28L",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-2nd floor 136": {
-			"Number": 136,
-			"Floor": -2,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "laima.strigo",
-			"ReservedById": "U03F55117EJ",
-			"ReservedTime": "2022-10-10T12:52:22.961478165+03:00"
-		},
-		"-1st floor 38": {
-			"Number": 38,
-			"Floor": -1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-1st floor 61": {
-			"Number": 61,
-			"Floor": -1,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "evelina.bernataviciute",
-			"ReservedById": "U03ENHGR7U4",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-1st floor 62": {
-			"Number": 62,
-			"Floor": -1,
-			"Reserved": true,
-			"AutoRelease": false,
-			"ReservedBy": "vytautas.butkevicius",
-			"ReservedById": "U03FDFJHENQ",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-1st floor 63": {
-			"Number": 63,
-			"Floor": -1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"-1st floor 64": {
-			"Number": 64,
-			"Floor": -1,
-			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
+			"AutoRelease": true,
+			"ReservedBy": "lukas.smicys",
+			"ReservedById": "U04MDCCHUF7",
+			"ReservedTime": "2023-02-02T08:39:48.669187934+02:00"
 		}
 	},
-	"ToBeReleased": {}
+	"ToBeReleased": {
+		"-1st floor 38": {
+			"ReleaserId": "U03NW7LJBCG",
+			"OwnerId": "U03NW7LJBCG",
+			"OwnerName": "aleksandras.sevcik",
+			"Space": {
+				"Number": 38,
+				"Floor": -1,
+				"Reserved": false,
+				"AutoRelease": false,
+				"ReservedBy": "justina.krasinskaite-",
+				"ReservedById": "U03F5J7EDLP",
+				"ReservedTime": "2023-03-08T20:52:34.340513856+02:00"
+			},
+			"StartDate": "2023-03-09T00:00:00Z",
+			"EndDate": "2023-03-11T00:00:00Z",
+			"Submitted": true,
+			"Cancelled": false,
+			"RootViewId": "",
+			"ViewId": ""
+		},
+		"-1st floor 61": {
+			"ReleaserId": "U03ENHGR7U4",
+			"OwnerId": "U03ENHGR7U4",
+			"OwnerName": "evelina.bernataviciut",
+			"Space": {
+				"Number": 61,
+				"Floor": -1,
+				"Reserved": true,
+				"AutoRelease": false,
+				"ReservedBy": "evelina.bernataviciut",
+				"ReservedById": "U03ENHGR7U4",
+				"ReservedTime": "2023-02-16T22:06:21.740954352+02:00"
+			},
+			"StartDate": "2023-03-10T00:00:00Z",
+			"EndDate": "2023-03-10T00:00:00Z",
+			"Submitted": true,
+			"Cancelled": false,
+			"RootViewId": "",
+			"ViewId": ""
+		},
+		"-1st floor 62": {
+			"ReleaserId": "U03FDFJHENQ",
+			"OwnerId": "U03FDFJHENQ",
+			"OwnerName": "vytautas.butkevicius",
+			"Space": {
+				"Number": 62,
+				"Floor": -1,
+				"Reserved": true,
+				"AutoRelease": true,
+				"ReservedBy": "mindaugas.mazeika",
+				"ReservedById": "U048VN66HPH",
+				"ReservedTime": "2023-03-06T21:06:42.3259001+02:00"
+			},
+			"StartDate": "2023-03-06T00:00:00Z",
+			"EndDate": "2023-03-19T00:00:00Z",
+			"Submitted": true,
+			"Cancelled": false,
+			"RootViewId": "",
+			"ViewId": ""
+		},
+		"-2nd floor 136": {
+			"ReleaserId": "U03F55117EJ",
+			"OwnerId": "U03F55117EJ",
+			"OwnerName": "laima.strigo",
+			"Space": {
+				"Number": 136,
+				"Floor": -2,
+				"Reserved": false,
+				"AutoRelease": false,
+				"ReservedBy": "laima.strigo",
+				"ReservedById": "U03F55117EJ",
+				"ReservedTime": "2023-02-23T10:14:31.977044703+02:00"
+			},
+			"StartDate": "2023-03-09T00:00:00Z",
+			"EndDate": "2023-03-10T00:00:00Z",
+			"Submitted": true,
+			"Cancelled": false,
+			"RootViewId": "",
+			"ViewId": ""
+		},
+		"1st floor 128": {
+			"ReleaserId": "U03F19CF4BH",
+			"OwnerId": "U03F19CF4BH",
+			"OwnerName": "zhenekas",
+			"Space": {
+				"Number": 128,
+				"Floor": 1,
+				"Reserved": false,
+				"AutoRelease": false,
+				"ReservedBy": "zhenekas",
+				"ReservedById": "U03F19CF4BH",
+				"ReservedTime": "2023-03-06T09:23:14.589941174+02:00"
+			},
+			"StartDate": "2023-03-10T00:00:00Z",
+			"EndDate": "2023-03-14T00:00:00Z",
+			"Submitted": true,
+			"Cancelled": false,
+			"RootViewId": "",
+			"ViewId": ""
+		}
+	}
 }
