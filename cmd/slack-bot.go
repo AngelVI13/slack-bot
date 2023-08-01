@@ -15,7 +15,7 @@ import (
 
 func setupLogging(logPath string) {
 	// Configure logger
-	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
 		log.Fatalf("error opening log file: %v", err)
 	}
@@ -27,15 +27,26 @@ func setupLogging(logPath string) {
 
 func main() {
 	setupLogging("slack-bot.log")
-	config := config.NewConfigFromEnv(".env")
+	config := config.NewConfigFromEnv("test.env")
 
 	eventManager := event.NewEventManager()
 
 	logger := event.NewEventLogger()
 	eventManager.Subscribe(logger, event.AnyEvent)
 
-	timer := event.NewTimer(eventManager)
-	timer.AddDaily(parking_spaces.ResetHour, parking_spaces.ResetMin, parking_spaces.ResetParking)
+	autoReleaseTimer := event.NewTimer(eventManager)
+	autoReleaseTimer.AddDaily(
+		parking_spaces.ResetHour,
+		parking_spaces.ResetMin,
+		parking_spaces.ResetParking,
+	)
+
+	reminderTimer := event.NewTimer(eventManager)
+	reminderTimer.AddDaily(
+		parking_spaces.ResetHour,
+		parking_spaces.ResetMin,
+		parking_spaces.ResetParking,
+	)
 
 	userManager := user.NewManager(config)
 
@@ -50,7 +61,11 @@ func main() {
 		event.TimerEvent,
 	)
 
-	parkingUsersManager := parking_users.NewManager(eventManager, userManager, parkingSpacesManager)
+	parkingUsersManager := parking_users.NewManager(
+		eventManager,
+		userManager,
+		parkingSpacesManager,
+	)
 	eventManager.SubscribeWithContext(
 		parkingUsersManager,
 		event.SlashCmdEvent,

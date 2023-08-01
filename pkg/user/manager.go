@@ -41,7 +41,10 @@ func getUsers(path string) (users UsersMap) {
 		log.Fatalf("No users found in (%s).", path)
 	}
 
-	log.Printf("INIT: User list loaded successfully (%d users configured)", loadedUsersNum)
+	log.Printf(
+		"INIT: User list loaded successfully (%d users configured)",
+		loadedUsersNum,
+	)
 	return users
 }
 
@@ -65,7 +68,7 @@ func (m *Manager) SynchronizeToFile() {
 		log.Fatal(err)
 	}
 
-	err = os.WriteFile(m.usersFilename, data, 0666)
+	err = os.WriteFile(m.usersFilename, data, 0o666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,4 +142,15 @@ func (m *Manager) GetNameFromId(userId string) string {
 		}
 	}
 	return ""
+}
+
+// Users returns a copy of the user list data
+func (m *Manager) Users() map[string]User {
+	userMapCopy := make(map[string]User, len(m.users))
+
+	for name, user := range m.users {
+		userMapCopy[name] = *user
+	}
+
+	return userMapCopy
 }

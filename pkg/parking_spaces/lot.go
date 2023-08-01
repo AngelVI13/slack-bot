@@ -41,7 +41,7 @@ func (d *ParkingLot) SynchronizeToFile() {
 		log.Fatal(err)
 	}
 
-	err = os.WriteFile(d.config.ParkingFilename, data, 0666)
+	err = os.WriteFile(d.config.ParkingFilename, data, 0o666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func (d *ParkingLot) synchronizeFromFile(data []byte) {
 
 	// Do not load any submitted items from to be released map
 	for space, info := range d.ToBeReleased {
-		if info.Submitted != true {
+		if !info.Submitted {
 			delete(d.ToBeReleased, space)
 		}
 	}
@@ -155,10 +155,17 @@ func (d *ParkingLot) GetSpacesInfo(userId string) SpacesInfo {
 	return allSpaces
 }
 
-func (l *ParkingLot) Reserve(parkingSpace ParkingKey, user, userId string, autoRelease bool) (errMsg string) {
+func (l *ParkingLot) Reserve(
+	parkingSpace ParkingKey,
+	user, userId string,
+	autoRelease bool,
+) (errMsg string) {
 	space := l.GetSpace(parkingSpace)
 	if space == nil {
-		return fmt.Sprintf("Failed to reserve space: couldn't find the space %s", parkingSpace)
+		return fmt.Sprintf(
+			"Failed to reserve space: couldn't find the space %s",
+			parkingSpace,
+		)
 	}
 
 	// Only inform user if it was someone else that tried to reserved his space.
@@ -189,10 +196,16 @@ func (l *ParkingLot) Reserve(parkingSpace ParkingKey, user, userId string, autoR
 	return ""
 }
 
-func (l *ParkingLot) Release(parkingSpace ParkingKey, userName, userId string) (victimId, errMsg string) {
+func (l *ParkingLot) Release(
+	parkingSpace ParkingKey,
+	userName, userId string,
+) (victimId, errMsg string) {
 	space := l.GetSpace(parkingSpace)
 	if space == nil {
-		return userId, fmt.Sprintf("Failed to release space: couldn't find the space %s", parkingSpace)
+		return userId, fmt.Sprintf(
+			"Failed to release space: couldn't find the space %s",
+			parkingSpace,
+		)
 	}
 
 	log.Printf("PARKING_RELEASE: User (%s) released (%s) space.", userName, parkingSpace)
@@ -208,7 +221,6 @@ func (l *ParkingLot) Release(parkingSpace ParkingKey, userName, userId string) (
 				space.ReservedBy,
 				parkingSpace,
 			)
-
 	}
 	return "", ""
 }
@@ -242,7 +254,8 @@ func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
 
 		// On the day before the start of the release -> make the space
 		// available for selection
-		if releaseInfo.StartDate.Sub(cTime).Hours() < 24 && releaseInfo.StartDate.After(cTime) {
+		if releaseInfo.StartDate.Sub(cTime).Hours() < 24 &&
+			releaseInfo.StartDate.After(cTime) {
 			log.Println("TempRelease space ", spaceKey, releaseInfo)
 			space.Reserved = false
 			space.AutoRelease = false

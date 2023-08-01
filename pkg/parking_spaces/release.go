@@ -156,7 +156,7 @@ func (q ReleaseMap) Add(
 ) (*ReleaseInfo, error) {
 	spaceKey := space.ParkingKey()
 	if q.Get(spaceKey) != nil {
-		return nil, fmt.Errorf("Space %s already marked for release.", spaceKey)
+		return nil, fmt.Errorf("space %s already marked for release", spaceKey)
 	}
 
 	releaseInfo := &ReleaseInfo{
