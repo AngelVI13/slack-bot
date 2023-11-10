@@ -5,6 +5,7 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
+	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
 
@@ -20,7 +21,7 @@ var parkingReleaseTitle = Identifier + "Temporary release a parking spot"
 // release button for a parking space)
 func generateReleaseModalRequest(
 	command *slackApi.BlockAction,
-	space *ParkingSpace,
+	space *spaces.Space,
 	errorTxt string,
 ) slack.ModalViewRequest {
 	allBlocks := generateReleaseModalBlocks(command, space, errorTxt)
@@ -31,7 +32,7 @@ func generateReleaseModalRequest(
 
 func generateReleaseModalBlocks(
 	command *slackApi.BlockAction,
-	space *ParkingSpace,
+	space *spaces.Space,
 	errorTxt string,
 ) []slack.Block {
 	description := slack.NewSectionBlock(
@@ -47,10 +48,20 @@ func generateReleaseModalBlocks(
 	)
 
 	startDate := slack.NewDatePickerBlockElement(releaseStartDateActionId)
-	startDate.Placeholder = slack.NewTextBlockObject("plain_text", "Select START date", false, false)
+	startDate.Placeholder = slack.NewTextBlockObject(
+		"plain_text",
+		"Select START date",
+		false,
+		false,
+	)
 
 	endDate := slack.NewDatePickerBlockElement(releaseEndDateActionId)
-	endDate.Placeholder = slack.NewTextBlockObject("plain_text", "Select END date", false, false)
+	endDate.Placeholder = slack.NewTextBlockObject(
+		"plain_text",
+		"Select END date",
+		false,
+		false,
+	)
 
 	calendarsSection := slack.NewActionBlock(
 		releaseBlockId,

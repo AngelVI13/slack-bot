@@ -1,4 +1,4 @@
-package parking_spaces
+package spaces
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ type ReleaseInfo struct {
 	ReleaserId string
 	OwnerId    string
 	OwnerName  string
-	Space      *ParkingSpace
+	Space      *Space
 	StartDate  *time.Time
 	EndDate    *time.Time
 	Submitted  bool
@@ -55,7 +55,7 @@ func (i *ReleaseInfo) Check() string {
 	if !i.DataPresent() {
 		return fmt.Sprintf(
 			"Missing date information for temporary release of space (%s)",
-			i.Space.ParkingKey(),
+			i.Space.Key(),
 		)
 	}
 
@@ -75,16 +75,16 @@ func (i ReleaseInfo) String() string {
 
 	return fmt.Sprintf(
 		"ReleaseInfo(space=%s, userName=%s, start=%s, end=%s)",
-		i.Space.ParkingKey(),
+		i.Space.Key(),
 		i.OwnerName,
 		startDateStr,
 		endDateStr,
 	)
 }
 
-type ReleaseMap map[ParkingKey]*ReleaseInfo
+type ReleaseMap map[SpaceKey]*ReleaseInfo
 
-func (q ReleaseMap) Get(spaceKey ParkingKey) *ReleaseInfo {
+func (q ReleaseMap) Get(spaceKey SpaceKey) *ReleaseInfo {
 	releaseInfo, ok := q[spaceKey]
 	if !ok {
 		return nil
@@ -119,7 +119,7 @@ func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
 	return nil
 }
 
-func (q ReleaseMap) Remove(spaceKey ParkingKey) bool {
+func (q ReleaseMap) Remove(spaceKey SpaceKey) bool {
 	_, ok := q[spaceKey]
 	if !ok {
 		return false
@@ -130,8 +130,8 @@ func (q ReleaseMap) Remove(spaceKey ParkingKey) bool {
 	return true
 }
 
-func (q ReleaseMap) RemoveByViewId(viewId string) (ParkingKey, bool) {
-	spaceKey := ParkingKey("")
+func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {
+	spaceKey := SpaceKey("")
 	for space, info := range q {
 		if info.ViewId == viewId {
 			spaceKey = space
@@ -152,9 +152,9 @@ func (q ReleaseMap) Add(
 	releaserId,
 	ownerName,
 	ownerId string,
-	space *ParkingSpace,
+	space *Space,
 ) (*ReleaseInfo, error) {
-	spaceKey := space.ParkingKey()
+	spaceKey := space.Key()
 	if q.Get(spaceKey) != nil {
 		return nil, fmt.Errorf("Space %s already marked for release.", spaceKey)
 	}

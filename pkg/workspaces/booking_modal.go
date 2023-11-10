@@ -1,4 +1,4 @@
-package parking_spaces
+package workspaces
 
 import (
 	"fmt"
@@ -24,14 +24,14 @@ var (
 	defaultFloorOption = floors[0]
 )
 
-var parkingBookingTitle = Identifier + "Booking"
+var workspaceBookingTitle = Identifier + "Booking"
 
 func (m *Manager) generateBookingModalRequest(
 	command event.Event,
 	userId, selectedFloor, errorTxt string,
 ) slack.ModalViewRequest {
 	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, selectedFloor, errorTxt)
-	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
+	return common.GenerateInfoModalRequest(workspaceBookingTitle, spacesSectionBlocks)
 }
 
 // generateParkingInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..

@@ -1,4 +1,4 @@
-package parking_spaces
+package spaces
 
 import (
 	"fmt"
@@ -6,19 +6,19 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/common"
 )
 
-type ParkingKey string
+type SpaceKey string
 
-type ParkingSpace struct {
+type Space struct {
 	Number int
 	Floor  int
 	common.ReservedProps
 }
 
-func (p *ParkingSpace) GetPropsText() string {
+func (p *Space) GetPropsText() string {
 	return fmt.Sprintf("(%d floor)", p.Floor)
 }
 
-func (p *ParkingSpace) GetStatusEmoji() string {
+func (p *Space) GetStatusEmoji() string {
 	emoji := ":large_green_circle:"
 	if p.Reserved {
 		emoji = ":large_orange_circle:"
@@ -28,7 +28,7 @@ func (p *ParkingSpace) GetStatusEmoji() string {
 
 // GetStatusDescription Get space status description i.e. reserved, by who, when, etc.
 // Returns empty string if space is free
-func (p *ParkingSpace) GetStatusDescription() string {
+func (p *Space) GetStatusDescription() string {
 	status := ""
 	if p.Reserved {
 		// timeStr := p.ReservedTime.Format("Mon 15:04")
@@ -38,11 +38,11 @@ func (p *ParkingSpace) GetStatusDescription() string {
 	return status
 }
 
-func (p *ParkingSpace) ParkingKey() ParkingKey {
-	return MakeParkingKey(p.Number, p.Floor)
+func (p *Space) Key() SpaceKey {
+	return MakeSpaceKey(p.Number, p.Floor)
 }
 
-func (p *ParkingSpace) Smaller(other *ParkingSpace) bool {
+func (p *Space) Smaller(other *Space) bool {
 	if p.Floor < other.Floor {
 		return true
 	} else if p.Floor > other.Floor {
@@ -52,7 +52,7 @@ func (p *ParkingSpace) Smaller(other *ParkingSpace) bool {
 	}
 }
 
-func MakeParkingKey(number, floor int) ParkingKey {
+func MakeSpaceKey(number, floor int) SpaceKey {
 	postfix := "th"
 
 	postfixes := []string{"st", "nd", "rd"}
@@ -61,7 +61,7 @@ func MakeParkingKey(number, floor int) ParkingKey {
 		postfix = postfixes[absFloor-1]
 	}
 
-	return ParkingKey(fmt.Sprintf("%d%s floor %d", floor, postfix, number))
+	return SpaceKey(fmt.Sprintf("%d%s floor %d", floor, postfix, number))
 }
 
 func abs(n int) int {
@@ -71,4 +71,4 @@ func abs(n int) int {
 	return n * -1
 }
 
-type ParkingSpaces map[ParkingKey]*ParkingSpace
+type ParkingSpaces map[SpaceKey]*Space
