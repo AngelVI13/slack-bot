@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	floors             = [3]string{"4th floor", "5th floor", "7th floot"}
+	floors             = [3]string{"4th floor", "5th floor", "7th floor"}
 	defaultFloorOption = floors[0]
 )
 
@@ -81,7 +81,7 @@ func (m *Manager) generateParkingButtons(
 		reserveWithAutoButton := slack.NewButtonBlockElement(
 			reserveWorkspaceActionId,
 			string(space.Key()),
-			slack.NewTextBlockObject("plain_text", fmt.Sprintf("%s :eject:", actionButtonText), true, false),
+			slack.NewTextBlockObject("plain_text", actionButtonText, true, false),
 		)
 		reserveWithAutoButton = reserveWithAutoButton.WithStyle(slack.StylePrimary)
 		buttons = append(buttons, reserveWithAutoButton)
@@ -143,10 +143,12 @@ func generateWorkspacePlanBlocks() []slack.Block {
 		slack.NewTextBlockObject(
 			"mrkdwn",
 			fmt.Sprintf(
-				"_Reservation is valid for %d-%d-%d_",
+				"_Reservation is valid for %d-%d-%d and will be auto released at %d:%02d_",
 				todayYear,
 				todayMonth,
 				todayDay,
+				ResetHour,
+				ResetMin,
 			),
 			false,
 			false,

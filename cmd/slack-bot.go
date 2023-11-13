@@ -11,6 +11,7 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/parking_users"
 	"github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/user"
+	"github.com/AngelVI13/slack-bot/pkg/workspaces"
 )
 
 func setupLogging(logPath string) {
@@ -34,11 +35,17 @@ func main() {
 	logger := event.NewEventLogger()
 	eventManager.Subscribe(logger, event.AnyEvent)
 
-	timer := event.NewTimer(eventManager)
-	timer.AddDaily(
+	resetParkingTimer := event.NewTimer(eventManager)
+	resetParkingTimer.AddDaily(
 		parking_spaces.ResetHour,
 		parking_spaces.ResetMin,
 		parking_spaces.ResetParking,
+	)
+	resetWorkspacesTimer := event.NewTimer(eventManager)
+	resetWorkspacesTimer.AddDaily(
+		workspaces.ResetHour,
+		workspaces.ResetMin,
+		workspaces.ResetWorkspaces,
 	)
 
 	userManager := user.NewManager(config)
@@ -50,6 +57,20 @@ func main() {
 	)
 	eventManager.SubscribeWithContext(
 		parkingSpacesManager,
+		event.SlashCmdEvent,
+		event.ViewSubmissionEvent,
+		event.BlockActionEvent,
+		event.ViewOpenedEvent,
+		event.ViewClosedEvent,
+		event.TimerEvent,
+	)
+	workspacesManager := workspaces.NewManager(
+		eventManager,
+		userManager,
+		config.WorkspacesFilename,
+	)
+	eventManager.SubscribeWithContext(
+		workspacesManager,
 		event.SlashCmdEvent,
 		event.ViewSubmissionEvent,
 		event.BlockActionEvent,

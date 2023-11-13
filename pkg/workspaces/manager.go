@@ -74,7 +74,7 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		log.Println("ReleaseWorkspaces")
-		// m.parkingLot.ReleaseSpaces(data.Time)
+		m.workspacesLot.ReleaseSpaces(data.Time)
 	}
 }
 
@@ -121,20 +121,18 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 
 		case reserveWorkspaceActionId:
-			isSpecialUser := m.userManager.HasParkingById(data.UserId)
-			parkingSpace := spaces.SpaceKey(action.Value)
+			workSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleReserveParking(
 				data,
-				parkingSpace,
+				workSpace,
 				m.selectedFloor[data.UserId],
-				isSpecialUser,
 			)
 
 		case releaseWorkspaceActionId:
-			parkingSpace := spaces.SpaceKey(action.Value)
+			workSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleReleaseParking(
 				data,
-				parkingSpace,
+				workSpace,
 				m.selectedFloor[data.UserId],
 			)
 		}
@@ -149,18 +147,14 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 func (m *Manager) handleReserveParking(
 	data *slackApi.BlockAction,
-	parkingSpace spaces.SpaceKey,
+	workSpace spaces.SpaceKey,
 	selectedFloor string,
-	isSpecialUser bool,
 ) []event.ResponseAction {
 	// Check if an admin has made the request
-	autoRelease := true // by default parking reservation is always with auto release
-	if isSpecialUser {  // unless we have a special user (i.e. user with designated parking space)
-		autoRelease = false
-	}
+	autoRelease := true // by default workspace reservation is always with auto release
 
 	errStr := m.workspacesLot.Reserve(
-		parkingSpace,
+		workSpace,
 		data.UserName,
 		data.UserId,
 		autoRelease,
@@ -178,13 +172,13 @@ func (m *Manager) handleReserveParking(
 
 func (m *Manager) handleReleaseParking(
 	data *slackApi.BlockAction,
-	parkingSpace spaces.SpaceKey,
+	workSpace spaces.SpaceKey,
 	selectedFloor string,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 
 	// Handle general case: normal user releasing a space
-	victimId, errStr := m.workspacesLot.Release(parkingSpace, data.UserName, data.UserId)
+	victimId, errStr := m.workspacesLot.Release(workSpace, data.UserName, data.UserId)
 	if victimId != "" {
 		log.Println(errStr)
 		action := common.NewPostEphemeralAction(
@@ -197,9 +191,9 @@ func (m *Manager) handleReleaseParking(
 
 	// Only remove release info from a space if an Admin is permanently releasing the space
 	if m.userManager.IsAdminId(data.UserId) {
-		ok := m.workspacesLot.ToBeReleased.Remove(parkingSpace)
+		ok := m.workspacesLot.ToBeReleased.Remove(workSpace)
 		if !ok {
-			log.Printf("Failed to remove release info for space %s", parkingSpace)
+			log.Printf("Failed to remove release info for space %s", workSpace)
 		}
 	}
 
