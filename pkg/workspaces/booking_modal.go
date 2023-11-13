@@ -11,16 +11,14 @@ import (
 )
 
 const (
-	floorActionId                    = "floorActionId"
-	floorOptionId                    = "floorOptionId"
-	reserveParkingActionId           = "reserveParking"
-	releaseParkingActionId           = "releaseParking"
-	tempReleaseParkingActionId       = "tempReleaseParking"
-	cancelTempReleaseParkingActionId = "cancelTempReleaseParking"
+	floorActionId            = "workspaceFloorActionId"
+	floorOptionId            = "workspaceFloorOptionId"
+	reserveWorkspaceActionId = "reserveWorkspace"
+	releaseWorkspaceActionId = "releaseWorkspace"
 )
 
 var (
-	floors             = [3]string{"-2nd floor", "-1st floor", "1st floor"}
+	floors             = [3]string{"4th floor", "5th floor", "7th floot"}
 	defaultFloorOption = floors[0]
 )
 
@@ -30,35 +28,24 @@ func (m *Manager) generateBookingModalRequest(
 	command event.Event,
 	userId, selectedFloor, errorTxt string,
 ) slack.ModalViewRequest {
-	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, selectedFloor, errorTxt)
+	spacesSectionBlocks := m.generateWorkspaceInfoBlocks(userId, selectedFloor, errorTxt)
 	return common.GenerateInfoModalRequest(workspaceBookingTitle, spacesSectionBlocks)
 }
 
-// generateParkingInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..
-func (m *Manager) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
+// generateSpacesInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..
+func (m *Manager) generateSpacesInfo(spaces spaces.SpacesInfo) []slack.Block {
 	var sections []slack.Block
 	for _, space := range spaces {
 		status := space.GetStatusDescription()
 		emoji := space.GetStatusEmoji()
 
-		releaseScheduled := ""
-		releaseInfo := m.parkingLot.ToBeReleased.Get(space.Key())
-		if releaseInfo != nil {
-			releaseScheduled = fmt.Sprintf(
-				"\n\t\tScheduled release from %s to %s",
-				releaseInfo.StartDate.Format("2006-01-02"),
-				releaseInfo.EndDate.Format("2006-01-02"),
-			)
-		}
-
 		spaceProps := space.GetPropsText()
 		text := fmt.Sprintf(
-			"%s *%s* \t%s\t %s%s",
+			"%s *%s* \t%s\t %s",
 			emoji,
 			fmt.Sprint(space.Number),
 			spaceProps,
 			status,
-			releaseScheduled,
 		)
 
 		sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
@@ -77,62 +64,22 @@ func (m *Manager) generateParkingButtons(
 	var buttons []slack.BlockElement
 
 	isAdminUser := m.userManager.IsAdminId(userId)
-	hasPermanentParkingUser := m.userManager.HasParkingById(userId)
-
-	releaseInfo := m.parkingLot.ToBeReleased.Get(space.Key())
-	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) &&
-		!releaseInfo.Cancelled {
-		cancelTempReleaseButton := slack.NewButtonBlockElement(
-			cancelTempReleaseParkingActionId,
-			string(space.Key()),
-			slack.NewTextBlockObject(
-				"plain_text",
-				"Cancel Scheduled Release!",
-				true,
-				false,
-			),
-		)
-		cancelTempReleaseButton = cancelTempReleaseButton.WithStyle(slack.StyleDanger)
-		buttons = append(buttons, cancelTempReleaseButton)
-	}
 
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
-		// space reserved but hasn't yet been schedule for release
-		if (isAdminUser || hasPermanentParkingUser) && releaseInfo == nil {
-			permanentSpace := m.userManager.HasParkingById(space.ReservedById)
-			if permanentSpace {
-				// Only allow the temporary parking button if the correct user is using
-				// the modal and the space hasn't already been released.
-				// For example, an admin can only temporary release a space if either he
-				// owns the space & has permanent parking rights or if he is releasing
-				// the space on behalf of somebody that has a permanent parking rights
-				tempReleaseButton := slack.NewButtonBlockElement(
-					tempReleaseParkingActionId,
-					string(space.Key()),
-					slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
-				)
-				tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
-				buttons = append(buttons, tempReleaseButton)
-			}
-		}
-
-		if isAdminUser || !hasPermanentParkingUser {
-			releaseButton := slack.NewButtonBlockElement(
-				releaseParkingActionId,
-				string(space.Key()),
-				slack.NewTextBlockObject("plain_text", "Release!", true, false),
-			)
-			releaseButton = releaseButton.WithStyle(slack.StyleDanger)
-			buttons = append(buttons, releaseButton)
-		}
+		releaseButton := slack.NewButtonBlockElement(
+			releaseWorkspaceActionId,
+			string(space.Key()),
+			slack.NewTextBlockObject("plain_text", "Release!", true, false),
+		)
+		releaseButton = releaseButton.WithStyle(slack.StyleDanger)
+		buttons = append(buttons, releaseButton)
 	} else if (!space.Reserved &&
-		!m.parkingLot.HasSpace(userId) &&
-		!m.parkingLot.HasTempRelease(userId) &&
+		!m.workspacesLot.HasSpace(userId) &&
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
-			reserveParkingActionId,
+			reserveWorkspaceActionId,
 			string(space.Key()),
 			slack.NewTextBlockObject("plain_text", fmt.Sprintf("%s :eject:", actionButtonText), true, false),
 		)
@@ -142,41 +89,42 @@ func (m *Manager) generateParkingButtons(
 	return buttons
 }
 
-func generateParkingPlanBlocks() []slack.Block {
+func generateWorkspacePlanBlocks() []slack.Block {
 	description := slack.NewSectionBlock(
 		slack.NewTextBlockObject(
 			"mrkdwn",
-			"In the links below you can find the parking plans for each floor so you can locate your parking space.",
+			"In the links below you can find the workspace plans for each floor so you can locate your workspace.",
 			false,
 			false,
 		),
 		nil,
 		nil,
 	)
-	outsideParking := slack.NewSectionBlock(
+	// TODO: replace links with actual workspace plans
+	fourthFloorWorkspaces := slack.NewSectionBlock(
 		slack.NewTextBlockObject(
 			"mrkdwn",
-			"<https://ibb.co/PFNyGsn|1st floor plan>",
+			"<https://ibb.co/PFNyGsn|4th floor plan>",
 			false,
 			false,
 		),
 		nil,
 		nil,
 	)
-	minusOneParking := slack.NewSectionBlock(
+	fifthFloorWorkspaces := slack.NewSectionBlock(
 		slack.NewTextBlockObject(
 			"mrkdwn",
-			"<https://ibb.co/zHw2T9w|-1st floor plan>",
+			"<https://ibb.co/zHw2T9w|5th floor plan>",
 			false,
 			false,
 		),
 		nil,
 		nil,
 	)
-	minusTwoParking := slack.NewSectionBlock(
+	seventhFloorWorkspaces := slack.NewSectionBlock(
 		slack.NewTextBlockObject(
 			"mrkdwn",
-			"<https://ibb.co/mt15xrz|-2nd floor plan>",
+			"<https://ibb.co/mt15xrz|7th floor plan>",
 			false,
 			false,
 		),
@@ -208,20 +156,20 @@ func generateParkingPlanBlocks() []slack.Block {
 	)
 	return []slack.Block{
 		description,
-		outsideParking,
-		minusOneParking,
-		minusTwoParking,
+		fourthFloorWorkspaces,
+		fifthFloorWorkspaces,
+		seventhFloorWorkspaces,
 		selectionEffectTime,
 	}
 }
 
-// generateParkingInfoBlocks Generates space block objects to be used as elements in modal
-func (m *Manager) generateParkingInfoBlocks(
+// generateWorkspaceInfoBlocks Generates space block objects to be used as elements in modal
+func (m *Manager) generateWorkspaceInfoBlocks(
 	userId, selectedFloor, errorTxt string,
 ) []slack.Block {
 	allBlocks := []slack.Block{}
 
-	descriptionBlocks := generateParkingPlanBlocks()
+	descriptionBlocks := generateWorkspacePlanBlocks()
 	allBlocks = append(allBlocks, descriptionBlocks...)
 
 	floorOptionBlocks := m.generateFloorOptions(userId)
@@ -241,11 +189,11 @@ func (m *Manager) generateParkingInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	spaces := m.parkingLot.GetSpacesByFloor(userId, selectedFloor)
-	parkingSpaceSections := m.generateParkingInfo(spaces)
+	spaces := m.workspacesLot.GetSpacesByFloor(userId, selectedFloor)
+	workspaceSections := m.generateSpacesInfo(spaces)
 
 	for idx, space := range spaces {
-		sectionBlock := parkingSpaceSections[idx]
+		sectionBlock := workspaceSections[idx]
 		buttons := m.generateParkingButtons(space, userId)
 
 		allBlocks = append(allBlocks, sectionBlock)
@@ -283,7 +231,7 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 	// Text shown as title when option box is opened/expanded
 	optionLabel := slack.NewTextBlockObject(
 		"plain_text",
-		"Choose a parking floor",
+		"Choose a workspace floor",
 		false,
 		false,
 	)

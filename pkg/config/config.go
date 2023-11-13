@@ -45,8 +45,9 @@ func NewConfigFromEnv(envPath string) *Config {
 		// after which the list is reset to full reviewers list.
 		// I don't see a reason why you might want to have that filename configurable
 		// so hardcoded it will stay.
-		ReviewersFilename: ".reviewers.txt",
-		ParkingFilename:   os.Getenv("SL_PARKING_FILE"),
+		ReviewersFilename:  ".reviewers.txt",
+		ParkingFilename:    os.Getenv("SL_PARKING_FILE"),
+		WorkspacesFilename: os.Getenv("SL_WORKSPACES_FILE"),
 
 		Debug:           os.Getenv("SL_DEBUG") == "1",
 		TaEndpoint:      taEndpoint,
