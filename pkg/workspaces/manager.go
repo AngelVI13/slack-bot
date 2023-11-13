@@ -2,10 +2,8 @@ package workspaces
 
 import (
 	"log"
-	"os"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
-	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
@@ -28,7 +26,7 @@ const (
 type Manager struct {
 	eventManager *event.EventManager
 	userManager  *user.Manager
-	parkingLot   *spaces.ParkingLot
+	parkingLot   *spaces.SpacesLot
 	slackClient  *slack.Client
 
 	selectedFloor map[string]string
@@ -37,9 +35,9 @@ type Manager struct {
 func NewManager(
 	eventManager *event.EventManager,
 	userManager *user.Manager,
-	config *config.Config,
+	filename string,
 ) *Manager {
-	parkingLot := getParkingLot(config)
+	parkingLot := spaces.GetSpacesLot(filename)
 	return &Manager{
 		eventManager:  eventManager,
 		userManager:   userManager,
@@ -211,27 +209,4 @@ func (m *Manager) handleReleaseParking(
 	actions = append(actions, action)
 
 	return actions
-}
-
-// TODO: this is the same as in lot.go -> update to take path as input and reuse for workspaces
-func getParkingLot(config *config.Config) (parkingLot spaces.ParkingLot) {
-	path := config.ParkingFilename
-
-	fileData, err := os.ReadFile(path)
-	if err != nil {
-		log.Fatalf("Could not read parking file (%s)", path)
-	}
-
-	parkingLot = spaces.NewParkingLotFromJson(fileData, config)
-
-	loadedSpacesNum := len(parkingLot.ParkingSpaces)
-	if loadedSpacesNum == 0 {
-		log.Fatalf("No spaces found in (%s).", path)
-	}
-
-	log.Printf(
-		"INIT: Parking spaces list loaded successfully (%d spaces configured)",
-		loadedSpacesNum,
-	)
-	return parkingLot
 }

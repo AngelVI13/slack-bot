@@ -71,4 +71,4 @@ func abs(n int) int {
 	return n * -1
 }
 
-type ParkingSpaces map[SpaceKey]*Space
+type UnitSpaces map[SpaceKey]*Space

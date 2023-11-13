@@ -3,11 +3,9 @@ package parking_spaces
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
-	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
@@ -27,7 +25,7 @@ const (
 
 type Manager struct {
 	eventManager *event.EventManager
-	parkingLot   *spaces.ParkingLot
+	parkingLot   *spaces.SpacesLot
 	userManager  *user.Manager
 
 	releaseInfo *spaces.ReleaseInfo
@@ -37,10 +35,10 @@ type Manager struct {
 
 func NewManager(
 	eventManager *event.EventManager,
-	config *config.Config,
 	userManager *user.Manager,
+	filename string,
 ) *Manager {
-	parkingLot := getParkingLot(config)
+	parkingLot := spaces.GetSpacesLot(filename)
 
 	return &Manager{
 		eventManager:  eventManager,
@@ -560,26 +558,4 @@ func (m *Manager) handleReleaseRange(
 	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Check())
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal)
 	return []event.ResponseAction{action}
-}
-
-func getParkingLot(config *config.Config) (parkingLot spaces.ParkingLot) {
-	path := config.ParkingFilename
-
-	fileData, err := os.ReadFile(path)
-	if err != nil {
-		log.Fatalf("Could not read parking file (%s)", path)
-	}
-
-	parkingLot = spaces.NewParkingLotFromJson(fileData, config)
-
-	loadedSpacesNum := len(parkingLot.ParkingSpaces)
-	if loadedSpacesNum == 0 {
-		log.Fatalf("No spaces found in (%s).", path)
-	}
-
-	log.Printf(
-		"INIT: Parking spaces list loaded successfully (%d spaces configured)",
-		loadedSpacesNum,
-	)
-	return parkingLot
 }

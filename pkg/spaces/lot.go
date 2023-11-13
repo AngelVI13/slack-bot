@@ -8,51 +8,49 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/AngelVI13/slack-bot/pkg/config"
 )
 
 type SpacesInfo []*Space
 
-type ParkingLot struct {
-	ParkingSpaces
-	config       *config.Config
+type SpacesLot struct {
+	UnitSpaces
+	Filename     string
 	ToBeReleased ReleaseMap
 }
 
-func NewParkingLot() ParkingLot {
-	return ParkingLot{
-		ParkingSpaces: make(ParkingSpaces),
-		ToBeReleased:  make(ReleaseMap),
+func NewSpacesLot() SpacesLot {
+	return SpacesLot{
+		UnitSpaces:   make(UnitSpaces),
+		ToBeReleased: make(ReleaseMap),
 	}
 }
 
-// NewParkingLotFromJson Takes json data as input and returns a populated ParkingLot object
-func NewParkingLotFromJson(data []byte, config *config.Config) ParkingLot {
-	parkingLot := NewParkingLot()
-	parkingLot.synchronizeFromFile(data)
-	parkingLot.config = config
-	return parkingLot
+// NewSpacesLotFromJson Takes json data as input and returns a populated ParkingLot object
+func NewSpacesLotFromJson(data []byte, filename string) SpacesLot {
+	spacesLot := NewSpacesLot()
+	spacesLot.synchronizeFromFile(data)
+	spacesLot.Filename = filename
+	return spacesLot
 }
 
-func (d *ParkingLot) SynchronizeToFile() {
+func (d *SpacesLot) SynchronizeToFile() {
 	data, err := json.MarshalIndent(d, "", "\t")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = os.WriteFile(d.config.ParkingFilename, data, 0o666)
+	err = os.WriteFile(d.Filename, data, 0o666)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("INFO: Wrote parking lot to file")
+	log.Printf("INFO: Wrote spaces lot to file: %s", d.Filename)
 }
 
-func (d *ParkingLot) synchronizeFromFile(data []byte) {
+func (d *SpacesLot) synchronizeFromFile(data []byte) {
 	// Unmarshal the provided data into the solid map
 	err := json.Unmarshal(data, d)
 	if err != nil {
-		log.Fatalf("Could not parse parking file. Error: %+v", err)
+		log.Fatalf("Could not parse spaces file. Error: %+v", err)
 	}
 
 	// Do not load any submitted items from to be released map
@@ -63,9 +61,9 @@ func (d *ParkingLot) synchronizeFromFile(data []byte) {
 	}
 }
 
-func (d *ParkingLot) HasSpace(userId string) bool {
+func (d *SpacesLot) HasSpace(userId string) bool {
 	userAlreadyReservedSpace := false
-	for _, space := range d.ParkingSpaces {
+	for _, space := range d.UnitSpaces {
 		if space.Reserved && space.ReservedById == userId {
 			userAlreadyReservedSpace = true
 			break
@@ -74,7 +72,7 @@ func (d *ParkingLot) HasSpace(userId string) bool {
 	return userAlreadyReservedSpace
 }
 
-func (d *ParkingLot) HasTempRelease(userId string) bool {
+func (d *SpacesLot) HasTempRelease(userId string) bool {
 	userAlreadyReleasedSpace := false
 	for _, releaseInfo := range d.ToBeReleased {
 		if releaseInfo.Submitted && releaseInfo.OwnerId == userId {
@@ -86,7 +84,7 @@ func (d *ParkingLot) HasTempRelease(userId string) bool {
 	return userAlreadyReleasedSpace
 }
 
-func (d *ParkingLot) GetSpacesByFloor(userId, floor string) SpacesInfo {
+func (d *SpacesLot) GetSpacesByFloor(userId, floor string) SpacesInfo {
 	floorSpaces := make(SpacesInfo, 0)
 	allSpaces := d.GetSpacesInfo(userId)
 
@@ -102,12 +100,12 @@ func (d *ParkingLot) GetSpacesByFloor(userId, floor string) SpacesInfo {
 	return floorSpaces
 }
 
-func (d *ParkingLot) GetSpacesInfo(userId string) SpacesInfo {
+func (d *SpacesLot) GetSpacesInfo(userId string) SpacesInfo {
 	// Group spaces in 2 groups -> belonging to given user or not
 	// The group that doesn't belong to user will be sorted by name and by status (reserved or not)
 	userSpaces := make(SpacesInfo, 0)
 	nonUserSpaces := make(SpacesInfo, 0)
-	for _, d := range d.ParkingSpaces {
+	for _, d := range d.UnitSpaces {
 		if d.Reserved && d.ReservedById == userId {
 			userSpaces = append(userSpaces, d)
 		} else {
@@ -149,22 +147,22 @@ func (d *ParkingLot) GetSpacesInfo(userId string) SpacesInfo {
 		})
 	}
 
-	allSpaces := make(SpacesInfo, 0, len(d.ParkingSpaces))
+	allSpaces := make(SpacesInfo, 0, len(d.UnitSpaces))
 	allSpaces = append(allSpaces, userSpaces...)
 	allSpaces = append(allSpaces, nonUserSpaces...)
 	return allSpaces
 }
 
-func (l *ParkingLot) Reserve(
-	parkingSpace SpaceKey,
+func (l *SpacesLot) Reserve(
+	unitSpace SpaceKey,
 	user, userId string,
 	autoRelease bool,
 ) (errMsg string) {
-	space := l.GetSpace(parkingSpace)
+	space := l.GetSpace(unitSpace)
 	if space == nil {
 		return fmt.Sprintf(
 			"Failed to reserve space: couldn't find the space %s",
-			parkingSpace,
+			unitSpace,
 		)
 	}
 
@@ -174,15 +172,15 @@ func (l *ParkingLot) Reserve(
 		reservedTime := space.ReservedTime.Format("Mon 15:04")
 		return fmt.Sprintf(
 			"*Error*: Could not reserve *%s*. *%s* has just reserved it (at *%s*)",
-			parkingSpace,
+			unitSpace,
 			space.ReservedBy,
 			reservedTime,
 		)
 	}
 	log.Printf(
-		"PARKING_RESERVE: User (%s) reserved space (%s) with auto release (%v)",
+		"SPACE_RESERVE: User (%s) reserved space (%s) with auto release (%v)",
 		user,
-		parkingSpace,
+		unitSpace,
 		autoRelease,
 	)
 
@@ -196,19 +194,19 @@ func (l *ParkingLot) Reserve(
 	return ""
 }
 
-func (l *ParkingLot) Release(
-	parkingSpace SpaceKey,
+func (l *SpacesLot) Release(
+	unitSpace SpaceKey,
 	userName, userId string,
 ) (victimId, errMsg string) {
-	space := l.GetSpace(parkingSpace)
+	space := l.GetSpace(unitSpace)
 	if space == nil {
 		return userId, fmt.Sprintf(
 			"Failed to release space: couldn't find the space %s",
-			parkingSpace,
+			unitSpace,
 		)
 	}
 
-	log.Printf("PARKING_RELEASE: User (%s) released (%s) space.", userName, parkingSpace)
+	log.Printf("SPACE_RELEASE: User (%s) released (%s) space.", userName, unitSpace)
 
 	space.Reserved = false
 	l.SynchronizeToFile()
@@ -219,24 +217,24 @@ func (l *ParkingLot) Release(
 				":warning: *%s* released your (*%s*) space (*%s*)",
 				userName,
 				space.ReservedBy,
-				parkingSpace,
+				unitSpace,
 			)
 	}
 	return "", ""
 }
 
-func (l *ParkingLot) GetSpace(parkingSpace SpaceKey) *Space {
-	space, ok := l.ParkingSpaces[parkingSpace]
+func (l *SpacesLot) GetSpace(unitSpace SpaceKey) *Space {
+	space, ok := l.UnitSpaces[unitSpace]
 	if !ok {
-		log.Printf("Incorrect parking space number %s", parkingSpace)
+		log.Printf("Incorrect space number %s", unitSpace)
 		return nil
 	}
 	return space
 }
 
 // TODO: Test this
-func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
-	for spaceKey, space := range l.ParkingSpaces {
+func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
+	for spaceKey, space := range l.UnitSpaces {
 		// Simple case
 		if space.Reserved && space.AutoRelease {
 			log.Println("AutoRelease space ", spaceKey)
@@ -278,24 +276,22 @@ func (l *ParkingLot) ReleaseSpaces(cTime time.Time) {
 	l.SynchronizeToFile()
 }
 
-func getParkingLot(config *config.Config) (parkingLot ParkingLot) {
-	path := config.ParkingFilename
-
-	fileData, err := os.ReadFile(path)
+func GetSpacesLot(filename string) (spacesLot SpacesLot) {
+	fileData, err := os.ReadFile(filename)
 	if err != nil {
-		log.Fatalf("Could not read parking file (%s)", path)
+		log.Fatalf("Could not read spaces file (%s)", filename)
 	}
 
-	parkingLot = NewParkingLotFromJson(fileData, config)
+	spacesLot = NewSpacesLotFromJson(fileData, filename)
 
-	loadedSpacesNum := len(parkingLot.ParkingSpaces)
+	loadedSpacesNum := len(spacesLot.UnitSpaces)
 	if loadedSpacesNum == 0 {
-		log.Fatalf("No spaces found in (%s).", path)
+		log.Fatalf("No spaces found in (%s).", filename)
 	}
 
 	log.Printf(
-		"INIT: Parking spaces list loaded successfully (%d spaces configured)",
-		loadedSpacesNum,
+		"INIT: Spaces list (%s) loaded successfully (%d spaces configured)",
+		filename, loadedSpacesNum,
 	)
-	return parkingLot
+	return spacesLot
 }

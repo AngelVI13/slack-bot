@@ -15,7 +15,7 @@ import (
 
 func setupLogging(logPath string) {
 	// Configure logger
-	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
 		log.Fatalf("error opening log file: %v", err)
 	}
@@ -35,11 +35,19 @@ func main() {
 	eventManager.Subscribe(logger, event.AnyEvent)
 
 	timer := event.NewTimer(eventManager)
-	timer.AddDaily(parking_spaces.ResetHour, parking_spaces.ResetMin, parking_spaces.ResetParking)
+	timer.AddDaily(
+		parking_spaces.ResetHour,
+		parking_spaces.ResetMin,
+		parking_spaces.ResetParking,
+	)
 
 	userManager := user.NewManager(config)
 
-	parkingSpacesManager := parking_spaces.NewManager(eventManager, config, userManager)
+	parkingSpacesManager := parking_spaces.NewManager(
+		eventManager,
+		userManager,
+		config.ParkingFilename,
+	)
 	eventManager.SubscribeWithContext(
 		parkingSpacesManager,
 		event.SlashCmdEvent,
@@ -50,7 +58,11 @@ func main() {
 		event.TimerEvent,
 	)
 
-	parkingUsersManager := parking_users.NewManager(eventManager, userManager, parkingSpacesManager)
+	parkingUsersManager := parking_users.NewManager(
+		eventManager,
+		userManager,
+		parkingSpacesManager,
+	)
 	eventManager.SubscribeWithContext(
 		parkingUsersManager,
 		event.SlashCmdEvent,

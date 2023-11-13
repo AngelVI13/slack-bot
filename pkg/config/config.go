@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -11,10 +12,11 @@ type Config struct {
 	SlackTaChannelId string
 	SlackAppToken    string
 
-	DevicesFilename   string
-	UsersFilename     string
-	ReviewersFilename string
-	ParkingFilename   string
+	DevicesFilename    string
+	UsersFilename      string
+	ReviewersFilename  string
+	ParkingFilename    string
+	WorkspacesFilename string
 
 	Debug           bool
 	TaEndpoint      string
