@@ -87,8 +87,15 @@ func (m *Manager) Context() string {
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	if !m.userManager.IsAdminId(data.UserId) {
-		errTxt := fmt.Sprintf("You don't have permission to execute '%s' command", SlashCmd)
-		action := common.NewPostEphemeralAction(data.UserId, data.UserId, slack.MsgOptionText(errTxt, false))
+		errTxt := fmt.Sprintf(
+			"You don't have permission to execute '%s' command",
+			SlashCmd,
+		)
+		action := common.NewPostEphemeralAction(
+			data.UserId,
+			data.UserId,
+			slack.MsgOptionText(errTxt, false),
+		)
 		return common.NewResponseEvent(action)
 	}
 
