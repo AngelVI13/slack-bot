@@ -448,40 +448,62 @@ func (m *Manager) handleCancelTempReleaseParking(
 		}
 	} else {
 		now := time.Now()
-		// If user cancelled before the daily reset -> just update end date and
-		// auto release of spaces will handle the returning of space to permanent owner
-		if now.Hour() <= ResetHour && now.Minute() < ResetMin {
-			releaseInfo.EndDate = &now
-			releaseInfo.MarkCancelled()
-			errorTxt = fmt.Sprintf(
-				"Temporary release cancelled. The space %s will be returned tomorrow",
-				parkingSpace,
-			)
-		} else if !chosenParkingSpace.Reserved {
-			// if parking space was not already reserved for the next day
-			// transfer it to owner
-			log.Println("TempReserve chosenParkingSpace ", parkingSpace, releaseInfo)
-			chosenParkingSpace.Reserved = true
-			chosenParkingSpace.AutoRelease = false
-			chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
-			chosenParkingSpace.ReservedById = releaseInfo.OwnerId
+		// If user cancelled before the daily reset
+		if (now.Hour() < ResetHour) || (now.Hour() == ResetHour && now.Minute() < ResetMin) {
+			// Somebody already booked it for the day -> return it at end of day
+			if chosenParkingSpace.Reserved {
+				log.Println("Temporary release cancelled (before eod). Space is taken. Return to owner at eod.", parkingSpace, releaseInfo)
+				releaseInfo.EndDate = &now
+				releaseInfo.MarkCancelled()
+				errorTxt = fmt.Sprintf(
+					"Temporary release cancelled. The space %s will be returned to you today at %d:%d",
+					parkingSpace,
+					ResetHour,
+					ResetMin,
+				)
+			} else {
+				// if parking space was not already reserved for the day transfer it to owner
+				log.Println("Temporary release cancelled (before eod). Space is not taken. Return to owner immediately.", parkingSpace, releaseInfo)
+				chosenParkingSpace.Reserved = true
+				chosenParkingSpace.AutoRelease = false
+				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
+				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-			ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
-			if !ok {
-				log.Printf("Failed removing release info for space %s", parkingSpace)
+				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
+				if !ok {
+					log.Printf("Failed removing release info for space %s", parkingSpace)
+				}
 			}
-		} else if chosenParkingSpace.Reserved {
-			// if parking space was already reserved by someone else -> transfer
-			// back to owner on the day after tomorrow
-			errorTxt = fmt.Sprintf(
-				`Temporary release cancelled but someone already reserved the space 
-for tomorrow. The space %s will be returned to you on the day after tomorrow.`,
-				parkingSpace,
-			)
-			hoursTillMidnight := 24 - now.Hour()
-			tomorrow := now.Add(time.Duration(hoursTillMidnight) * time.Hour)
-			releaseInfo.EndDate = &tomorrow
-			releaseInfo.MarkCancelled()
+		} else { // User cancelled space after EOD
+			if chosenParkingSpace.Reserved {
+				// if parking space was already reserved by someone else -> transfer
+				// back to owner on the day after tomorrow
+				log.Println("Temporary release cancelled (after eod). Space is taken. Return to owner tomorrow after eod.", parkingSpace, releaseInfo)
+				errorTxt = fmt.Sprintf(
+					`Temporary release cancelled but someone already reserved the space 
+                    for tomorrow. The space %s will be returned to you tomorrow at %d:%d.`,
+					parkingSpace,
+					ResetHour,
+					ResetMin,
+				)
+				hoursTillMidnight := 24 - now.Hour()
+				tomorrow := now.Add(time.Duration(hoursTillMidnight) * time.Hour)
+				releaseInfo.EndDate = &tomorrow
+				releaseInfo.MarkCancelled()
+			} else {
+				// if parking space was not already reserved for the next day
+				// transfer it to owner
+				log.Println("Temporary release cancelled (after eod). Space is not taken. Return to owner immediately.", parkingSpace, releaseInfo)
+				chosenParkingSpace.Reserved = true
+				chosenParkingSpace.AutoRelease = false
+				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
+				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
+
+				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
+				if !ok {
+					log.Printf("Failed removing release info for space %s", parkingSpace)
+				}
+			}
 		}
 	}
 	m.parkingLot.SynchronizeToFile()
