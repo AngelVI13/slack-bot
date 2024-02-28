@@ -9,13 +9,18 @@ import (
 type SpaceKey string
 
 type Space struct {
-	Number int
-	Floor  int
+	Number      int
+	Floor       int
+	Description string
 	common.ReservedProps
 }
 
 func (p *Space) GetPropsText() string {
-	return fmt.Sprintf("(%d floor)", p.Floor)
+	description := ""
+	if p.Description != "" {
+		description = fmt.Sprintf(" - %s", p.Description)
+	}
+	return fmt.Sprintf("(%d floor%s)", p.Floor, description)
 }
 
 func (p *Space) GetStatusEmoji() string {

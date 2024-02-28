@@ -14,7 +14,8 @@ import (
 const (
 	Identifier = "Workspaces: "
 	// SlashCmd   = "/workspace"
-	SlashCmd = "/test-workspace"
+	SlashCmd    = "/test-workspace"
+	ChannelName = "qdev_technologies"
 
 	defaultUserOption = ""
 
@@ -51,6 +52,11 @@ func (m *Manager) Consume(e event.Event) {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
 		if data.Command != SlashCmd {
+			return
+		}
+
+		if data.ChannelName != ChannelName {
+			// command is only allowed in a specific channel
 			return
 		}
 
@@ -122,7 +128,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 		case reserveWorkspaceActionId:
 			workSpace := spaces.SpaceKey(action.Value)
-			actions = m.handleReserveParking(
+			actions = m.handleReserveWorkspace(
 				data,
 				workSpace,
 				m.selectedFloor[data.UserId],
@@ -130,7 +136,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 		case releaseWorkspaceActionId:
 			workSpace := spaces.SpaceKey(action.Value)
-			actions = m.handleReleaseParking(
+			actions = m.handleReleaseWorkspace(
 				data,
 				workSpace,
 				m.selectedFloor[data.UserId],
@@ -145,12 +151,11 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	return common.NewResponseEvent(actions...)
 }
 
-func (m *Manager) handleReserveParking(
+func (m *Manager) handleReserveWorkspace(
 	data *slackApi.BlockAction,
 	workSpace spaces.SpaceKey,
 	selectedFloor string,
 ) []event.ResponseAction {
-	// Check if an admin has made the request
 	autoRelease := true // by default workspace reservation is always with auto release
 
 	errStr := m.workspacesLot.Reserve(
@@ -170,7 +175,7 @@ func (m *Manager) handleReserveParking(
 	return []event.ResponseAction{action}
 }
 
-func (m *Manager) handleReleaseParking(
+func (m *Manager) handleReleaseWorkspace(
 	data *slackApi.BlockAction,
 	workSpace spaces.SpaceKey,
 	selectedFloor string,

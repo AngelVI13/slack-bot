@@ -3,65 +3,22 @@
 		"4th floor 1": {
 			"Number": 1,
 			"Floor": 4,
+			"Description": "Verification Room",
 			"Reserved": false,
 			"AutoRelease": true,
 			"ReservedBy": "angel.iliev",
 			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2023-11-13T15:02:16.860903275+02:00"
+			"ReservedTime": "2024-02-28T13:04:53.421072225+02:00"
 		},
 		"4th floor 2": {
 			"Number": 2,
 			"Floor": 4,
-			"Reserved": true,
-			"AutoRelease": true,
-			"ReservedBy": "evelina.bernataviciute",
-			"ReservedById": "U03ENHGR7U4",
-			"ReservedTime": "2023-02-16T22:06:21.740954352+02:00"
-		},
-		"5th floor 1": {
-			"Number": 1,
-			"Floor": 5,
-			"Reserved": true,
-			"AutoRelease": true,
-			"ReservedBy": "sandra.aleksieje",
-			"ReservedById": "U03E6NZQVTR",
-			"ReservedTime": "2023-03-10T09:26:17.889004464+02:00"
-		},
-		"5th floor 2": {
-			"Number": 2,
-			"Floor": 5,
-			"Reserved": true,
-			"AutoRelease": true,
-			"ReservedBy": "linas.ramanauskas",
-			"ReservedById": "U03F8EGKV0D",
-			"ReservedTime": "2023-01-13T10:07:50.183937572+02:00"
-		},
-		"5th floor 3": {
-			"Number": 3,
-			"Floor": 5,
+			"Description": "Verification Room",
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "dmitrij.zylkov",
-			"ReservedById": "U03FEAQ3N3W",
-			"ReservedTime": "2022-12-13T13:12:35.018051189+02:00"
-		},
-		"7th floor 1": {
-			"Number": 1,
-			"Floor": 7,
-			"Reserved": true,
-			"AutoRelease": true,
-			"ReservedBy": "daniel.klioc",
-			"ReservedById": "U03F8U4B4LV",
-			"ReservedTime": "2022-10-10T13:51:52.218652476+03:00"
-		},
-		"7th floor 2": {
-			"Number": 2,
-			"Floor": 7,
-			"Reserved": true,
-			"AutoRelease": true,
-			"ReservedBy": "vygintas.simonavicius",
-			"ReservedById": "U03EJD1FLR3",
-			"ReservedTime": "2023-01-18T17:02:54.60234142+02:00"
+			"ReservedBy": "ugnius.bertasius",
+			"ReservedById": "U03FQJZ8XC1",
+			"ReservedTime": "2024-02-28T12:16:26.663752087+02:00"
 		}
 	},
 	"Filename": "workspaces.json",

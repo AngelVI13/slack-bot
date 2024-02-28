@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	floors             = [3]string{"4th floor", "5th floor", "7th floor"}
+	floors             = [...]string{"4th floor"}
 	defaultFloorOption = floors[0]
 )
 
@@ -89,49 +89,7 @@ func (m *Manager) generateParkingButtons(
 	return buttons
 }
 
-func generateWorkspacePlanBlocks() []slack.Block {
-	description := slack.NewSectionBlock(
-		slack.NewTextBlockObject(
-			"mrkdwn",
-			"In the links below you can find the workspace plans for each floor so you can locate your workspace.",
-			false,
-			false,
-		),
-		nil,
-		nil,
-	)
-	// TODO: replace links with actual workspace plans
-	fourthFloorWorkspaces := slack.NewSectionBlock(
-		slack.NewTextBlockObject(
-			"mrkdwn",
-			"<https://ibb.co/PFNyGsn|4th floor plan>",
-			false,
-			false,
-		),
-		nil,
-		nil,
-	)
-	fifthFloorWorkspaces := slack.NewSectionBlock(
-		slack.NewTextBlockObject(
-			"mrkdwn",
-			"<https://ibb.co/zHw2T9w|5th floor plan>",
-			false,
-			false,
-		),
-		nil,
-		nil,
-	)
-	seventhFloorWorkspaces := slack.NewSectionBlock(
-		slack.NewTextBlockObject(
-			"mrkdwn",
-			"<https://ibb.co/mt15xrz|7th floor plan>",
-			false,
-			false,
-		),
-		nil,
-		nil,
-	)
-
+func generateWorkspaceTimeBlocks() []slack.Block {
 	now := time.Now()
 
 	todayYear, todayMonth, todayDay := now.Date()
@@ -157,10 +115,6 @@ func generateWorkspacePlanBlocks() []slack.Block {
 		nil,
 	)
 	return []slack.Block{
-		description,
-		fourthFloorWorkspaces,
-		fifthFloorWorkspaces,
-		seventhFloorWorkspaces,
 		selectionEffectTime,
 	}
 }
@@ -171,7 +125,7 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 ) []slack.Block {
 	allBlocks := []slack.Block{}
 
-	descriptionBlocks := generateWorkspacePlanBlocks()
+	descriptionBlocks := generateWorkspaceTimeBlocks()
 	allBlocks = append(allBlocks, descriptionBlocks...)
 
 	floorOptionBlocks := m.generateFloorOptions(userId)
