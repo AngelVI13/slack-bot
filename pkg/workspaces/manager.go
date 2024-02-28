@@ -13,8 +13,8 @@ import (
 
 const (
 	Identifier = "Workspaces: "
-	// SlashCmd   = "/workspace"
-	SlashCmd    = "/test-workspace"
+	SlashCmd   = "/workspace"
+	// SlashCmd    = "/test-workspace"
 	ChannelName = "qdev_technologies"
 
 	defaultUserOption = ""
