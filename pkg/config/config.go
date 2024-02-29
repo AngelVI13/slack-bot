@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -11,10 +12,11 @@ type Config struct {
 	SlackTaChannelId string
 	SlackAppToken    string
 
-	DevicesFilename   string
-	UsersFilename     string
-	ReviewersFilename string
-	ParkingFilename   string
+	DevicesFilename    string
+	UsersFilename      string
+	ReviewersFilename  string
+	ParkingFilename    string
+	WorkspacesFilename string
 
 	Debug           bool
 	TaEndpoint      string
@@ -43,8 +45,9 @@ func NewConfigFromEnv(envPath string) *Config {
 		// after which the list is reset to full reviewers list.
 		// I don't see a reason why you might want to have that filename configurable
 		// so hardcoded it will stay.
-		ReviewersFilename: ".reviewers.txt",
-		ParkingFilename:   os.Getenv("SL_PARKING_FILE"),
+		ReviewersFilename:  ".reviewers.txt",
+		ParkingFilename:    os.Getenv("SL_PARKING_FILE"),
+		WorkspacesFilename: os.Getenv("SL_WORKSPACES_FILE"),
 
 		Debug:           os.Getenv("SL_DEBUG") == "1",
 		TaEndpoint:      taEndpoint,

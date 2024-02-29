@@ -6,6 +6,7 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
 
@@ -25,20 +26,23 @@ var (
 
 var parkingBookingTitle = Identifier + "Booking"
 
-func (m *Manager) generateBookingModalRequest(command event.Event, userId, selectedFloor, errorTxt string) slack.ModalViewRequest {
+func (m *Manager) generateBookingModalRequest(
+	command event.Event,
+	userId, selectedFloor, errorTxt string,
+) slack.ModalViewRequest {
 	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, selectedFloor, errorTxt)
 	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
 }
 
 // generateParkingInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..
-func (m *Manager) generateParkingInfo(spaces SpacesInfo) []slack.Block {
+func (m *Manager) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
 	var sections []slack.Block
 	for _, space := range spaces {
 		status := space.GetStatusDescription()
 		emoji := space.GetStatusEmoji()
 
 		releaseScheduled := ""
-		releaseInfo := m.parkingLot.ToBeReleased.Get(space.ParkingKey())
+		releaseInfo := m.parkingLot.ToBeReleased.Get(space.Key())
 		if releaseInfo != nil {
 			releaseScheduled = fmt.Sprintf(
 				"\n\t\tScheduled release from %s to %s",
@@ -67,7 +71,7 @@ func (m *Manager) generateParkingInfo(spaces SpacesInfo) []slack.Block {
 }
 
 func (m *Manager) generateParkingButtons(
-	space *ParkingSpace,
+	space *spaces.Space,
 	userId string,
 ) []slack.BlockElement {
 	var buttons []slack.BlockElement
@@ -75,12 +79,18 @@ func (m *Manager) generateParkingButtons(
 	isAdminUser := m.userManager.IsAdminId(userId)
 	hasPermanentParkingUser := m.userManager.HasParkingById(userId)
 
-	releaseInfo := m.parkingLot.ToBeReleased.Get(space.ParkingKey())
-	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) && !releaseInfo.Cancelled {
+	releaseInfo := m.parkingLot.ToBeReleased.Get(space.Key())
+	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) &&
+		!releaseInfo.Cancelled {
 		cancelTempReleaseButton := slack.NewButtonBlockElement(
 			cancelTempReleaseParkingActionId,
-			string(space.ParkingKey()),
-			slack.NewTextBlockObject("plain_text", "Cancel Scheduled Release!", true, false),
+			string(space.Key()),
+			slack.NewTextBlockObject(
+				"plain_text",
+				"Cancel Scheduled Release!",
+				true,
+				false,
+			),
 		)
 		cancelTempReleaseButton = cancelTempReleaseButton.WithStyle(slack.StyleDanger)
 		buttons = append(buttons, cancelTempReleaseButton)
@@ -98,7 +108,7 @@ func (m *Manager) generateParkingButtons(
 				// the space on behalf of somebody that has a permanent parking rights
 				tempReleaseButton := slack.NewButtonBlockElement(
 					tempReleaseParkingActionId,
-					string(space.ParkingKey()),
+					string(space.Key()),
 					slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
 				)
 				tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
@@ -109,7 +119,7 @@ func (m *Manager) generateParkingButtons(
 		if isAdminUser || !hasPermanentParkingUser {
 			releaseButton := slack.NewButtonBlockElement(
 				releaseParkingActionId,
-				string(space.ParkingKey()),
+				string(space.Key()),
 				slack.NewTextBlockObject("plain_text", "Release!", true, false),
 			)
 			releaseButton = releaseButton.WithStyle(slack.StyleDanger)
@@ -123,7 +133,7 @@ func (m *Manager) generateParkingButtons(
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
 			reserveParkingActionId,
-			string(space.ParkingKey()),
+			string(space.Key()),
 			slack.NewTextBlockObject("plain_text", fmt.Sprintf("%s :eject:", actionButtonText), true, false),
 		)
 		reserveWithAutoButton = reserveWithAutoButton.WithStyle(slack.StylePrimary)
@@ -144,17 +154,32 @@ func generateParkingPlanBlocks() []slack.Block {
 		nil,
 	)
 	outsideParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "<https://ibb.co/PFNyGsn|1st floor plan>", false, false),
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			"<https://ibb.co/PFNyGsn|1st floor plan>",
+			false,
+			false,
+		),
 		nil,
 		nil,
 	)
 	minusOneParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "<https://ibb.co/zHw2T9w|-1st floor plan>", false, false),
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			"<https://ibb.co/zHw2T9w|-1st floor plan>",
+			false,
+			false,
+		),
 		nil,
 		nil,
 	)
 	minusTwoParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject("mrkdwn", "<https://ibb.co/mt15xrz|-2nd floor plan>", false, false),
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			"<https://ibb.co/mt15xrz|-2nd floor plan>",
+			false,
+			false,
+		),
 		nil,
 		nil,
 	)
@@ -169,7 +194,12 @@ func generateParkingPlanBlocks() []slack.Block {
 	selectionEffectTime := slack.NewSectionBlock(
 		slack.NewTextBlockObject(
 			"mrkdwn",
-			fmt.Sprintf("_Reservation is valid for %d-%d-%d_", todayYear, todayMonth, todayDay),
+			fmt.Sprintf(
+				"_Reservation is valid for %d-%d-%d_",
+				todayYear,
+				todayMonth,
+				todayDay,
+			),
 			false,
 			false,
 		),
@@ -186,7 +216,9 @@ func generateParkingPlanBlocks() []slack.Block {
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
-func (m *Manager) generateParkingInfoBlocks(userId, selectedFloor, errorTxt string) []slack.Block {
+func (m *Manager) generateParkingInfoBlocks(
+	userId, selectedFloor, errorTxt string,
+) []slack.Block {
 	allBlocks := []slack.Block{}
 
 	descriptionBlocks := generateParkingPlanBlocks()
@@ -249,12 +281,24 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 	}
 
 	// Text shown as title when option box is opened/expanded
-	optionLabel := slack.NewTextBlockObject("plain_text", "Choose a parking floor", false, false)
+	optionLabel := slack.NewTextBlockObject(
+		"plain_text",
+		"Choose a parking floor",
+		false,
+		false,
+	)
 	// Default option shown for option box
 	defaultOption := slack.NewTextBlockObject("plain_text", selectedFloor, false, false)
 
-	optionGroupBlockObject := slack.NewOptionGroupBlockElement(optionLabel, optionBlocks...)
-	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupSelectBlockElement("static_select", defaultOption, floorOptionId, optionGroupBlockObject)
+	optionGroupBlockObject := slack.NewOptionGroupBlockElement(
+		optionLabel,
+		optionBlocks...)
+	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupSelectBlockElement(
+		"static_select",
+		defaultOption,
+		floorOptionId,
+		optionGroupBlockObject,
+	)
 
 	actionBlock := slack.NewActionBlock(floorActionId, newOptionsGroupSelectBlockElement)
 	allBlocks = append(allBlocks, actionBlock)

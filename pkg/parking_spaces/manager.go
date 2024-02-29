@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
-	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
+	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/slack-go/slack"
 )
@@ -25,20 +25,20 @@ const (
 
 type Manager struct {
 	eventManager *event.EventManager
-	parkingLot   *ParkingLot
+	parkingLot   *spaces.SpacesLot
 	userManager  *user.Manager
 
-	releaseInfo *ReleaseInfo
+	releaseInfo *spaces.ReleaseInfo
 
 	selectedFloor map[string]string
 }
 
 func NewManager(
 	eventManager *event.EventManager,
-	config *config.Config,
 	userManager *user.Manager,
+	filename string,
 ) *Manager {
-	parkingLot := getParkingLot(config)
+	parkingLot := spaces.GetSpacesLot(filename)
 
 	return &Manager{
 		eventManager:  eventManager,
@@ -146,7 +146,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 		case reserveParkingActionId:
 			isSpecialUser := m.userManager.HasParkingById(data.UserId)
-			parkingSpace := ParkingKey(action.Value)
+			parkingSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleReserveParking(
 				data,
 				parkingSpace,
@@ -155,7 +155,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 
 		case releaseParkingActionId:
-			parkingSpace := ParkingKey(action.Value)
+			parkingSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleReleaseParking(
 				data,
 				parkingSpace,
@@ -163,7 +163,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 
 		case tempReleaseParkingActionId:
-			parkingSpace := ParkingKey(action.Value)
+			parkingSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleTempReleaseParking(
 				data,
 				parkingSpace,
@@ -171,7 +171,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 
 		case cancelTempReleaseParkingActionId:
-			parkingSpace := ParkingKey(action.Value)
+			parkingSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleCancelTempReleaseParking(
 				data,
 				parkingSpace,
@@ -309,7 +309,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 
 	if common.EqualDate(startDate, currentTime) || (currentTime.Before(startDate) &&
 		currentTime.Hour() >= ResetHour && currentTime.Minute() >= ResetMin) {
-		m.parkingLot.Release(releaseInfo.Space.ParkingKey(), data.UserName, data.UserId)
+		m.parkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
 	}
 
 	modal := m.generateBookingModalRequest(
@@ -350,7 +350,7 @@ func (m *Manager) handleViewClosed(data *slackApi.ViewClosed) {
 
 func (m *Manager) handleReserveParking(
 	data *slackApi.BlockAction,
-	parkingSpace ParkingKey,
+	parkingSpace spaces.SpaceKey,
 	selectedFloor string,
 	isSpecialUser bool,
 ) []event.ResponseAction {
@@ -374,7 +374,7 @@ func (m *Manager) handleReserveParking(
 
 func (m *Manager) handleTempReleaseParking(
 	data *slackApi.BlockAction,
-	parkingSpace ParkingKey,
+	parkingSpace spaces.SpaceKey,
 	selectedFloor string,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
@@ -417,7 +417,7 @@ func (m *Manager) handleTempReleaseParking(
 
 func (m *Manager) handleCancelTempReleaseParking(
 	data *slackApi.BlockAction,
-	parkingSpace ParkingKey,
+	parkingSpace spaces.SpaceKey,
 	selectedFloor string,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
@@ -521,7 +521,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 func (m *Manager) handleReleaseParking(
 	data *slackApi.BlockAction,
-	parkingSpace ParkingKey,
+	parkingSpace spaces.SpaceKey,
 	selectedFloor string,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}

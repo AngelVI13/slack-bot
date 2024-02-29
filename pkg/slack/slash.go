@@ -11,8 +11,9 @@ import (
 
 type Slash struct {
 	BaseEvent
-	Command   string
-	TriggerId string
+	Command     string
+	TriggerId   string
+	ChannelName string
 }
 
 func (s *Slash) Type() event.EventType {
@@ -30,7 +31,10 @@ func (s *Slash) HasContext(c string) bool {
 func handleSlashCommand(socketEvent socketmode.Event) event.Event {
 	command, ok := socketEvent.Data.(slack.SlashCommand)
 	if !ok {
-		log.Printf("ERROR: Could not type cast the message to a SlashCommand: %v\n", command)
+		log.Printf(
+			"ERROR: Could not type cast the message to a SlashCommand: %v\n",
+			command,
+		)
 		return nil
 	}
 
@@ -39,7 +43,8 @@ func handleSlashCommand(socketEvent socketmode.Event) event.Event {
 			UserName: command.UserName,
 			UserId:   command.UserID,
 		},
-		Command:   command.Command,
-		TriggerId: command.TriggerID,
+		Command:     command.Command,
+		TriggerId:   command.TriggerID,
+		ChannelName: command.ChannelName,
 	}
 }

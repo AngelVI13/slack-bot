@@ -1,0 +1,26 @@
+{
+	"UnitSpaces": {
+		"4th floor 1": {
+			"Number": 1,
+			"Floor": 4,
+			"Description": "Verification Room",
+			"Reserved": false,
+			"AutoRelease": true,
+			"ReservedBy": "angel.iliev",
+			"ReservedById": "U03FBL3R6KU",
+			"ReservedTime": "2024-02-28T13:04:53.421072225+02:00"
+		},
+		"4th floor 2": {
+			"Number": 2,
+			"Floor": 4,
+			"Description": "Verification Room",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "ugnius.bertasius",
+			"ReservedById": "U03FQJZ8XC1",
+			"ReservedTime": "2024-02-28T12:16:26.663752087+02:00"
+		}
+	},
+	"Filename": "workspaces.json",
+	"ToBeReleased": {}
+}
