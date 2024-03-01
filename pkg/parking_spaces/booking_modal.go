@@ -186,9 +186,8 @@ func generateParkingPlanBlocks() []slack.Block {
 
 	now := time.Now()
 
-	todayYear, todayMonth, todayDay := now.Date()
 	if now.Hour() >= ResetHour && now.Minute() > ResetMin {
-		todayDay++
+		now = now.Add(24 * time.Hour)
 	}
 
 	selectionEffectTime := slack.NewSectionBlock(
@@ -196,9 +195,9 @@ func generateParkingPlanBlocks() []slack.Block {
 			"mrkdwn",
 			fmt.Sprintf(
 				"_Reservation is valid for %d-%d-%d_",
-				todayYear,
-				todayMonth,
-				todayDay,
+				now.Year(),
+				now.Month(),
+				now.Day(),
 			),
 			false,
 			false,
