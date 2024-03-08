@@ -9,6 +9,7 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/parking_users"
+	"github.com/AngelVI13/slack-bot/pkg/roll"
 	"github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/AngelVI13/slack-bot/pkg/workspaces"
@@ -93,6 +94,8 @@ func main() {
 		event.ViewClosedEvent,
 		event.TimerEvent,
 	)
+	rollManager := roll.NewManager(eventManager)
+	eventManager.Subscribe(rollManager, event.SlashCmdEvent)
 
 	slackClient := slack.NewClient(config, eventManager)
 	eventManager.Subscribe(slackClient, event.ResponseEvent)

@@ -14,6 +14,7 @@ type Slash struct {
 	Command     string
 	TriggerId   string
 	ChannelName string
+	ChannelId   string
 }
 
 func (s *Slash) Type() event.EventType {
@@ -46,5 +47,6 @@ func handleSlashCommand(socketEvent socketmode.Event) event.Event {
 		Command:     command.Command,
 		TriggerId:   command.TriggerID,
 		ChannelName: command.ChannelName,
+		ChannelId:   command.ChannelID,
 	}
 }
