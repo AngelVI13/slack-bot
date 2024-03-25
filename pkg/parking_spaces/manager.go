@@ -310,7 +310,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	currentTime := time.Now()
 
 	if common.EqualDate(startDate, currentTime) || (currentTime.Before(startDate) &&
-		startDate.Sub(currentTime) < 24 &&
+		startDate.Sub(currentTime).Hours() < 24 &&
 		currentTime.Hour() >= ResetHour && currentTime.Minute() >= ResetMin) {
 		// Directly release space in two cases:
 		// * Release starts from today
