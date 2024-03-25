@@ -218,7 +218,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return common.NewResponseEvent(actions...)
 	}
 
-	startDate, err := time.Parse("2006-01-02", startDateStr)
+	currentLocation := time.Now().Location()
+
+	startDate, err := time.ParseInLocation("2006-01-02", startDateStr, currentLocation)
 	if err != nil {
 		// Remote space from temporary release queue
 		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
@@ -256,7 +258,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		}
 		return common.NewResponseEvent(actions...)
 	}
-	endDate, err := time.Parse("2006-01-02", endDateStr)
+	endDate, err := time.ParseInLocation("2006-01-02", endDateStr, currentLocation)
 	if err != nil {
 		// Remote space from temporary release queue
 		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
@@ -308,7 +310,11 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	currentTime := time.Now()
 
 	if common.EqualDate(startDate, currentTime) || (currentTime.Before(startDate) &&
+		startDate.Sub(currentTime) < 24 &&
 		currentTime.Hour() >= ResetHour && currentTime.Minute() >= ResetMin) {
+		// Directly release space in two cases:
+		// * Release starts from today
+		// * Release starts from tomorrow & current time is after Reset time
 		m.parkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
 	}
 
@@ -564,7 +570,8 @@ func (m *Manager) handleReleaseRange(
 	selectedDate string,
 	isStartDate bool,
 ) []event.ResponseAction {
-	date, err := time.Parse("2006-01-02", selectedDate)
+	currentLocation := time.Now().Location()
+	date, err := time.ParseInLocation("2006-01-02", selectedDate, currentLocation)
 	if err != nil {
 		log.Printf("Failed to parse date format %s: %v", selectedDate, err)
 	}
