@@ -26,9 +26,14 @@ var workspaceBookingTitle = Identifier + "Booking"
 
 func (m *Manager) generateBookingModalRequest(
 	command event.Event,
-	userId, selectedFloor, errorTxt string,
+	userId, selectedFloor string, selectedFloorTaken bool, errorTxt string,
 ) slack.ModalViewRequest {
-	spacesSectionBlocks := m.generateWorkspaceInfoBlocks(userId, selectedFloor, errorTxt)
+	spacesSectionBlocks := m.generateWorkspaceInfoBlocks(
+		userId,
+		selectedFloor,
+		selectedFloorTaken,
+		errorTxt,
+	)
 	return common.GenerateInfoModalRequest(workspaceBookingTitle, spacesSectionBlocks)
 }
 
@@ -120,7 +125,7 @@ func generateWorkspaceTimeBlocks() []slack.Block {
 
 // generateWorkspaceInfoBlocks Generates space block objects to be used as elements in modal
 func (m *Manager) generateWorkspaceInfoBlocks(
-	userId, selectedFloor, errorTxt string,
+	userId, selectedFloor string, selectedShowTaken bool, errorTxt string,
 ) []slack.Block {
 	allBlocks := []slack.Block{}
 
@@ -144,7 +149,7 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	spaces := m.workspacesLot.GetSpacesByFloor(userId, selectedFloor)
+	spaces := m.workspacesLot.GetSpacesByFloor(userId, selectedFloor, selectedShowTaken)
 	workspaceSections := m.generateSpacesInfo(spaces)
 
 	for idx, space := range spaces {

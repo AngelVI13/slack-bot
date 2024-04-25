@@ -28,9 +28,14 @@ var parkingBookingTitle = Identifier + "Booking"
 
 func (m *Manager) generateBookingModalRequest(
 	command event.Event,
-	userId, selectedFloor, errorTxt string,
+	userId, selectedFloor string, selectedShowTaken bool, errorTxt string,
 ) slack.ModalViewRequest {
-	spacesSectionBlocks := m.generateParkingInfoBlocks(userId, selectedFloor, errorTxt)
+	spacesSectionBlocks := m.generateParkingInfoBlocks(
+		userId,
+		selectedFloor,
+		selectedShowTaken,
+		errorTxt,
+	)
 	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
 }
 
@@ -216,7 +221,7 @@ func generateParkingPlanBlocks() []slack.Block {
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
 func (m *Manager) generateParkingInfoBlocks(
-	userId, selectedFloor, errorTxt string,
+	userId, selectedFloor string, selectedShowTaken bool, errorTxt string,
 ) []slack.Block {
 	allBlocks := []slack.Block{}
 
@@ -240,7 +245,12 @@ func (m *Manager) generateParkingInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	spaces := m.parkingLot.GetSpacesByFloor(userId, selectedFloor)
+	spaces := m.parkingLot.GetSpacesByFloor(
+		userId,
+		selectedFloor,
+		selectedShowTaken,
+	)
+
 	parkingSpaceSections := m.generateParkingInfo(spaces)
 
 	for idx, space := range spaces {

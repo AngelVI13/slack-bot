@@ -84,16 +84,32 @@ func (d *SpacesLot) HasTempRelease(userId string) bool {
 	return userAlreadyReleasedSpace
 }
 
-func (d *SpacesLot) GetSpacesByFloor(userId, floor string) SpacesInfo {
+func (d *SpacesLot) GetSpacesByFloor(
+	userId, floor string,
+	onlyTaken bool,
+) SpacesInfo {
 	floorSpaces := make(SpacesInfo, 0)
 	allSpaces := d.GetSpacesInfo(userId)
 
-	if floor == "" {
-		return allSpaces
+	if floor == "" || len(allSpaces) == 0 {
+		// NOTE: This should never happen
+		return SpacesInfo{}
 	}
 
 	for _, space := range allSpaces {
-		if strings.HasPrefix(string(space.Key()), floor) {
+		if !strings.HasPrefix(string(space.Key()), floor) {
+			continue
+		}
+
+		if space.Reserved && space.ReservedById == userId {
+			floorSpaces = append(floorSpaces, space)
+			// its already added so skip it
+			continue
+		}
+
+		if onlyTaken && space.Reserved {
+			floorSpaces = append(floorSpaces, space)
+		} else if !onlyTaken && !space.Reserved {
 			floorSpaces = append(floorSpaces, space)
 		}
 	}

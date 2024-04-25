@@ -30,7 +30,8 @@ type Manager struct {
 
 	releaseInfo *spaces.ReleaseInfo
 
-	selectedFloor map[string]string
+	selectedFloor     map[string]string
+	selectedShowTaken map[string]bool
 }
 
 func NewManager(
@@ -41,11 +42,12 @@ func NewManager(
 	parkingLot := spaces.GetSpacesLot(filename)
 
 	return &Manager{
-		eventManager:  eventManager,
-		parkingLot:    &parkingLot,
-		userManager:   userManager,
-		releaseInfo:   nil,
-		selectedFloor: map[string]string{},
+		eventManager:      eventManager,
+		parkingLot:        &parkingLot,
+		userManager:       userManager,
+		releaseInfo:       nil,
+		selectedFloor:     map[string]string{},
+		selectedShowTaken: map[string]bool{},
 	}
 }
 
@@ -113,7 +115,14 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	if ok {
 		selectedFloor = selected
 	}
-	modal := m.generateBookingModalRequest(data, data.UserId, selectedFloor, errorTxt)
+
+	modal := m.generateBookingModalRequest(
+		data,
+		data.UserId,
+		selectedFloor,
+		m.selectedShowTaken[data.UserId],
+		errorTxt,
+	)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
@@ -137,6 +146,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				data,
 				data.UserId,
 				selectedFloor,
+				m.selectedShowTaken[data.UserId],
 				errorTxt,
 			)
 			actions = append(
@@ -151,6 +161,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				data,
 				parkingSpace,
 				m.selectedFloor[data.UserId],
+				m.selectedShowTaken[data.UserId],
 				isSpecialUser,
 			)
 
@@ -160,6 +171,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				data,
 				parkingSpace,
 				m.selectedFloor[data.UserId],
+				m.selectedShowTaken[data.UserId],
 			)
 
 		case tempReleaseParkingActionId:
@@ -168,6 +180,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				data,
 				parkingSpace,
 				m.selectedFloor[data.UserId],
+				m.selectedShowTaken[data.UserId],
 			)
 
 		case cancelTempReleaseParkingActionId:
@@ -176,6 +189,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				data,
 				parkingSpace,
 				m.selectedFloor[data.UserId],
+				m.selectedShowTaken[data.UserId],
 			)
 
 		case releaseStartDateActionId, releaseEndDateActionId:
@@ -322,6 +336,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		data,
 		data.UserId,
 		m.selectedFloor[data.UserId],
+		m.selectedShowTaken[data.UserId],
 		"",
 	)
 
@@ -358,6 +373,7 @@ func (m *Manager) handleReserveParking(
 	data *slackApi.BlockAction,
 	parkingSpace spaces.SpaceKey,
 	selectedFloor string,
+	selectedShowTaken bool,
 	isSpecialUser bool,
 ) []event.ResponseAction {
 	// Check if an admin has made the request
@@ -372,6 +388,7 @@ func (m *Manager) handleReserveParking(
 		data,
 		data.UserId,
 		selectedFloor,
+		selectedShowTaken,
 		errStr,
 	)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
@@ -382,6 +399,7 @@ func (m *Manager) handleTempReleaseParking(
 	data *slackApi.BlockAction,
 	parkingSpace spaces.SpaceKey,
 	selectedFloor string,
+	selectedShowTaken bool,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 	// Special User handling
@@ -408,6 +426,7 @@ func (m *Manager) handleTempReleaseParking(
 			data,
 			data.UserId,
 			selectedFloor,
+			selectedShowTaken,
 			err.Error(),
 		)
 		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
@@ -425,6 +444,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 	data *slackApi.BlockAction,
 	parkingSpace spaces.SpaceKey,
 	selectedFloor string,
+	selectedShowTaken bool,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 	// Special User handling
@@ -518,6 +538,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 		data,
 		data.UserId,
 		selectedFloor,
+		selectedShowTaken,
 		errorTxt,
 	)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
@@ -529,6 +550,7 @@ func (m *Manager) handleReleaseParking(
 	data *slackApi.BlockAction,
 	parkingSpace spaces.SpaceKey,
 	selectedFloor string,
+	selectedShowTaken bool,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 
@@ -557,6 +579,7 @@ func (m *Manager) handleReleaseParking(
 		data,
 		data.UserId,
 		selectedFloor,
+		selectedShowTaken,
 		errorTxt,
 	)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)

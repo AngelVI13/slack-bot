@@ -30,7 +30,8 @@ type Manager struct {
 	workspacesLot *spaces.SpacesLot
 	slackClient   *slack.Client
 
-	selectedFloor map[string]string
+	selectedFloor     map[string]string
+	selectedShowTaken map[string]bool
 }
 
 func NewManager(
@@ -40,10 +41,11 @@ func NewManager(
 ) *Manager {
 	worspacesLot := spaces.GetSpacesLot(filename)
 	return &Manager{
-		eventManager:  eventManager,
-		userManager:   userManager,
-		workspacesLot: &worspacesLot,
-		selectedFloor: map[string]string{},
+		eventManager:      eventManager,
+		userManager:       userManager,
+		workspacesLot:     &worspacesLot,
+		selectedFloor:     map[string]string{},
+		selectedShowTaken: map[string]bool{},
 	}
 }
 
@@ -95,7 +97,13 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	if ok {
 		selectedFloor = selected
 	}
-	modal := m.generateBookingModalRequest(data, data.UserId, selectedFloor, errorTxt)
+	modal := m.generateBookingModalRequest(
+		data,
+		data.UserId,
+		selectedFloor,
+		m.selectedShowTaken[data.UserId],
+		errorTxt,
+	)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(action)
@@ -119,6 +127,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				data,
 				data.UserId,
 				selectedFloor,
+				m.selectedShowTaken[data.UserId],
 				errorTxt,
 			)
 			actions = append(
@@ -132,6 +141,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				data,
 				workSpace,
 				m.selectedFloor[data.UserId],
+				m.selectedShowTaken[data.UserId],
 			)
 
 		case releaseWorkspaceActionId:
@@ -140,6 +150,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				data,
 				workSpace,
 				m.selectedFloor[data.UserId],
+				m.selectedShowTaken[data.UserId],
 			)
 		}
 	}
@@ -155,6 +166,7 @@ func (m *Manager) handleReserveWorkspace(
 	data *slackApi.BlockAction,
 	workSpace spaces.SpaceKey,
 	selectedFloor string,
+	selectedShowTaken bool,
 ) []event.ResponseAction {
 	autoRelease := true // by default workspace reservation is always with auto release
 
@@ -169,6 +181,7 @@ func (m *Manager) handleReserveWorkspace(
 		data,
 		data.UserId,
 		selectedFloor,
+		selectedShowTaken,
 		errStr,
 	)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
@@ -179,6 +192,7 @@ func (m *Manager) handleReleaseWorkspace(
 	data *slackApi.BlockAction,
 	workSpace spaces.SpaceKey,
 	selectedFloor string,
+	selectedShowTaken bool,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 
@@ -207,6 +221,7 @@ func (m *Manager) handleReleaseWorkspace(
 		data,
 		data.UserId,
 		selectedFloor,
+		selectedShowTaken,
 		errorTxt,
 	)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
