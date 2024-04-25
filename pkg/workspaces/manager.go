@@ -152,6 +152,22 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				m.selectedFloor[data.UserId],
 				m.selectedShowTaken[data.UserId],
 			)
+		case showOptionId:
+			selectedShowValue := data.Values[showActionId][showOptionId].SelectedOption.Value
+			selectedShowOption := selectedShowValue == showTakenOption
+			m.selectedShowTaken[data.UserId] = selectedShowOption
+			errorTxt := ""
+			modal := m.generateBookingModalRequest(
+				data,
+				data.UserId,
+				m.selectedFloor[data.UserId],
+				selectedShowOption,
+				errorTxt,
+			)
+			actions = append(
+				actions,
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+			)
 		}
 	}
 
