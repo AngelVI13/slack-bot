@@ -1,7 +1,5 @@
 package event
 
-import "fmt"
-
 type EventType int
 
 type Event interface {
@@ -30,7 +28,7 @@ var ResponseActionNames = map[ResponseActionType]string{
 }
 
 type ResponseAction interface {
-	String() string
+	Info() map[string]any
 	Action() ResponseActionType
 }
 
@@ -63,10 +61,6 @@ var EventNames = map[EventType]string{
 	TimerEvent:          "TimerEvent",
 	ResponseEvent:       "ResponseEvent",
 	AnyEvent:            "AnyEvent",
-}
-
-func DefaultEventString(e Event) string {
-	return fmt.Sprintf("%s(%s)", EventNames[e.Type()], e.User())
 }
 
 func EventName(e Event) string {

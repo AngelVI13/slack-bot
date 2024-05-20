@@ -22,13 +22,13 @@ func (r *Response) User() string {
 	return ""
 }
 
-// TODO: continue from here
-func (r Response) String() string {
-	out := "Response ["
+func (r *Response) Info() map[string]any {
+	out := map[string]any{}
+
 	for _, action := range r.Actions() {
-		out += action.String() + ", "
+		actionStr := event.ResponseActionNames[action.Action()]
+		out[actionStr] = action.Info()
 	}
-	out += "]"
 	return out
 }
 
