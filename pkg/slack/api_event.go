@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -20,8 +19,10 @@ func (m *Mention) Type() event.EventType {
 	return event.MentionEvent
 }
 
-func (m Mention) String() string {
-	return fmt.Sprintf("%s - %s", event.DefaultEventString(&m), m.Text)
+func (m *Mention) Info() map[string]any {
+	return map[string]any{
+		"text": m.Text,
+	}
 }
 
 func (m *Mention) HasContext(c string) bool {
@@ -33,7 +34,10 @@ func handleApiEvent(socketEvent socketmode.Event, client *Client) event.Event {
 	// The Event sent on the channel is not the same as the EventAPI events so we need to type cast it
 	apiEvent, ok := socketEvent.Data.(slackevents.EventsAPIEvent)
 	if !ok {
-		log.Printf("Could not type cast the event to the EventsAPIEvent: %v\n", socketEvent)
+		log.Printf(
+			"Could not type cast the event to the EventsAPIEvent: %v\n",
+			socketEvent,
+		)
 		return nil
 	}
 

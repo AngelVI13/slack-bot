@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -21,8 +20,10 @@ func (s *Slash) Type() event.EventType {
 	return event.SlashCmdEvent
 }
 
-func (s Slash) String() string {
-	return fmt.Sprintf("%s - %s", event.DefaultEventString(&s), s.Command)
+func (s *Slash) Info() map[string]any {
+	return map[string]any{
+		"cmd": s.Command,
+	}
 }
 
 func (s *Slash) HasContext(c string) bool {

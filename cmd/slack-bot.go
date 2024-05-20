@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
@@ -24,7 +25,9 @@ func setupLogging(logPath string) {
 	defer logFile.Close()
 
 	wrt := io.MultiWriter(os.Stdout, logFile)
-	log.SetOutput(wrt)
+
+	logger := slog.New(slog.NewTextHandler(wrt, nil))
+	slog.SetDefault(logger)
 }
 
 func main() {

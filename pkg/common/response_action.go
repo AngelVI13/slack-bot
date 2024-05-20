@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack"
 )
@@ -51,13 +49,12 @@ func NewPushViewAction(
 	}
 }
 
-func (v ViewAction) String() string {
-	return fmt.Sprintf(
-		"%s, TriggerID: %s ViewId: %s",
-		event.ResponseActionNames[v.Action()],
-		v.TriggerId,
-		v.ViewId,
-	)
+func (v *ViewAction) Info() map[string]any {
+	return map[string]any{
+		"action":    event.ResponseActionNames[v.Action()],
+		"triggerId": v.TriggerId,
+		"viewId":    v.ViewId,
+	}
 }
 
 func (v *ViewAction) Action() event.ResponseActionType {
@@ -74,8 +71,11 @@ func (p *PostAction) Action() event.ResponseActionType {
 	return p.action
 }
 
-func (p PostAction) String() string {
-	return fmt.Sprintf("%s, ChannelId: %s", event.ResponseActionNames[p.Action()], p.ChannelId)
+func (p *PostAction) Info() map[string]any {
+	return map[string]any{
+		"action":    event.ResponseActionNames[p.Action()],
+		"channelId": p.ChannelId,
+	}
 }
 
 func NewPostAction(channelId string, msgOption slack.MsgOption) *PostAction {
@@ -91,7 +91,10 @@ type PostEphemeralAction struct {
 	UserId string
 }
 
-func NewPostEphemeralAction(channelId, userId string, msgOption slack.MsgOption) *PostEphemeralAction {
+func NewPostEphemeralAction(
+	channelId, userId string,
+	msgOption slack.MsgOption,
+) *PostEphemeralAction {
 	return &PostEphemeralAction{
 		PostAction: PostAction{
 			action:    event.PostEphemeral,

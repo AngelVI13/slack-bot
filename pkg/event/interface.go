@@ -7,7 +7,7 @@ type EventType int
 type Event interface {
 	Type() EventType
 	User() string
-	String() string
+	Info() map[string]any
 	HasContext(context string) bool
 }
 
@@ -67,4 +67,8 @@ var EventNames = map[EventType]string{
 
 func DefaultEventString(e Event) string {
 	return fmt.Sprintf("%s(%s)", EventNames[e.Type()], e.User())
+}
+
+func EventName(e Event) string {
+	return EventNames[e.Type()]
 }

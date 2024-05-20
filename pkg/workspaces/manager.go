@@ -1,7 +1,7 @@
 package workspaces
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -81,7 +81,7 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
-		log.Println("ReleaseWorkspaces")
+		slog.Info("ReleaseWorkspaces")
 		m.workspacesLot.ReleaseSpaces(data.Time)
 	}
 }
@@ -215,7 +215,7 @@ func (m *Manager) handleReleaseWorkspace(
 	// Handle general case: normal user releasing a space
 	victimId, errStr := m.workspacesLot.Release(workSpace, data.UserName, data.UserId)
 	if victimId != "" {
-		log.Println(errStr)
+		slog.Info(errStr)
 		action := common.NewPostEphemeralAction(
 			victimId,
 			victimId,
@@ -228,7 +228,7 @@ func (m *Manager) handleReleaseWorkspace(
 	if m.userManager.IsAdminId(data.UserId) {
 		ok := m.workspacesLot.ToBeReleased.Remove(workSpace)
 		if !ok {
-			log.Printf("Failed to remove release info for space %s", workSpace)
+			slog.Warn("Failed to remove release info", "space", workSpace)
 		}
 	}
 

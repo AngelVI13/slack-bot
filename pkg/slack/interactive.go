@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -31,13 +30,12 @@ func (v *ViewSubmission) Type() event.EventType {
 	return event.ViewSubmissionEvent
 }
 
-func (v ViewSubmission) String() string {
-	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
-		event.DefaultEventString(&v),
-		v.Title,
-		v.ViewId,
-		v.TriggerId,
-	)
+func (v *ViewSubmission) Info() map[string]any {
+	return map[string]any{
+		"title":     v.Title,
+		"viewId":    v.ViewId,
+		"triggerId": v.TriggerId,
+	}
 }
 
 type BlockAction struct {
@@ -49,13 +47,12 @@ func (b *BlockAction) Type() event.EventType {
 	return event.BlockActionEvent
 }
 
-func (b BlockAction) String() string {
-	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
-		event.DefaultEventString(&b),
-		b.Title,
-		b.ViewId,
-		b.TriggerId,
-	)
+func (b *BlockAction) Info() map[string]any {
+	return map[string]any{
+		"title":     b.Title,
+		"viewId":    b.ViewId,
+		"triggerId": b.TriggerId,
+	}
 }
 
 type ViewClosed struct {
@@ -66,13 +63,12 @@ func (v *ViewClosed) Type() event.EventType {
 	return event.ViewClosedEvent
 }
 
-func (v ViewClosed) String() string {
-	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
-		event.DefaultEventString(&v),
-		v.Title,
-		v.ViewId,
-		v.TriggerId,
-	)
+func (v *ViewClosed) Info() map[string]any {
+	return map[string]any{
+		"title":     v.Title,
+		"viewId":    v.ViewId,
+		"triggerId": v.TriggerId,
+	}
 }
 
 type ViewOpened struct {
@@ -86,14 +82,12 @@ func (v *ViewOpened) Type() event.EventType {
 	return event.ViewOpenedEvent
 }
 
-func (v ViewOpened) String() string {
-	return fmt.Sprintf(
-		"%s |Title: %s |RootViewId: %s |ViewId: %s",
-		event.DefaultEventString(&v),
-		v.Title,
-		v.RootViewId,
-		v.ViewId,
-	)
+func (v *ViewOpened) Info() map[string]any {
+	return map[string]any{
+		"title":      v.Title,
+		"viewId":     v.ViewId,
+		"rootViewId": v.RootViewId,
+	}
 }
 
 func (v *ViewOpened) HasContext(c string) bool {
@@ -136,7 +130,11 @@ func handleInteractionEvent(socketEvent socketmode.Event, c *Client) event.Event
 	case slack.InteractionTypeViewClosed:
 		event = &ViewClosed{interaction}
 	default:
-		log.Printf("Unsupported interaction event: %v, %v", interactionCb.Type, interaction)
+		log.Printf(
+			"Unsupported interaction event: %v, %v",
+			interactionCb.Type,
+			interaction,
+		)
 		return nil
 	}
 

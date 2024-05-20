@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"sort"
 	"strings"
@@ -222,7 +223,7 @@ func (l *SpacesLot) Release(
 		)
 	}
 
-	log.Printf("SPACE_RELEASE: User (%s) released (%s) space.", userName, unitSpace)
+	slog.Info("SPACE_RELEASE", "user", userName, "space", unitSpace)
 
 	space.Reserved = false
 	l.SynchronizeToFile()

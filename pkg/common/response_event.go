@@ -22,6 +22,7 @@ func (r *Response) User() string {
 	return ""
 }
 
+// TODO: continue from here
 func (r Response) String() string {
 	out := "Response ["
 	for _, action := range r.Actions() {
