@@ -149,7 +149,7 @@ func userNameForSelectedUser(interaction Interaction, c *Client) string {
 	if userId == "" {
 		return ""
 	}
-	userData, err := c.socket.Client.GetUserInfo(userId)
+	userData, err := c.socket.GetUserInfo(userId)
 	if err != nil || userData == nil {
 		return ""
 	}

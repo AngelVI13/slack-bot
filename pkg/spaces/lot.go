@@ -56,7 +56,7 @@ func (d *SpacesLot) synchronizeFromFile(data []byte) {
 
 	// Do not load any submitted items from to be released map
 	for space, info := range d.ToBeReleased {
-		if info.Submitted != true {
+		if !info.Submitted {
 			delete(d.ToBeReleased, space)
 		}
 	}

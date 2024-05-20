@@ -46,33 +46,30 @@ func NewClient(config *config.Config, eventManager *event.EventManager) *Client 
 
 // Listen Listen on incomming slack events
 func (c *Client) Listen() {
-	for {
-		select {
-		case socketEvent := <-c.socket.Events:
-			var processedEvent event.Event
-			// We have a new Events, let's type switch the event
-			// Add more use cases here if you want to listen to other events.
-			switch socketEvent.Type {
-			case socketmode.EventTypeEventsAPI:
-				// Handle mentions
-				// TODO: should the ACK be done here before any processing happens?
-				c.socket.Ack(*socketEvent.Request)
-				processedEvent = handleApiEvent(socketEvent, c)
-			case socketmode.EventTypeSlashCommand:
-				// Handle slash commands
-				c.socket.Ack(*socketEvent.Request)
-				processedEvent = handleSlashCommand(socketEvent)
-			case socketmode.EventTypeInteractive:
-				// Handle interaction events i.e. user voted in our poll etc.
-				c.socket.Ack(*socketEvent.Request)
-				processedEvent = handleInteractionEvent(socketEvent, c)
-			default:
-				// log.Println("Unknown event", socketEvent)
-			}
+	for socketEvent := range c.socket.Events {
+		var processedEvent event.Event
+		// We have a new Events, let's type switch the event
+		// Add more use cases here if you want to listen to other events.
+		switch socketEvent.Type {
+		case socketmode.EventTypeEventsAPI:
+			// Handle mentions
+			// TODO: should the ACK be done here before any processing happens?
+			c.socket.Ack(*socketEvent.Request)
+			processedEvent = handleApiEvent(socketEvent, c)
+		case socketmode.EventTypeSlashCommand:
+			// Handle slash commands
+			c.socket.Ack(*socketEvent.Request)
+			processedEvent = handleSlashCommand(socketEvent)
+		case socketmode.EventTypeInteractive:
+			// Handle interaction events i.e. user voted in our poll etc.
+			c.socket.Ack(*socketEvent.Request)
+			processedEvent = handleInteractionEvent(socketEvent, c)
+		default:
+			// log.Println("Unknown event", socketEvent)
+		}
 
-			if processedEvent != nil {
-				c.eventManager.Publish(processedEvent)
-			}
+		if processedEvent != nil {
+			c.eventManager.Publish(processedEvent)
 		}
 	}
 }
@@ -109,8 +106,8 @@ func (c *Client) Consume(e event.Event) {
 			if newView != nil {
 				c.eventManager.Publish(&ViewOpened{
 					Title:      view.ModalRequest.Title.Text,
-					ViewId:     newView.View.ID,
-					RootViewId: newView.View.RootViewID,
+					ViewId:     newView.ID,
+					RootViewId: newView.RootViewID,
 				})
 			}
 
@@ -119,10 +116,10 @@ func (c *Client) Consume(e event.Event) {
 			}
 		case event.PostEphemeral:
 			post := action.(*common.PostEphemeralAction)
-			c.socket.Client.PostEphemeral(post.ChannelId, post.UserId, post.MsgOption)
+			c.socket.PostEphemeral(post.ChannelId, post.UserId, post.MsgOption)
 		case event.Post:
 			post := action.(*common.PostAction)
-			c.socket.Client.PostMessage(post.ChannelId, post.MsgOption)
+			c.socket.PostMessage(post.ChannelId, post.MsgOption)
 		default:
 			log.Printf("Unsupported action: %v", action.Action())
 		}
