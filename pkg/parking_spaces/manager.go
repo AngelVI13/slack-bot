@@ -518,7 +518,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 				if !ok {
-					slog.Warn("Failed removing release info", "space", parkingSpace)
+					slog.Error("Failed removing release info", "space", parkingSpace)
 				}
 			}
 		} else { // User cancelled space after EOD
@@ -552,7 +552,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 				if !ok {
-					slog.Warn("Failed removing release info", "space", parkingSpace)
+					slog.Error("Failed removing release info", "space", parkingSpace)
 				}
 			}
 		}
@@ -595,7 +595,7 @@ func (m *Manager) handleReleaseParking(
 	if m.userManager.IsAdminId(data.UserId) {
 		ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 		if !ok {
-			slog.Warn("Failed to remove release info", "space", parkingSpace)
+			slog.Error("Failed to remove release info", "space", parkingSpace)
 		}
 	}
 

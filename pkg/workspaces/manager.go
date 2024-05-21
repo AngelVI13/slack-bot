@@ -228,7 +228,7 @@ func (m *Manager) handleReleaseWorkspace(
 	if m.userManager.IsAdminId(data.UserId) {
 		ok := m.workspacesLot.ToBeReleased.Remove(workSpace)
 		if !ok {
-			slog.Warn("Failed to remove release info", "space", workSpace)
+			slog.Error("Failed to remove release info", "space", workSpace)
 		}
 	}
 
