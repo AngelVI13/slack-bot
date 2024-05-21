@@ -22,6 +22,48 @@ func (i *Interaction) HasContext(c string) bool {
 	return strings.Contains(i.Title, c)
 }
 
+func (i *Interaction) value(blockId, actionId string) string {
+	values := i.Values[blockId][actionId]
+
+	if values.Value != "" {
+		return values.Value
+	} else if values.SelectedOption.Value != "" {
+		return values.SelectedOption.Value
+	} else if len(values.SelectedOptions) > 0 {
+		var out []string
+		for _, v := range values.SelectedOptions {
+			out = append(out, v.Value)
+		}
+		return strings.Join(out, ",")
+	} else if values.SelectedUser != "" {
+		return values.SelectedUser
+	} else if len(values.SelectedUsers) > 0 {
+		return strings.Join(values.SelectedUsers, ",")
+	} else if values.SelectedChannel != "" {
+		return values.SelectedChannel
+	} else if len(values.SelectedChannels) > 0 {
+		return strings.Join(values.SelectedChannels, ",")
+	} else if values.SelectedConversation != "" {
+		return values.SelectedConversation
+	} else if len(values.SelectedConversations) > 0 {
+		return strings.Join(values.SelectedConversations, ",")
+	} else if values.SelectedDate != "" {
+		return values.SelectedDate
+	} else if values.SelectedTime != "" {
+		return values.SelectedTime
+	}
+	return ""
+}
+
+func (i *Interaction) ActionInfo() map[string]string {
+	out := map[string]string{}
+	for _, action := range i.Actions {
+		out[action.ActionID] = i.value(action.BlockID, action.ActionID)
+	}
+
+	return out
+}
+
 type ViewSubmission struct {
 	Interaction
 }
@@ -32,9 +74,7 @@ func (v *ViewSubmission) Type() event.EventType {
 
 func (v *ViewSubmission) Info() map[string]any {
 	return map[string]any{
-		"title":     v.Title,
-		"viewId":    v.ViewId,
-		"triggerId": v.TriggerId,
+		"title": v.Title,
 	}
 }
 
@@ -49,9 +89,8 @@ func (b *BlockAction) Type() event.EventType {
 
 func (b *BlockAction) Info() map[string]any {
 	return map[string]any{
-		"title":     b.Title,
-		"viewId":    b.ViewId,
-		"triggerId": b.TriggerId,
+		"info":  b.ActionInfo(),
+		"title": b.Title,
 	}
 }
 
@@ -65,9 +104,7 @@ func (v *ViewClosed) Type() event.EventType {
 
 func (v *ViewClosed) Info() map[string]any {
 	return map[string]any{
-		"title":     v.Title,
-		"viewId":    v.ViewId,
-		"triggerId": v.TriggerId,
+		"title": v.Title,
 	}
 }
 
@@ -84,9 +121,7 @@ func (v *ViewOpened) Type() event.EventType {
 
 func (v *ViewOpened) Info() map[string]any {
 	return map[string]any{
-		"title":      v.Title,
-		"viewId":     v.ViewId,
-		"rootViewId": v.RootViewId,
+		"title": v.Title,
 	}
 }
 

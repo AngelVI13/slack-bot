@@ -159,6 +159,7 @@ func (q ReleaseMap) Add(
 		return nil, fmt.Errorf("Space %s already marked for release", spaceKey)
 	}
 
+	slog.Info("Adding to release map", "space", spaceKey)
 	releaseInfo := &ReleaseInfo{
 		RootViewId: viewId,
 		ReleaserId: releaserId,

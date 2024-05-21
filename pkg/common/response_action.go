@@ -51,9 +51,7 @@ func NewPushViewAction(
 
 func (v *ViewAction) Info() map[string]any {
 	return map[string]any{
-		"action":    event.ResponseActionNames[v.Action()],
-		"triggerId": v.TriggerId,
-		"viewId":    v.ViewId,
+		"action": event.ResponseActionNames[v.Action()],
 	}
 }
 

@@ -106,7 +106,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
-	response := common.NewResponseEvent(action)
+	response := common.NewResponseEvent(data.UserName, action)
 	return response
 }
 
@@ -171,11 +171,11 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 		}
 	}
 
-	if actions == nil || len(actions) == 0 {
+	if len(actions) == 0 {
 		return nil
 	}
 
-	return common.NewResponseEvent(actions...)
+	return common.NewResponseEvent(data.UserName, actions...)
 }
 
 func (m *Manager) handleReserveWorkspace(

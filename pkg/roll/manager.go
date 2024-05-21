@@ -45,6 +45,6 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	text := fmt.Sprintf("%s rolled %d", data.UserName, roll)
 	msg := slack.MsgOptionText(text, true)
 	action := common.NewPostAction(data.ChannelId, msg)
-	response := common.NewResponseEvent(action)
+	response := common.NewResponseEvent(data.UserName, action)
 	return response
 }

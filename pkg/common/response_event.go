@@ -5,11 +5,20 @@ import (
 )
 
 type Response struct {
+	user    string
 	actions []event.ResponseAction
 }
 
-func NewResponseEvent(actions ...event.ResponseAction) *Response {
+func NewResponseEvent(user string, actions ...event.ResponseAction) *Response {
 	return &Response{
+		user:    user,
+		actions: actions,
+	}
+}
+
+func NewAnonResponseEvent(actions ...event.ResponseAction) *Response {
+	return &Response{
+		user:    "",
 		actions: actions,
 	}
 }
@@ -19,7 +28,7 @@ func (r *Response) Type() event.EventType {
 }
 
 func (r *Response) User() string {
-	return ""
+	return r.user
 }
 
 func (r *Response) Info() map[string]any {

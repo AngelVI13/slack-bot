@@ -25,8 +25,8 @@ func setupLogging(logPath string) *os.File {
 
 	wrt := io.MultiWriter(os.Stdout, logFile)
 
-	// logger := slog.New(slog.NewTextHandler(wrt, nil))
-	logger := slog.New(slog.NewJSONHandler(wrt, nil))
+	logger := slog.New(slog.NewTextHandler(wrt, nil))
+	// logger := slog.New(slog.NewJSONHandler(wrt, nil))
 	slog.SetDefault(logger)
 
 	return logFile

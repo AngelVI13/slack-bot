@@ -9,10 +9,11 @@ func NewEventLogger() *EventLogger {
 }
 
 func (ev *EventLogger) Consume(event Event) {
-	args := []any{"user", event.User()}
+	args := []any{"evt", EventName(event)}
+	args = append(args, "user", event.User())
 	for k, v := range event.Info() {
 		args = append(args, k, v)
 	}
 
-	slog.Info(EventName(event), args...)
+	slog.Info("", args...)
 }
