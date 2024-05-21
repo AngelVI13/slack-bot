@@ -2,7 +2,7 @@ package spaces
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -26,7 +26,7 @@ type ReleaseInfo struct {
 }
 
 func (i *ReleaseInfo) MarkSubmitted() {
-	log.Printf("ReleaseInfo Submitted: %v", i)
+	slog.Info("ReleaseInfo Submitted", "info", i)
 	i.Submitted = true
 
 	// Need to reset view IDs as they are no longer needed.
@@ -38,7 +38,7 @@ func (i *ReleaseInfo) MarkSubmitted() {
 }
 
 func (i *ReleaseInfo) MarkCancelled() {
-	log.Printf("ReleaseInfo Cancelled: %v", i)
+	slog.Info("ReleaseInfo Cancelled", "info", i)
 	i.Cancelled = true
 }
 
@@ -125,7 +125,7 @@ func (q ReleaseMap) Remove(spaceKey SpaceKey) bool {
 		return false
 	}
 
-	log.Println("Removing from release map: space ", spaceKey)
+	slog.Info("Removing from release map", "space", spaceKey)
 	delete(q, spaceKey)
 	return true
 }
@@ -142,7 +142,7 @@ func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {
 		return spaceKey, false
 	}
 
-	log.Println("Removing from release map: space ", spaceKey)
+	slog.Info("Removing from release map", "space", spaceKey)
 	delete(q, spaceKey)
 	return spaceKey, true
 }

@@ -1,7 +1,7 @@
 package slack
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack/slackevents"
@@ -34,9 +34,9 @@ func handleApiEvent(socketEvent socketmode.Event, client *Client) event.Event {
 	// The Event sent on the channel is not the same as the EventAPI events so we need to type cast it
 	apiEvent, ok := socketEvent.Data.(slackevents.EventsAPIEvent)
 	if !ok {
-		log.Printf(
-			"Could not type cast the event to the EventsAPIEvent: %v\n",
-			socketEvent,
+		slog.Error(
+			"Could not type cast the event to the EventsAPIEvent",
+			"socketEvent", socketEvent,
 		)
 		return nil
 	}
@@ -67,12 +67,12 @@ func handleApiEvent(socketEvent socketmode.Event, client *Client) event.Event {
 			}
 			return processedEvent
 		default:
-			log.Printf("unsupported callback event type: %T -> %v", innerEvent.Data, innerEvent.Data)
+			slog.Error("unsupported callback event type", "innerEvent.Data", innerEvent.Data)
 			return nil
 
 		}
 	default:
-		log.Printf("unsupported api event type: %T -> %v", apiEvent.Type, apiEvent)
+		slog.Error("unsupported api event type", "type", apiEvent.Type, "event", apiEvent)
 		return nil
 	}
 }

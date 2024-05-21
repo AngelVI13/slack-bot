@@ -1,7 +1,7 @@
 package slack
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack"
@@ -33,9 +33,8 @@ func (s *Slash) HasContext(c string) bool {
 func handleSlashCommand(socketEvent socketmode.Event) event.Event {
 	command, ok := socketEvent.Data.(slack.SlashCommand)
 	if !ok {
-		log.Printf(
-			"ERROR: Could not type cast the message to a SlashCommand: %v\n",
-			command,
+		slog.Error(
+			"Could not type cast the message to a SlashCommand", "cmd", command,
 		)
 		return nil
 	}

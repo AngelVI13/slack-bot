@@ -2,6 +2,7 @@ package slack
 
 import (
 	"log"
+	"log/slog"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
@@ -77,7 +78,7 @@ func (c *Client) Listen() {
 func (c *Client) Consume(e event.Event) {
 	data, ok := e.(event.Response)
 	if !ok {
-		log.Printf("Slack client expected Response but got sth else: %T: %v", e, e)
+		slog.Error("Slack client expected Response but got sth else", "event", e)
 		return
 	}
 
@@ -100,7 +101,7 @@ func (c *Client) Consume(e event.Event) {
 			case event.UpdateView:
 				_, err = c.socket.UpdateView(view.ModalRequest, "", "", view.ViewId)
 			default:
-				log.Printf("Unsupported view action: %v", viewAction)
+				slog.Error("Unsupported view action", "viewAction", viewAction)
 			}
 
 			if newView != nil {
@@ -112,7 +113,7 @@ func (c *Client) Consume(e event.Event) {
 			}
 
 			if err != nil {
-				log.Printf("Error opening view: %s", err)
+				slog.Error("Error opening view", "err", err)
 			}
 		case event.PostEphemeral:
 			post := action.(*common.PostEphemeralAction)
@@ -121,7 +122,7 @@ func (c *Client) Consume(e event.Event) {
 			post := action.(*common.PostAction)
 			c.socket.PostMessage(post.ChannelId, post.MsgOption)
 		default:
-			log.Printf("Unsupported action: %v", action.Action())
+			slog.Error("Unsupported action", "action", action.Action())
 		}
 	}
 }

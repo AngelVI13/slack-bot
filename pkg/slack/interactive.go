@@ -1,7 +1,7 @@
 package slack
 
 import (
-	"log"
+	"log/slog"
 	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -97,8 +97,8 @@ func (v *ViewOpened) HasContext(c string) bool {
 func handleInteractionEvent(socketEvent socketmode.Event, c *Client) event.Event {
 	interactionCb, ok := socketEvent.Data.(slack.InteractionCallback)
 	if !ok {
-		log.Printf(
-			"ERROR: Could not type cast the message to a Interaction callback: %v\n",
+		slog.Error(
+			"Could not type cast the message to a Interaction callback", "event",
 			socketEvent,
 		)
 		return nil
@@ -130,10 +130,10 @@ func handleInteractionEvent(socketEvent socketmode.Event, c *Client) event.Event
 	case slack.InteractionTypeViewClosed:
 		event = &ViewClosed{interaction}
 	default:
-		log.Printf(
-			"Unsupported interaction event: %v, %v",
-			interactionCb.Type,
-			interaction,
+		slog.Error(
+			"Unsupported interaction event",
+			"interactionCbType", interactionCb.Type,
+			"interaction", interaction,
 		)
 		return nil
 	}

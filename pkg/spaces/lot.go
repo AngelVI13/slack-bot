@@ -44,7 +44,7 @@ func (d *SpacesLot) SynchronizeToFile() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("INFO: Wrote spaces lot to file: %s", d.Filename)
+	slog.Info("Wrote spaces lot to file", "file", d.Filename)
 }
 
 func (d *SpacesLot) synchronizeFromFile(data []byte) {
@@ -194,10 +194,13 @@ func (l *SpacesLot) Reserve(
 			reservedTime,
 		)
 	}
-	log.Printf(
-		"SPACE_RESERVE: User (%s) reserved space (%s) with auto release (%v)",
+	slog.Info(
+		"SPACE_RESERVE",
+		"user",
 		user,
+		"space",
 		unitSpace,
+		"autoRelease",
 		autoRelease,
 	)
 
@@ -243,7 +246,7 @@ func (l *SpacesLot) Release(
 func (l *SpacesLot) GetSpace(unitSpace SpaceKey) *Space {
 	space, ok := l.UnitSpaces[unitSpace]
 	if !ok {
-		log.Printf("Incorrect space number %s", unitSpace)
+		slog.Error("Incorrect space number", "space", unitSpace)
 		return nil
 	}
 	return space
@@ -254,7 +257,7 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 	for spaceKey, space := range l.UnitSpaces {
 		// Simple case
 		if space.Reserved && space.AutoRelease {
-			log.Println("AutoRelease space ", spaceKey)
+			slog.Info("AutoRelease", "space", spaceKey)
 			space.Reserved = false
 			space.AutoRelease = false
 			// Fall-through to check if this is also a temporary
@@ -271,13 +274,13 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 		// available for selection
 		if releaseInfo.StartDate.Sub(cTime).Hours() < 24 &&
 			releaseInfo.StartDate.After(cTime) {
-			log.Println("TempRelease space ", spaceKey, releaseInfo)
+			slog.Info("TempRelease", "space", spaceKey, "releaseInfo", releaseInfo)
 			space.Reserved = false
 			space.AutoRelease = false
 		} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
 			// On the day of the end of release -> reserve back the space
 			// for the correct user
-			log.Println("TempReserve space ", spaceKey, releaseInfo)
+			slog.Info("TempReserve", "space", spaceKey, "releaseInfo", releaseInfo)
 			space.Reserved = true
 			space.AutoRelease = false
 			space.ReservedBy = releaseInfo.OwnerName
@@ -285,7 +288,7 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 
 			ok := l.ToBeReleased.Remove(spaceKey)
 			if !ok {
-				log.Printf("Failed removing release info for space %s", spaceKey)
+				slog.Error("Failed removing release info", "space", spaceKey)
 			}
 		}
 	}
@@ -306,9 +309,9 @@ func GetSpacesLot(filename string) (spacesLot SpacesLot) {
 		log.Fatalf("No spaces found in (%s).", filename)
 	}
 
-	log.Printf(
-		"INIT: Spaces list (%s) loaded successfully (%d spaces configured)",
-		filename, loadedSpacesNum,
+	slog.Info(
+		"INIT: Spaces list loaded successfully",
+		"file", filename, "spaces", loadedSpacesNum,
 	)
 	return spacesLot
 }

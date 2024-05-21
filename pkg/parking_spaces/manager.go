@@ -2,7 +2,7 @@ package parking_spaces
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -77,7 +77,7 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
-		log.Println("ReleaseSpaces")
+		slog.Info("ReleaseSpaces")
 		m.parkingLot.ReleaseSpaces(data.Time)
 	case event.ViewSubmissionEvent:
 		data := e.(*slackApi.ViewSubmission)
@@ -381,7 +381,7 @@ func (m *Manager) handleViewOpened(data *slackApi.ViewOpened) {
 func (m *Manager) handleViewClosed(data *slackApi.ViewClosed) {
 	space, success := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
 	if success {
-		log.Printf("Removed space %s from ToBeReleased queue", space)
+		slog.Info("Removed from ToBeReleased queue", "space", space)
 		m.parkingLot.SynchronizeToFile()
 	}
 }
@@ -476,7 +476,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 	if releaseInfo == nil {
 		errorTxt = fmt.Sprintf("Couldn't find release info for space %s", parkingSpace)
 	} else if releaseInfo.StartDate.After(time.Now()) {
-		log.Println("Cancel temp. release & return to owner chosenParkingSpace ", parkingSpace, releaseInfo)
+		slog.Info("Cancel temp. release & return to owner", "space", parkingSpace, "releaseInfo", releaseInfo)
 		chosenParkingSpace.Reserved = true
 		chosenParkingSpace.AutoRelease = false
 		chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
@@ -495,7 +495,9 @@ func (m *Manager) handleCancelTempReleaseParking(
 		if (now.Hour() < ResetHour) || (now.Hour() == ResetHour && now.Minute() < ResetMin) {
 			// Somebody already booked it for the day -> return it at end of day
 			if chosenParkingSpace.Reserved {
-				log.Println("Temporary release cancelled (before eod). Space is taken. Return to owner at eod.", parkingSpace, releaseInfo)
+				slog.Info(
+					"Temporary release cancelled (before eod). Space is taken. Return to owner at eod.",
+					"space", parkingSpace, "releaseInfo", releaseInfo)
 				releaseInfo.EndDate = &now
 				releaseInfo.MarkCancelled()
 				errorTxt = fmt.Sprintf(
@@ -506,7 +508,9 @@ func (m *Manager) handleCancelTempReleaseParking(
 				)
 			} else {
 				// if parking space was not already reserved for the day transfer it to owner
-				log.Println("Temporary release cancelled (before eod). Space is not taken. Return to owner immediately.", parkingSpace, releaseInfo)
+				slog.Info(
+					"Temporary release cancelled (before eod). Space is not taken. Return to owner immediately.",
+					"space", parkingSpace, "releaseInfo", releaseInfo)
 				chosenParkingSpace.Reserved = true
 				chosenParkingSpace.AutoRelease = false
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
@@ -514,14 +518,16 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 				if !ok {
-					log.Printf("Failed removing release info for space %s", parkingSpace)
+					slog.Warn("Failed removing release info", "space", parkingSpace)
 				}
 			}
 		} else { // User cancelled space after EOD
 			if chosenParkingSpace.Reserved {
 				// if parking space was already reserved by someone else -> transfer
 				// back to owner on the day after tomorrow
-				log.Println("Temporary release cancelled (after eod). Space is taken. Return to owner tomorrow after eod.", parkingSpace, releaseInfo)
+				slog.Info(
+					"Temporary release cancelled (after eod). Space is taken. Return to owner tomorrow after eod.",
+					"space", parkingSpace, "releaseInfo", releaseInfo)
 				errorTxt = fmt.Sprintf(
 					`Temporary release cancelled but someone already reserved the space 
                     for tomorrow. The space %s will be returned to you tomorrow at %d:%d.`,
@@ -536,7 +542,9 @@ func (m *Manager) handleCancelTempReleaseParking(
 			} else {
 				// if parking space was not already reserved for the next day
 				// transfer it to owner
-				log.Println("Temporary release cancelled (after eod). Space is not taken. Return to owner immediately.", parkingSpace, releaseInfo)
+				slog.Info(
+					"Temporary release cancelled (after eod). Space is not taken. Return to owner immediately.",
+					"space", parkingSpace, "releaseInfo", releaseInfo)
 				chosenParkingSpace.Reserved = true
 				chosenParkingSpace.AutoRelease = false
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
@@ -544,7 +552,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 				if !ok {
-					log.Printf("Failed removing release info for space %s", parkingSpace)
+					slog.Warn("Failed removing release info", "space", parkingSpace)
 				}
 			}
 		}
@@ -574,7 +582,7 @@ func (m *Manager) handleReleaseParking(
 	// Handle general case: normal user releasing a space
 	victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName, data.UserId)
 	if victimId != "" {
-		log.Println(errStr)
+		slog.Warn(errStr)
 		action := common.NewPostEphemeralAction(
 			victimId,
 			victimId,
@@ -587,7 +595,7 @@ func (m *Manager) handleReleaseParking(
 	if m.userManager.IsAdminId(data.UserId) {
 		ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 		if !ok {
-			log.Printf("Failed to remove release info for space %s", parkingSpace)
+			slog.Warn("Failed to remove release info", "space", parkingSpace)
 		}
 	}
 
@@ -613,14 +621,16 @@ func (m *Manager) handleReleaseRange(
 	currentLocation := time.Now().Location()
 	date, err := time.ParseInLocation("2006-01-02", selectedDate, currentLocation)
 	if err != nil {
-		log.Printf("Failed to parse date format %s: %v", selectedDate, err)
+		// TODO: should this return here or just log ?
+		slog.Error("Failed to parse date format", "date", selectedDate, "err", err)
 	}
 
 	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
 	// NOTE: releaseInfo is created when the user clicks "Release" button
 	if releaseInfo == nil {
-		log.Printf(
-			"ERROR: Expected release info to be not nil: %v",
+		slog.Error(
+			"Expected release info to be not nil",
+			"ToBeReleased",
 			m.parkingLot.ToBeReleased,
 		)
 		return nil
