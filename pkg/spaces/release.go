@@ -149,6 +149,7 @@ func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {
 
 func (q ReleaseMap) Add(
 	viewId,
+	releaserName,
 	releaserId,
 	ownerName,
 	ownerId string,
@@ -159,7 +160,15 @@ func (q ReleaseMap) Add(
 		return nil, fmt.Errorf("Space %s already marked for release", spaceKey)
 	}
 
-	slog.Info("Adding to release map", "space", spaceKey)
+	slog.Info(
+		"Adding to release map",
+		"space",
+		spaceKey,
+		"releaser",
+		releaserName,
+		"owner",
+		ownerName,
+	)
 	releaseInfo := &ReleaseInfo{
 		RootViewId: viewId,
 		ReleaserId: releaserId,

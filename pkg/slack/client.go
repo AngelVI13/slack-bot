@@ -54,7 +54,6 @@ func (c *Client) Listen() {
 		switch socketEvent.Type {
 		case socketmode.EventTypeEventsAPI:
 			// Handle mentions
-			// TODO: should the ACK be done here before any processing happens?
 			c.socket.Ack(*socketEvent.Request)
 			processedEvent = handleApiEvent(socketEvent, c)
 		case socketmode.EventTypeSlashCommand:

@@ -132,7 +132,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 			actions = append(
 				actions,
-				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 
 		case reserveWorkspaceActionId:
@@ -166,7 +166,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 			actions = append(
 				actions,
-				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 		}
 	}
@@ -200,7 +200,12 @@ func (m *Manager) handleReserveWorkspace(
 		selectedShowTaken,
 		errStr,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errStr,
+	)
 	return []event.ResponseAction{action}
 }
 
@@ -216,11 +221,7 @@ func (m *Manager) handleReleaseWorkspace(
 	victimId, errStr := m.workspacesLot.Release(workSpace, data.UserName, data.UserId)
 	if victimId != "" {
 		slog.Info(errStr)
-		action := common.NewPostEphemeralAction(
-			victimId,
-			victimId,
-			slack.MsgOptionText(errStr, false),
-		)
+		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
 		actions = append(actions, action)
 	}
 
@@ -232,15 +233,20 @@ func (m *Manager) handleReleaseWorkspace(
 		}
 	}
 
-	errorTxt := ""
+	errTxt := ""
 	bookingModal := m.generateBookingModalRequest(
 		data,
 		data.UserId,
 		selectedFloor,
 		selectedShowTaken,
-		errorTxt,
+		errTxt,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errTxt,
+	)
 	actions = append(actions, action)
 
 	return actions

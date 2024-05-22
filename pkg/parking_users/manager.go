@@ -91,11 +91,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 			"You don't have permission to execute '%s' command",
 			SlashCmd,
 		)
-		action := common.NewPostEphemeralAction(
-			data.UserId,
-			data.UserId,
-			slack.MsgOptionText(errTxt, false),
-		)
+		action := common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false)
 		return common.NewResponseEvent(data.UserName, action)
 	}
 
@@ -132,14 +128,15 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			// to update the existing checkboxes with their new values.
 			// Thats why we update the view with a clean modal
 			// and then just load the modal with actual data afterwards
+			errTxt := ""
 			clearedModal := m.generateUsersModalRequest(data, defaultUserOption)
 			actions = append(actions, common.NewUpdateViewAction(
-				data.TriggerId, data.ViewId, clearedModal,
+				data.TriggerId, data.ViewId, clearedModal, errTxt,
 			))
 
 			modalWithData := m.generateUsersModalRequest(data, selectedUserId)
 			actions = append(actions, common.NewUpdateViewAction(
-				data.TriggerId, data.ViewId, modalWithData,
+				data.TriggerId, data.ViewId, modalWithData, errTxt,
 			))
 		case userOptionId:
 			isAdmin := user.STANDARD
@@ -172,9 +169,10 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				// TODO: make his space reservation to permanent
 			}
 
+			errTxt := ""
 			modal := m.generateUsersModalRequest(data, selectedUser.UserId)
 			actions = append(actions, common.NewUpdateViewAction(
-				data.TriggerId, data.ViewId, modal,
+				data.TriggerId, data.ViewId, modal, errTxt,
 			))
 		}
 	}

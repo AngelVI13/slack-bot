@@ -280,7 +280,7 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 		} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
 			// On the day of the end of release -> reserve back the space
 			// for the correct user
-			slog.Info("TempReserve", "space", spaceKey, "releaseInfo", releaseInfo)
+			slog.Info("TempReserve (return to owner)", "space", spaceKey, "releaseInfo", releaseInfo)
 			space.Reserved = true
 			space.AutoRelease = false
 			space.ReservedBy = releaseInfo.OwnerName

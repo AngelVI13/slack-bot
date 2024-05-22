@@ -151,7 +151,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 			actions = append(
 				actions,
-				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 
 		case reserveParkingActionId:
@@ -212,7 +212,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 			actions = append(
 				actions,
-				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 		}
 	}
@@ -240,11 +240,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			spaceKey,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
@@ -264,11 +260,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			err,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
@@ -281,11 +273,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			spaceKey,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
@@ -302,11 +290,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			err,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
@@ -324,11 +308,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			errorTxt,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
@@ -349,17 +329,18 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		m.parkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
 	}
 
+	errTxt := ""
 	modal := m.generateBookingModalRequest(
 		data,
 		data.UserId,
 		m.selectedFloor[data.UserId],
 		m.selectedShowTaken[data.UserId],
-		"",
+		errTxt,
 	)
 
 	actions = append(
 		actions,
-		common.NewUpdateViewAction(data.TriggerId, rootViewId, modal),
+		common.NewUpdateViewAction(data.TriggerId, rootViewId, modal, errTxt),
 	)
 
 	if len(actions) == 0 {
@@ -408,7 +389,12 @@ func (m *Manager) handleReserveParking(
 		selectedShowTaken,
 		errStr,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errStr,
+	)
 	return []event.ResponseAction{action}
 }
 
@@ -431,6 +417,7 @@ func (m *Manager) handleTempReleaseParking(
 	// modal is referring to
 	info, err := m.parkingLot.ToBeReleased.Add(
 		data.ViewId,
+		data.UserName,
 		data.UserId,
 		chosenParkingSpace.ReservedBy,
 		chosenParkingSpace.ReservedById,
@@ -439,14 +426,20 @@ func (m *Manager) handleTempReleaseParking(
 	// If we can't add a space for temporary release queue it likely means that someone
 	// is already trying to do the same thing -> show error in modal
 	if err != nil {
+		errTxt := err.Error()
 		bookingModal := m.generateBookingModalRequest(
 			data,
 			data.UserId,
 			selectedFloor,
 			selectedShowTaken,
-			err.Error(),
+			errTxt,
 		)
-		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+		action := common.NewUpdateViewAction(
+			data.TriggerId,
+			data.ViewId,
+			bookingModal,
+			errTxt,
+		)
 		actions = append(actions, action)
 		return actions
 	}
@@ -566,7 +559,12 @@ func (m *Manager) handleCancelTempReleaseParking(
 		selectedShowTaken,
 		errorTxt,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errorTxt,
+	)
 	actions = append(actions, action)
 	return actions
 }
@@ -583,11 +581,7 @@ func (m *Manager) handleReleaseParking(
 	victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName, data.UserId)
 	if victimId != "" {
 		slog.Warn(errStr)
-		action := common.NewPostEphemeralAction(
-			victimId,
-			victimId,
-			slack.MsgOptionText(errStr, false),
-		)
+		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
 		actions = append(actions, action)
 	}
 
@@ -607,7 +601,12 @@ func (m *Manager) handleReleaseParking(
 		selectedShowTaken,
 		errorTxt,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errorTxt,
+	)
 	actions = append(actions, action)
 
 	return actions
@@ -642,7 +641,8 @@ func (m *Manager) handleReleaseRange(
 		releaseInfo.EndDate = &date
 	}
 
-	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Check())
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal)
+	errTxt := releaseInfo.Check()
+	modal := generateReleaseModalRequest(data, releaseInfo.Space, errTxt)
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errTxt)
 	return []event.ResponseAction{action}
 }
