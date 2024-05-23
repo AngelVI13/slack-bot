@@ -7,7 +7,6 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
-	"github.com/slack-go/slack"
 )
 
 const (

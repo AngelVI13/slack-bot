@@ -10,7 +10,6 @@ import (
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/user"
-	"github.com/slack-go/slack"
 )
 
 const (
