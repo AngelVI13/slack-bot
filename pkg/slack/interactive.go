@@ -1,8 +1,7 @@
 package slack
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -23,6 +22,48 @@ func (i *Interaction) HasContext(c string) bool {
 	return strings.Contains(i.Title, c)
 }
 
+func (i *Interaction) value(blockId, actionId string) string {
+	values := i.Values[blockId][actionId]
+
+	if values.Value != "" {
+		return values.Value
+	} else if values.SelectedOption.Value != "" {
+		return values.SelectedOption.Value
+	} else if len(values.SelectedOptions) > 0 {
+		var out []string
+		for _, v := range values.SelectedOptions {
+			out = append(out, v.Value)
+		}
+		return strings.Join(out, ",")
+	} else if values.SelectedUser != "" {
+		return values.SelectedUser
+	} else if len(values.SelectedUsers) > 0 {
+		return strings.Join(values.SelectedUsers, ",")
+	} else if values.SelectedChannel != "" {
+		return values.SelectedChannel
+	} else if len(values.SelectedChannels) > 0 {
+		return strings.Join(values.SelectedChannels, ",")
+	} else if values.SelectedConversation != "" {
+		return values.SelectedConversation
+	} else if len(values.SelectedConversations) > 0 {
+		return strings.Join(values.SelectedConversations, ",")
+	} else if values.SelectedDate != "" {
+		return values.SelectedDate
+	} else if values.SelectedTime != "" {
+		return values.SelectedTime
+	}
+	return ""
+}
+
+func (i *Interaction) ActionInfo() map[string]string {
+	out := map[string]string{}
+	for _, action := range i.Actions {
+		out[action.ActionID] = i.value(action.BlockID, action.ActionID)
+	}
+
+	return out
+}
+
 type ViewSubmission struct {
 	Interaction
 }
@@ -31,13 +72,10 @@ func (v *ViewSubmission) Type() event.EventType {
 	return event.ViewSubmissionEvent
 }
 
-func (v ViewSubmission) String() string {
-	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
-		event.DefaultEventString(&v),
-		v.Title,
-		v.ViewId,
-		v.TriggerId,
-	)
+func (v *ViewSubmission) Info() map[string]any {
+	return map[string]any{
+		"title": v.Title,
+	}
 }
 
 type BlockAction struct {
@@ -49,13 +87,11 @@ func (b *BlockAction) Type() event.EventType {
 	return event.BlockActionEvent
 }
 
-func (b BlockAction) String() string {
-	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
-		event.DefaultEventString(&b),
-		b.Title,
-		b.ViewId,
-		b.TriggerId,
-	)
+func (b *BlockAction) Info() map[string]any {
+	return map[string]any{
+		"info":  b.ActionInfo(),
+		"title": b.Title,
+	}
 }
 
 type ViewClosed struct {
@@ -66,13 +102,10 @@ func (v *ViewClosed) Type() event.EventType {
 	return event.ViewClosedEvent
 }
 
-func (v ViewClosed) String() string {
-	return fmt.Sprintf("%s |Title: %s |ViewId: %s |TriggerId: %s",
-		event.DefaultEventString(&v),
-		v.Title,
-		v.ViewId,
-		v.TriggerId,
-	)
+func (v *ViewClosed) Info() map[string]any {
+	return map[string]any{
+		"title": v.Title,
+	}
 }
 
 type ViewOpened struct {
@@ -86,14 +119,10 @@ func (v *ViewOpened) Type() event.EventType {
 	return event.ViewOpenedEvent
 }
 
-func (v ViewOpened) String() string {
-	return fmt.Sprintf(
-		"%s |Title: %s |RootViewId: %s |ViewId: %s",
-		event.DefaultEventString(&v),
-		v.Title,
-		v.RootViewId,
-		v.ViewId,
-	)
+func (v *ViewOpened) Info() map[string]any {
+	return map[string]any{
+		"title": v.Title,
+	}
 }
 
 func (v *ViewOpened) HasContext(c string) bool {
@@ -103,8 +132,8 @@ func (v *ViewOpened) HasContext(c string) bool {
 func handleInteractionEvent(socketEvent socketmode.Event, c *Client) event.Event {
 	interactionCb, ok := socketEvent.Data.(slack.InteractionCallback)
 	if !ok {
-		log.Printf(
-			"ERROR: Could not type cast the message to a Interaction callback: %v\n",
+		slog.Error(
+			"Could not type cast the message to a Interaction callback", "event",
 			socketEvent,
 		)
 		return nil
@@ -136,7 +165,11 @@ func handleInteractionEvent(socketEvent socketmode.Event, c *Client) event.Event
 	case slack.InteractionTypeViewClosed:
 		event = &ViewClosed{interaction}
 	default:
-		log.Printf("Unsupported interaction event: %v, %v", interactionCb.Type, interaction)
+		slog.Error(
+			"Unsupported interaction event",
+			"interactionCbType", interactionCb.Type,
+			"interaction", interaction,
+		)
 		return nil
 	}
 
@@ -151,7 +184,7 @@ func userNameForSelectedUser(interaction Interaction, c *Client) string {
 	if userId == "" {
 		return ""
 	}
-	userData, err := c.socket.Client.GetUserInfo(userId)
+	userData, err := c.socket.GetUserInfo(userId)
 	if err != nil || userData == nil {
 		return ""
 	}

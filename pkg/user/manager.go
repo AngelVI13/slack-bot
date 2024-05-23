@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
@@ -41,7 +42,7 @@ func getUsers(path string) (users UsersMap) {
 		log.Fatalf("No users found in (%s).", path)
 	}
 
-	log.Printf("INIT: User list loaded successfully (%d users configured)", loadedUsersNum)
+	slog.Info("INIT: User list loaded successfully", "users", loadedUsersNum)
 	return users
 }
 
@@ -65,11 +66,11 @@ func (m *Manager) SynchronizeToFile() {
 		log.Fatal(err)
 	}
 
-	err = os.WriteFile(m.usersFilename, data, 0666)
+	err = os.WriteFile(m.usersFilename, data, 0o666)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("INFO: Wrote users list to file")
+	slog.Info("Wrote users list to file")
 }
 
 func (m *Manager) IsAdminId(userId string) bool {

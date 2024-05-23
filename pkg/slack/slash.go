@@ -1,8 +1,7 @@
 package slack
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack"
@@ -21,8 +20,10 @@ func (s *Slash) Type() event.EventType {
 	return event.SlashCmdEvent
 }
 
-func (s Slash) String() string {
-	return fmt.Sprintf("%s - %s", event.DefaultEventString(&s), s.Command)
+func (s *Slash) Info() map[string]any {
+	return map[string]any{
+		"cmd": s.Command,
+	}
 }
 
 func (s *Slash) HasContext(c string) bool {
@@ -32,9 +33,8 @@ func (s *Slash) HasContext(c string) bool {
 func handleSlashCommand(socketEvent socketmode.Event) event.Event {
 	command, ok := socketEvent.Data.(slack.SlashCommand)
 	if !ok {
-		log.Printf(
-			"ERROR: Could not type cast the message to a SlashCommand: %v\n",
-			command,
+		slog.Error(
+			"Could not type cast the message to a SlashCommand", "cmd", command,
 		)
 		return nil
 	}

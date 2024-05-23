@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -14,8 +13,10 @@ func (t *TimerDone) Type() EventType {
 	return TimerEvent
 }
 
-func (t TimerDone) String() string {
-	return fmt.Sprintf("Timer[%s] Done.", t.Label)
+func (t *TimerDone) Info() map[string]any {
+	return map[string]any{
+		"label": t.Label,
+	}
 }
 
 func (t *TimerDone) User() string {

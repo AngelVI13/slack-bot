@@ -7,7 +7,6 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
-	"github.com/slack-go/slack"
 )
 
 const (
@@ -43,8 +42,7 @@ func (m *Manager) Context() string {
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	roll := rand.Intn(100) + 1
 	text := fmt.Sprintf("%s rolled %d", data.UserName, roll)
-	msg := slack.MsgOptionText(text, true)
-	action := common.NewPostAction(data.ChannelId, msg)
-	response := common.NewResponseEvent(action)
+	action := common.NewPostAction(data.ChannelId, text, true)
+	response := common.NewResponseEvent(data.UserName, action)
 	return response
 }

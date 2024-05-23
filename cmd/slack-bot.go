@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
@@ -15,20 +16,26 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/workspaces"
 )
 
-func setupLogging(logPath string) {
+func setupLogging(logPath string) *os.File {
 	// Configure logger
 	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
 		log.Fatalf("error opening log file: %v", err)
 	}
-	defer logFile.Close()
 
 	wrt := io.MultiWriter(os.Stdout, logFile)
-	log.SetOutput(wrt)
+
+	logger := slog.New(slog.NewTextHandler(wrt, nil))
+	// logger := slog.New(slog.NewJSONHandler(wrt, nil))
+	slog.SetDefault(logger)
+
+	return logFile
 }
 
 func main() {
-	setupLogging("slack-bot.log")
+	logFile := setupLogging("slack-bot.log")
+	defer logFile.Close()
+
 	config := config.NewConfigFromEnv(".env")
 
 	eventManager := event.NewEventManager()

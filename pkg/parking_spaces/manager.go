@@ -2,7 +2,7 @@ package parking_spaces
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -10,7 +10,6 @@ import (
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/user"
-	"github.com/slack-go/slack"
 )
 
 const (
@@ -77,7 +76,7 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
-		log.Println("ReleaseSpaces")
+		slog.Info("ReleaseSpaces")
 		m.parkingLot.ReleaseSpaces(data.Time)
 	case event.ViewSubmissionEvent:
 		data := e.(*slackApi.ViewSubmission)
@@ -125,7 +124,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
-	response := common.NewResponseEvent(action)
+	response := common.NewResponseEvent(data.UserName, action)
 	return response
 }
 
@@ -151,7 +150,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 			actions = append(
 				actions,
-				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 
 		case reserveParkingActionId:
@@ -212,16 +211,16 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 			actions = append(
 				actions,
-				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 		}
 	}
 
-	if actions == nil || len(actions) == 0 {
+	if len(actions) == 0 {
 		return nil
 	}
 
-	return common.NewResponseEvent(actions...)
+	return common.NewResponseEvent(data.UserName, actions...)
 }
 
 func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
@@ -240,13 +239,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			spaceKey,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
-		return common.NewResponseEvent(actions...)
+		return common.NewResponseEvent(data.UserName, actions...)
 	}
 
 	currentLocation := time.Now().Location()
@@ -264,13 +259,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			err,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
-		return common.NewResponseEvent(actions...)
+		return common.NewResponseEvent(data.UserName, actions...)
 	}
 
 	endDateStr := submittedData[releaseEndDateActionId].SelectedDate
@@ -281,13 +272,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			spaceKey,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
-		return common.NewResponseEvent(actions...)
+		return common.NewResponseEvent(data.UserName, actions...)
 	}
 	endDate, err := time.ParseInLocation("2006-01-02", endDateStr, currentLocation)
 	if err != nil {
@@ -302,13 +289,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			err,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
-		return common.NewResponseEvent(actions...)
+		return common.NewResponseEvent(data.UserName, actions...)
 	}
 
 	errorTxt := common.CheckDateRange(startDate, endDate)
@@ -324,13 +307,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			errorTxt,
 		)
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				slack.MsgOptionText(errTxt, false),
-			),
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
 		}
-		return common.NewResponseEvent(actions...)
+		return common.NewResponseEvent(data.UserName, actions...)
 	}
 
 	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
@@ -349,23 +328,24 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		m.parkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
 	}
 
+	errTxt := ""
 	modal := m.generateBookingModalRequest(
 		data,
 		data.UserId,
 		m.selectedFloor[data.UserId],
 		m.selectedShowTaken[data.UserId],
-		"",
+		errTxt,
 	)
 
 	actions = append(
 		actions,
-		common.NewUpdateViewAction(data.TriggerId, rootViewId, modal),
+		common.NewUpdateViewAction(data.TriggerId, rootViewId, modal, errTxt),
 	)
 
-	if actions == nil || len(actions) == 0 {
+	if len(actions) == 0 {
 		return nil
 	}
-	return common.NewResponseEvent(actions...)
+	return common.NewResponseEvent(data.UserName, actions...)
 }
 
 func (m *Manager) handleViewOpened(data *slackApi.ViewOpened) {
@@ -381,7 +361,7 @@ func (m *Manager) handleViewOpened(data *slackApi.ViewOpened) {
 func (m *Manager) handleViewClosed(data *slackApi.ViewClosed) {
 	space, success := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
 	if success {
-		log.Printf("Removed space %s from ToBeReleased queue", space)
+		slog.Info("Removed from ToBeReleased queue", "space", space)
 		m.parkingLot.SynchronizeToFile()
 	}
 }
@@ -408,7 +388,12 @@ func (m *Manager) handleReserveParking(
 		selectedShowTaken,
 		errStr,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errStr,
+	)
 	return []event.ResponseAction{action}
 }
 
@@ -431,6 +416,7 @@ func (m *Manager) handleTempReleaseParking(
 	// modal is referring to
 	info, err := m.parkingLot.ToBeReleased.Add(
 		data.ViewId,
+		data.UserName,
 		data.UserId,
 		chosenParkingSpace.ReservedBy,
 		chosenParkingSpace.ReservedById,
@@ -439,14 +425,20 @@ func (m *Manager) handleTempReleaseParking(
 	// If we can't add a space for temporary release queue it likely means that someone
 	// is already trying to do the same thing -> show error in modal
 	if err != nil {
+		errTxt := err.Error()
 		bookingModal := m.generateBookingModalRequest(
 			data,
 			data.UserId,
 			selectedFloor,
 			selectedShowTaken,
-			err.Error(),
+			errTxt,
 		)
-		action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+		action := common.NewUpdateViewAction(
+			data.TriggerId,
+			data.ViewId,
+			bookingModal,
+			errTxt,
+		)
 		actions = append(actions, action)
 		return actions
 	}
@@ -476,7 +468,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 	if releaseInfo == nil {
 		errorTxt = fmt.Sprintf("Couldn't find release info for space %s", parkingSpace)
 	} else if releaseInfo.StartDate.After(time.Now()) {
-		log.Println("Cancel temp. release & return to owner chosenParkingSpace ", parkingSpace, releaseInfo)
+		slog.Info("Cancel temp. release & return to owner", "space", parkingSpace, "releaseInfo", releaseInfo)
 		chosenParkingSpace.Reserved = true
 		chosenParkingSpace.AutoRelease = false
 		chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
@@ -495,7 +487,9 @@ func (m *Manager) handleCancelTempReleaseParking(
 		if (now.Hour() < ResetHour) || (now.Hour() == ResetHour && now.Minute() < ResetMin) {
 			// Somebody already booked it for the day -> return it at end of day
 			if chosenParkingSpace.Reserved {
-				log.Println("Temporary release cancelled (before eod). Space is taken. Return to owner at eod.", parkingSpace, releaseInfo)
+				slog.Info(
+					"Temporary release cancelled (before eod). Space is taken. Return to owner at eod.",
+					"space", parkingSpace, "releaseInfo", releaseInfo)
 				releaseInfo.EndDate = &now
 				releaseInfo.MarkCancelled()
 				errorTxt = fmt.Sprintf(
@@ -506,7 +500,9 @@ func (m *Manager) handleCancelTempReleaseParking(
 				)
 			} else {
 				// if parking space was not already reserved for the day transfer it to owner
-				log.Println("Temporary release cancelled (before eod). Space is not taken. Return to owner immediately.", parkingSpace, releaseInfo)
+				slog.Info(
+					"Temporary release cancelled (before eod). Space is not taken. Return to owner immediately.",
+					"space", parkingSpace, "releaseInfo", releaseInfo)
 				chosenParkingSpace.Reserved = true
 				chosenParkingSpace.AutoRelease = false
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
@@ -514,14 +510,16 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 				if !ok {
-					log.Printf("Failed removing release info for space %s", parkingSpace)
+					slog.Error("Failed removing release info", "space", parkingSpace)
 				}
 			}
 		} else { // User cancelled space after EOD
 			if chosenParkingSpace.Reserved {
 				// if parking space was already reserved by someone else -> transfer
 				// back to owner on the day after tomorrow
-				log.Println("Temporary release cancelled (after eod). Space is taken. Return to owner tomorrow after eod.", parkingSpace, releaseInfo)
+				slog.Info(
+					"Temporary release cancelled (after eod). Space is taken. Return to owner tomorrow after eod.",
+					"space", parkingSpace, "releaseInfo", releaseInfo)
 				errorTxt = fmt.Sprintf(
 					`Temporary release cancelled but someone already reserved the space 
                     for tomorrow. The space %s will be returned to you tomorrow at %d:%d.`,
@@ -536,7 +534,9 @@ func (m *Manager) handleCancelTempReleaseParking(
 			} else {
 				// if parking space was not already reserved for the next day
 				// transfer it to owner
-				log.Println("Temporary release cancelled (after eod). Space is not taken. Return to owner immediately.", parkingSpace, releaseInfo)
+				slog.Info(
+					"Temporary release cancelled (after eod). Space is not taken. Return to owner immediately.",
+					"space", parkingSpace, "releaseInfo", releaseInfo)
 				chosenParkingSpace.Reserved = true
 				chosenParkingSpace.AutoRelease = false
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
@@ -544,7 +544,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 				if !ok {
-					log.Printf("Failed removing release info for space %s", parkingSpace)
+					slog.Error("Failed removing release info", "space", parkingSpace)
 				}
 			}
 		}
@@ -558,7 +558,12 @@ func (m *Manager) handleCancelTempReleaseParking(
 		selectedShowTaken,
 		errorTxt,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errorTxt,
+	)
 	actions = append(actions, action)
 	return actions
 }
@@ -574,12 +579,8 @@ func (m *Manager) handleReleaseParking(
 	// Handle general case: normal user releasing a space
 	victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName, data.UserId)
 	if victimId != "" {
-		log.Println(errStr)
-		action := common.NewPostEphemeralAction(
-			victimId,
-			victimId,
-			slack.MsgOptionText(errStr, false),
-		)
+		slog.Warn(errStr)
+		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
 		actions = append(actions, action)
 	}
 
@@ -587,7 +588,7 @@ func (m *Manager) handleReleaseParking(
 	if m.userManager.IsAdminId(data.UserId) {
 		ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
 		if !ok {
-			log.Printf("Failed to remove release info for space %s", parkingSpace)
+			slog.Error("Failed to remove release info", "space", parkingSpace)
 		}
 	}
 
@@ -599,7 +600,12 @@ func (m *Manager) handleReleaseParking(
 		selectedShowTaken,
 		errorTxt,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errorTxt,
+	)
 	actions = append(actions, action)
 
 	return actions
@@ -613,14 +619,16 @@ func (m *Manager) handleReleaseRange(
 	currentLocation := time.Now().Location()
 	date, err := time.ParseInLocation("2006-01-02", selectedDate, currentLocation)
 	if err != nil {
-		log.Printf("Failed to parse date format %s: %v", selectedDate, err)
+		// TODO: should this return here or just log ?
+		slog.Error("Failed to parse date format", "date", selectedDate, "err", err)
 	}
 
 	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
 	// NOTE: releaseInfo is created when the user clicks "Release" button
 	if releaseInfo == nil {
-		log.Printf(
-			"ERROR: Expected release info to be not nil: %v",
+		slog.Error(
+			"Expected release info to be not nil",
+			"ToBeReleased",
 			m.parkingLot.ToBeReleased,
 		)
 		return nil
@@ -632,7 +640,8 @@ func (m *Manager) handleReleaseRange(
 		releaseInfo.EndDate = &date
 	}
 
-	modal := generateReleaseModalRequest(data, releaseInfo.Space, releaseInfo.Check())
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal)
+	errTxt := releaseInfo.Check()
+	modal := generateReleaseModalRequest(data, releaseInfo.Space, errTxt)
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errTxt)
 	return []event.ResponseAction{action}
 }

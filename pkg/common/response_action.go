@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack"
 )
@@ -12,18 +10,21 @@ type ViewAction struct {
 	TriggerId    string
 	ViewId       string
 	ModalRequest slack.ModalViewRequest
+	ErrTxt       string
 }
 
 func NewUpdateViewAction(
 	triggerId,
 	viewId string,
 	modalRequest slack.ModalViewRequest,
+	errTxt string,
 ) *ViewAction {
 	return &ViewAction{
 		action:       event.UpdateView,
 		TriggerId:    triggerId,
 		ViewId:       viewId,
 		ModalRequest: modalRequest,
+		ErrTxt:       errTxt,
 	}
 }
 
@@ -51,13 +52,14 @@ func NewPushViewAction(
 	}
 }
 
-func (v ViewAction) String() string {
-	return fmt.Sprintf(
-		"%s, TriggerID: %s ViewId: %s",
-		event.ResponseActionNames[v.Action()],
-		v.TriggerId,
-		v.ViewId,
-	)
+func (v *ViewAction) Info() map[string]any {
+	out := map[string]any{}
+
+	if v.ErrTxt != "" {
+		out["error"] = v.ErrTxt
+	}
+
+	return out
 }
 
 func (v *ViewAction) Action() event.ResponseActionType {
@@ -68,21 +70,26 @@ type PostAction struct {
 	action    event.ResponseActionType
 	ChannelId string
 	MsgOption slack.MsgOption
+	Txt       string
 }
 
 func (p *PostAction) Action() event.ResponseActionType {
 	return p.action
 }
 
-func (p PostAction) String() string {
-	return fmt.Sprintf("%s, ChannelId: %s", event.ResponseActionNames[p.Action()], p.ChannelId)
+func (p *PostAction) Info() map[string]any {
+	return map[string]any{
+		"txt":       p.Txt,
+		"channelId": p.ChannelId,
+	}
 }
 
-func NewPostAction(channelId string, msgOption slack.MsgOption) *PostAction {
+func NewPostAction(channelId, txt string, escape bool) *PostAction {
 	return &PostAction{
 		action:    event.Post,
 		ChannelId: channelId,
-		MsgOption: msgOption,
+		MsgOption: slack.MsgOptionText(txt, escape),
+		Txt:       txt,
 	}
 }
 
@@ -91,12 +98,16 @@ type PostEphemeralAction struct {
 	UserId string
 }
 
-func NewPostEphemeralAction(channelId, userId string, msgOption slack.MsgOption) *PostEphemeralAction {
+func NewPostEphemeralAction(
+	channelId, userId, txt string,
+	escape bool,
+) *PostEphemeralAction {
 	return &PostEphemeralAction{
 		PostAction: PostAction{
 			action:    event.PostEphemeral,
 			ChannelId: channelId,
-			MsgOption: msgOption,
+			MsgOption: slack.MsgOptionText(txt, escape),
+			Txt:       txt,
 		},
 		UserId: userId,
 	}

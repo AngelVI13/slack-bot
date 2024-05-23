@@ -1,7 +1,7 @@
 package workspaces
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -81,7 +81,7 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
-		log.Println("ReleaseWorkspaces")
+		slog.Info("ReleaseWorkspaces")
 		m.workspacesLot.ReleaseSpaces(data.Time)
 	}
 }
@@ -106,7 +106,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
-	response := common.NewResponseEvent(action)
+	response := common.NewResponseEvent(data.UserName, action)
 	return response
 }
 
@@ -132,7 +132,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 			actions = append(
 				actions,
-				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 
 		case reserveWorkspaceActionId:
@@ -166,16 +166,16 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 			actions = append(
 				actions,
-				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal),
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 		}
 	}
 
-	if actions == nil || len(actions) == 0 {
+	if len(actions) == 0 {
 		return nil
 	}
 
-	return common.NewResponseEvent(actions...)
+	return common.NewResponseEvent(data.UserName, actions...)
 }
 
 func (m *Manager) handleReserveWorkspace(
@@ -200,7 +200,12 @@ func (m *Manager) handleReserveWorkspace(
 		selectedShowTaken,
 		errStr,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errStr,
+	)
 	return []event.ResponseAction{action}
 }
 
@@ -215,12 +220,8 @@ func (m *Manager) handleReleaseWorkspace(
 	// Handle general case: normal user releasing a space
 	victimId, errStr := m.workspacesLot.Release(workSpace, data.UserName, data.UserId)
 	if victimId != "" {
-		log.Println(errStr)
-		action := common.NewPostEphemeralAction(
-			victimId,
-			victimId,
-			slack.MsgOptionText(errStr, false),
-		)
+		slog.Info(errStr)
+		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
 		actions = append(actions, action)
 	}
 
@@ -228,19 +229,24 @@ func (m *Manager) handleReleaseWorkspace(
 	if m.userManager.IsAdminId(data.UserId) {
 		ok := m.workspacesLot.ToBeReleased.Remove(workSpace)
 		if !ok {
-			log.Printf("Failed to remove release info for space %s", workSpace)
+			slog.Error("Failed to remove release info", "space", workSpace)
 		}
 	}
 
-	errorTxt := ""
+	errTxt := ""
 	bookingModal := m.generateBookingModalRequest(
 		data,
 		data.UserId,
 		selectedFloor,
 		selectedShowTaken,
-		errorTxt,
+		errTxt,
 	)
-	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, bookingModal)
+	action := common.NewUpdateViewAction(
+		data.TriggerId,
+		data.ViewId,
+		bookingModal,
+		errTxt,
+	)
 	actions = append(actions, action)
 
 	return actions
