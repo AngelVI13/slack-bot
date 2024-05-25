@@ -83,7 +83,7 @@ func (m *Manager) Consume(e event.Event) {
 
 		// NOTE: Currently only modal with ViewSubmission for parking pkg
 		// is related to parking booking (temporary release of parking space)
-		if data.Title != m.bookingView.Title {
+		if data.Title != m.releaseView.Title {
 			return
 		}
 
@@ -304,15 +304,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 
 	errTxt := ""
 	modal := m.bookingView.Generate(data.UserId, errTxt)
+	updateAction := common.NewUpdateViewAction(data.TriggerId, rootViewId, modal, errTxt)
+	actions = append(actions, updateAction)
 
-	actions = append(
-		actions,
-		common.NewUpdateViewAction(data.TriggerId, rootViewId, modal, errTxt),
-	)
-
-	if len(actions) == 0 {
-		return nil
-	}
 	return common.NewResponseEvent(data.UserName, actions...)
 }
 

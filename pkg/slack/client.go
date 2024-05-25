@@ -103,7 +103,7 @@ func (c *Client) Consume(e event.Event) {
 				slog.Error("Unsupported view action", "viewAction", viewAction)
 			}
 
-			if newView != nil {
+			if newView != nil && err == nil {
 				c.eventManager.Publish(&ViewOpened{
 					BaseEvent: BaseEvent{
 						UserName: e.User(),
@@ -116,7 +116,9 @@ func (c *Client) Consume(e event.Event) {
 			}
 
 			if err != nil {
-				slog.Error("Error opening view", "err", err)
+				actionName := event.ResponseActionNames[action.Action()]
+				details := newView.ResponseMetadata.Messages
+				slog.Error("", "action", actionName, "err", err, "details", details)
 			}
 		case event.PostEphemeral:
 			post := action.(*common.PostEphemeralAction)

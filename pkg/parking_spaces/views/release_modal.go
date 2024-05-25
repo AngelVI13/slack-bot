@@ -22,7 +22,7 @@ type Release struct {
 
 func NewRelease(identifier string, managerData *model.Data) *Release {
 	return &Release{
-		Title:       identifier + "Temporary release a parking spot",
+		Title:       identifier + "Release a spot",
 		managerData: managerData,
 	}
 }
