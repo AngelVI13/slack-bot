@@ -7,6 +7,8 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
+	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/user"
@@ -18,19 +20,19 @@ const (
 	// SlashCmd = "/test-park"
 
 	ResetParking = "Reset parking status"
-	ResetHour    = 17
-	ResetMin     = 0
+	ResetHour    = model.ResetHour
+	ResetMin     = model.ResetMin
 )
 
 type Manager struct {
 	eventManager *event.EventManager
-	parkingLot   *spaces.SpacesLot
-	userManager  *user.Manager
 
+	// TODO: this is not used ????
 	releaseInfo *spaces.ReleaseInfo
 
-	selectedFloor     map[string]string
-	selectedShowTaken map[string]bool
+	data        *model.Data
+	bookingView *views.Booking
+	releaseView *views.Release
 }
 
 func NewManager(
@@ -38,15 +40,13 @@ func NewManager(
 	userManager *user.Manager,
 	filename string,
 ) *Manager {
-	parkingLot := spaces.GetSpacesLot(filename)
-
+	data := model.NewData(filename, userManager)
 	return &Manager{
-		eventManager:      eventManager,
-		parkingLot:        &parkingLot,
-		userManager:       userManager,
-		releaseInfo:       nil,
-		selectedFloor:     map[string]string{},
-		selectedShowTaken: map[string]bool{},
+		eventManager: eventManager,
+		releaseInfo:  nil,
+		data:         data,
+		bookingView:  views.NewBooking(Identifier, data),
+		releaseView:  views.NewRelease(Identifier, data),
 	}
 }
 
@@ -77,13 +77,13 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		slog.Info("ReleaseSpaces")
-		m.parkingLot.ReleaseSpaces(data.Time)
+		m.data.ParkingLot.ReleaseSpaces(data.Time)
 	case event.ViewSubmissionEvent:
 		data := e.(*slackApi.ViewSubmission)
 
 		// NOTE: Currently only modal with ViewSubmission for parking pkg
 		// is related to parking booking (temporary release of parking space)
-		if data.Title != parkingBookingTitle {
+		if data.Title != m.bookingView.Title {
 			return
 		}
 
@@ -109,19 +109,7 @@ func (m *Manager) Context() string {
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
-	selectedFloor := defaultFloorOption
-	selected, ok := m.selectedFloor[data.UserId]
-	if ok {
-		selectedFloor = selected
-	}
-
-	modal := m.generateBookingModalRequest(
-		data,
-		data.UserId,
-		selectedFloor,
-		m.selectedShowTaken[data.UserId],
-		errorTxt,
-	)
+	modal := m.bookingView.Generate(data.UserId, errorTxt)
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(data.UserName, action)
@@ -131,84 +119,70 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Response {
 	var actions []event.ResponseAction
 
-	if _, ok := m.selectedFloor[data.UserId]; !ok {
-		m.selectedFloor[data.UserId] = defaultFloorOption
-	}
+	m.data.SetDefaultFloorIfMissing(data.UserId, model.DefaultFloorOption)
 
 	for _, action := range data.Actions {
 		switch action.ActionID {
-		case floorOptionId:
-			selectedFloor := data.Values[floorActionId][floorOptionId].SelectedOption.Value
-			m.selectedFloor[data.UserId] = selectedFloor
+		case views.FloorOptionId:
+			selectedFloor := data.IValue(views.FloorActionId, views.FloorOptionId)
+			m.data.SelectedFloor[data.UserId] = selectedFloor
 			errorTxt := ""
-			modal := m.generateBookingModalRequest(
-				data,
-				data.UserId,
-				selectedFloor,
-				m.selectedShowTaken[data.UserId],
-				errorTxt,
-			)
+			modal := m.bookingView.Generate(data.UserId, errorTxt)
 			actions = append(
 				actions,
 				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 
-		case reserveParkingActionId:
-			isSpecialUser := m.userManager.HasParkingById(data.UserId)
+		case views.ReserveParkingActionId:
+			isSpecialUser := m.data.UserManager.HasParkingById(data.UserId)
 			parkingSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleReserveParking(
 				data,
 				parkingSpace,
-				m.selectedFloor[data.UserId],
-				m.selectedShowTaken[data.UserId],
+				m.data.SelectedFloor[data.UserId],
+				m.data.SelectedShowTaken[data.UserId],
 				isSpecialUser,
 			)
 
-		case releaseParkingActionId:
+		case views.ReleaseParkingActionId:
 			parkingSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleReleaseParking(
 				data,
 				parkingSpace,
-				m.selectedFloor[data.UserId],
-				m.selectedShowTaken[data.UserId],
+				m.data.SelectedFloor[data.UserId],
+				m.data.SelectedShowTaken[data.UserId],
 			)
 
-		case tempReleaseParkingActionId:
+		case views.TempReleaseParkingActionId:
 			parkingSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleTempReleaseParking(
 				data,
 				parkingSpace,
-				m.selectedFloor[data.UserId],
-				m.selectedShowTaken[data.UserId],
+				m.data.SelectedFloor[data.UserId],
+				m.data.SelectedShowTaken[data.UserId],
 			)
 
-		case cancelTempReleaseParkingActionId:
+		case views.CancelTempReleaseParkingActionId:
 			parkingSpace := spaces.SpaceKey(action.Value)
 			actions = m.handleCancelTempReleaseParking(
 				data,
 				parkingSpace,
-				m.selectedFloor[data.UserId],
-				m.selectedShowTaken[data.UserId],
+				m.data.SelectedFloor[data.UserId],
+				m.data.SelectedShowTaken[data.UserId],
 			)
 
-		case releaseStartDateActionId, releaseEndDateActionId:
+		case views.ReleaseStartDateActionId, views.ReleaseEndDateActionId:
 			selectedDate := action.SelectedDate
-			isStartDate := action.ActionID == releaseStartDateActionId
+			isStartDate := action.ActionID == views.ReleaseStartDateActionId
 
 			actions = m.handleReleaseRange(data, selectedDate, isStartDate)
 
-		case showOptionId:
-			selectedShowValue := data.Values[showActionId][showOptionId].SelectedOption.Value
-			selectedShowOption := selectedShowValue == showTakenOption
-			m.selectedShowTaken[data.UserId] = selectedShowOption
+		case views.ShowOptionId:
+			selectedShowValue := data.IValue(views.ShowActionId, views.ShowOptionId)
+			selectedShowOption := selectedShowValue == model.ShowTakenOption
+			m.data.SelectedShowTaken[data.UserId] = selectedShowOption
 			errorTxt := ""
-			modal := m.generateBookingModalRequest(
-				data,
-				data.UserId,
-				m.selectedFloor[data.UserId],
-				selectedShowOption,
-				errorTxt,
-			)
+			modal := m.bookingView.Generate(data.UserId, errorTxt)
 			actions = append(
 				actions,
 				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
@@ -226,14 +200,14 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
 	var actions []event.ResponseAction
 
-	submittedData, ok := data.Values[releaseBlockId]
+	submittedData, ok := data.Values[views.ReleaseBlockId]
 	if !ok {
 		return nil
 	}
 
-	startDateStr := submittedData[releaseStartDateActionId].SelectedDate
+	startDateStr := submittedData[views.ReleaseStartDateActionId].SelectedDate
 	if startDateStr == "" {
-		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %s: no start date provided",
 			spaceKey,
@@ -249,8 +223,8 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	startDate, err := time.ParseInLocation("2006-01-02", startDateStr, currentLocation)
 	if err != nil {
 		// Remote space from temporary release queue
-		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
-		m.parkingLot.SynchronizeToFile()
+		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		m.data.ParkingLot.SynchronizeToFile()
 
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %s: failure to parse start date format %s: %v",
@@ -264,9 +238,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
 
-	endDateStr := submittedData[releaseEndDateActionId].SelectedDate
+	endDateStr := submittedData[views.ReleaseEndDateActionId].SelectedDate
 	if endDateStr == "" {
-		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %s: no end date provided",
 			spaceKey,
@@ -279,8 +253,8 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	endDate, err := time.ParseInLocation("2006-01-02", endDateStr, currentLocation)
 	if err != nil {
 		// Remote space from temporary release queue
-		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
-		m.parkingLot.SynchronizeToFile()
+		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		m.data.ParkingLot.SynchronizeToFile()
 
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %s: failure to parse end date format %s: %v",
@@ -297,8 +271,8 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	errorTxt := common.CheckDateRange(startDate, endDate)
 	if errorTxt != "" {
 		// Remote space from temporary release queue
-		spaceKey, _ := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
-		m.parkingLot.SynchronizeToFile()
+		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+		m.data.ParkingLot.SynchronizeToFile()
 
 		// TODO: maybe this should be a dialog window instead
 		errTxt := fmt.Sprintf(
@@ -312,11 +286,11 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
 
-	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
 
 	rootViewId := releaseInfo.RootViewId
 	releaseInfo.MarkSubmitted()
-	m.parkingLot.SynchronizeToFile()
+	m.data.ParkingLot.SynchronizeToFile()
 	currentTime := time.Now()
 
 	if common.EqualDate(startDate, currentTime) || (currentTime.Before(startDate) &&
@@ -325,17 +299,11 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		// Directly release space in two cases:
 		// * Release starts from today
 		// * Release starts from tomorrow & current time is after Reset time
-		m.parkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
+		m.data.ParkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
 	}
 
 	errTxt := ""
-	modal := m.generateBookingModalRequest(
-		data,
-		data.UserId,
-		m.selectedFloor[data.UserId],
-		m.selectedShowTaken[data.UserId],
-		errTxt,
-	)
+	modal := m.bookingView.Generate(data.UserId, errTxt)
 
 	actions = append(
 		actions,
@@ -349,7 +317,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 }
 
 func (m *Manager) handleViewOpened(data *slackApi.ViewOpened) {
-	releaseInfo := m.parkingLot.ToBeReleased.GetByRootViewId(data.RootViewId)
+	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByRootViewId(data.RootViewId)
 	if releaseInfo == nil {
 		return
 	}
@@ -359,10 +327,10 @@ func (m *Manager) handleViewOpened(data *slackApi.ViewOpened) {
 }
 
 func (m *Manager) handleViewClosed(data *slackApi.ViewClosed) {
-	space, success := m.parkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+	space, success := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
 	if success {
 		slog.Info("Removed from ToBeReleased queue", "space", space)
-		m.parkingLot.SynchronizeToFile()
+		m.data.ParkingLot.SynchronizeToFile()
 	}
 }
 
@@ -379,15 +347,14 @@ func (m *Manager) handleReserveParking(
 		autoRelease = false
 	}
 
-	errStr := m.parkingLot.Reserve(parkingSpace, data.UserName, data.UserId, autoRelease)
-
-	bookingModal := m.generateBookingModalRequest(
-		data,
+	errStr := m.data.ParkingLot.Reserve(
+		parkingSpace,
+		data.UserName,
 		data.UserId,
-		selectedFloor,
-		selectedShowTaken,
-		errStr,
+		autoRelease,
 	)
+
+	bookingModal := m.bookingView.Generate(data.UserId, errStr)
 	action := common.NewUpdateViewAction(
 		data.TriggerId,
 		data.ViewId,
@@ -405,7 +372,7 @@ func (m *Manager) handleTempReleaseParking(
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 	// Special User handling
-	chosenParkingSpace := m.parkingLot.GetSpace(parkingSpace)
+	chosenParkingSpace := m.data.ParkingLot.GetSpace(parkingSpace)
 	if chosenParkingSpace == nil {
 		return nil
 	}
@@ -414,7 +381,7 @@ func (m *Manager) handleTempReleaseParking(
 	// this allows us to restore the space to the original user after the temporary release is over.
 	// NOTE: here the current view Id is used to help us later identify which space the release
 	// modal is referring to
-	info, err := m.parkingLot.ToBeReleased.Add(
+	info, err := m.data.ParkingLot.ToBeReleased.Add(
 		data.ViewId,
 		data.UserName,
 		data.UserId,
@@ -426,13 +393,7 @@ func (m *Manager) handleTempReleaseParking(
 	// is already trying to do the same thing -> show error in modal
 	if err != nil {
 		errTxt := err.Error()
-		bookingModal := m.generateBookingModalRequest(
-			data,
-			data.UserId,
-			selectedFloor,
-			selectedShowTaken,
-			errTxt,
-		)
+		bookingModal := m.bookingView.Generate(data.UserId, errTxt)
 		action := common.NewUpdateViewAction(
 			data.TriggerId,
 			data.ViewId,
@@ -443,7 +404,7 @@ func (m *Manager) handleTempReleaseParking(
 		return actions
 	}
 
-	releaseModal := generateReleaseModalRequest(data, chosenParkingSpace, info.Check())
+	releaseModal := m.releaseView.Generate(chosenParkingSpace, info.Check())
 	action := common.NewPushViewAction(data.TriggerId, releaseModal)
 	actions = append(actions, action)
 	return actions
@@ -457,14 +418,14 @@ func (m *Manager) handleCancelTempReleaseParking(
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 	// Special User handling
-	chosenParkingSpace := m.parkingLot.GetSpace(parkingSpace)
+	chosenParkingSpace := m.data.ParkingLot.GetSpace(parkingSpace)
 	if chosenParkingSpace == nil {
 		return nil
 	}
 
 	errorTxt := ""
 
-	releaseInfo := m.parkingLot.ToBeReleased.Get(parkingSpace)
+	releaseInfo := m.data.ParkingLot.ToBeReleased.Get(parkingSpace)
 	if releaseInfo == nil {
 		errorTxt = fmt.Sprintf("Couldn't find release info for space %s", parkingSpace)
 	} else if releaseInfo.StartDate.After(time.Now()) {
@@ -474,7 +435,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 		chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 		chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-		ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
+		ok := m.data.ParkingLot.ToBeReleased.Remove(parkingSpace)
 		if !ok {
 			errorTxt = fmt.Sprintf(
 				"Failed to cancel temporary release for space %s. Please contact an administrator",
@@ -508,7 +469,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
+				ok := m.data.ParkingLot.ToBeReleased.Remove(parkingSpace)
 				if !ok {
 					slog.Error("Failed removing release info", "space", parkingSpace)
 				}
@@ -542,22 +503,16 @@ func (m *Manager) handleCancelTempReleaseParking(
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-				ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
+				ok := m.data.ParkingLot.ToBeReleased.Remove(parkingSpace)
 				if !ok {
 					slog.Error("Failed removing release info", "space", parkingSpace)
 				}
 			}
 		}
 	}
-	m.parkingLot.SynchronizeToFile()
+	m.data.ParkingLot.SynchronizeToFile()
 
-	bookingModal := m.generateBookingModalRequest(
-		data,
-		data.UserId,
-		selectedFloor,
-		selectedShowTaken,
-		errorTxt,
-	)
+	bookingModal := m.bookingView.Generate(data.UserId, errorTxt)
 	action := common.NewUpdateViewAction(
 		data.TriggerId,
 		data.ViewId,
@@ -577,7 +532,11 @@ func (m *Manager) handleReleaseParking(
 	actions := []event.ResponseAction{}
 
 	// Handle general case: normal user releasing a space
-	victimId, errStr := m.parkingLot.Release(parkingSpace, data.UserName, data.UserId)
+	victimId, errStr := m.data.ParkingLot.Release(
+		parkingSpace,
+		data.UserName,
+		data.UserId,
+	)
 	if victimId != "" {
 		slog.Warn(errStr)
 		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
@@ -585,21 +544,15 @@ func (m *Manager) handleReleaseParking(
 	}
 
 	// Only remove release info from a space if an Admin is permanently releasing the space
-	if m.userManager.IsAdminId(data.UserId) {
-		ok := m.parkingLot.ToBeReleased.Remove(parkingSpace)
+	if m.data.UserManager.IsAdminId(data.UserId) {
+		ok := m.data.ParkingLot.ToBeReleased.Remove(parkingSpace)
 		if !ok {
 			slog.Error("Failed to remove release info", "space", parkingSpace)
 		}
 	}
 
 	errorTxt := ""
-	bookingModal := m.generateBookingModalRequest(
-		data,
-		data.UserId,
-		selectedFloor,
-		selectedShowTaken,
-		errorTxt,
-	)
+	bookingModal := m.bookingView.Generate(data.UserId, errorTxt)
 	action := common.NewUpdateViewAction(
 		data.TriggerId,
 		data.ViewId,
@@ -623,13 +576,13 @@ func (m *Manager) handleReleaseRange(
 		slog.Error("Failed to parse date format", "date", selectedDate, "err", err)
 	}
 
-	releaseInfo := m.parkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
 	// NOTE: releaseInfo is created when the user clicks "Release" button
 	if releaseInfo == nil {
 		slog.Error(
 			"Expected release info to be not nil",
 			"ToBeReleased",
-			m.parkingLot.ToBeReleased,
+			m.data.ParkingLot.ToBeReleased,
 		)
 		return nil
 	}
@@ -641,7 +594,7 @@ func (m *Manager) handleReleaseRange(
 	}
 
 	errTxt := releaseInfo.Check()
-	modal := generateReleaseModalRequest(data, releaseInfo.Space, errTxt)
+	modal := m.releaseView.Generate(releaseInfo.Space, errTxt)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errTxt)
 	return []event.ResponseAction{action}
 }

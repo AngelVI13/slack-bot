@@ -1,58 +1,64 @@
-package parking_spaces
+package views
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
-	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
 
 const (
-	floorActionId                    = "floorActionId"
-	floorOptionId                    = "floorOptionId"
-	reserveParkingActionId           = "reserveParking"
-	releaseParkingActionId           = "releaseParking"
-	tempReleaseParkingActionId       = "tempReleaseParking"
-	cancelTempReleaseParkingActionId = "cancelTempReleaseParking"
-	showActionId                     = "showActionId"
-	showOptionId                     = "showOptionId"
+	FloorActionId                    = "floorActionId"
+	FloorOptionId                    = "floorOptionId"
+	ReserveParkingActionId           = "reserveParking"
+	ReleaseParkingActionId           = "releaseParking"
+	TempReleaseParkingActionId       = "tempReleaseParking"
+	CancelTempReleaseParkingActionId = "cancelTempReleaseParking"
+	ShowActionId                     = "showActionId"
+	ShowOptionId                     = "showOptionId"
 )
 
-var (
-	floors             = [3]string{"-2nd floor", "-1st floor", "1st floor"}
-	defaultFloorOption = floors[0]
-	showOptions        = [2]string{"Free", "Taken"}
-	showFreeOption     = showOptions[0]
-	showTakenOption    = showOptions[1]
-)
+type Booking struct {
+	Title string
+	data  *model.Data
+}
 
-var parkingBookingTitle = Identifier + "Booking"
+func NewBooking(identifier string, managerData *model.Data) *Booking {
+	return &Booking{
+		Title: identifier + "Booking",
+		data:  managerData,
+	}
+}
 
-func (m *Manager) generateBookingModalRequest(
-	command event.Event,
-	userId, selectedFloor string, selectedShowTaken bool, errorTxt string,
-) slack.ModalViewRequest {
-	spacesSectionBlocks := m.generateParkingInfoBlocks(
+func (b *Booking) Generate(userId string, errorTxt string) slack.ModalViewRequest {
+	selectedFloor := model.DefaultFloorOption
+	selected, ok := b.data.SelectedFloor[userId]
+	if ok {
+		selectedFloor = selected
+	}
+	selectedShowTaken := b.data.SelectedShowTaken[userId]
+
+	spacesSectionBlocks := b.generateParkingInfoBlocks(
 		userId,
 		selectedFloor,
 		selectedShowTaken,
 		errorTxt,
 	)
-	return common.GenerateInfoModalRequest(parkingBookingTitle, spacesSectionBlocks)
+	return common.GenerateInfoModalRequest(b.Title, spacesSectionBlocks)
 }
 
 // generateParkingInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..
-func (m *Manager) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
+func (b *Booking) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
 	var sections []slack.Block
 	for _, space := range spaces {
 		status := space.GetStatusDescription()
 		emoji := space.GetStatusEmoji()
 
 		releaseScheduled := ""
-		releaseInfo := m.parkingLot.ToBeReleased.Get(space.Key())
+		releaseInfo := b.data.ParkingLot.ToBeReleased.Get(space.Key())
 		if releaseInfo != nil {
 			releaseScheduled = fmt.Sprintf(
 				"\n\t\tScheduled release from %s to %s",
@@ -80,20 +86,20 @@ func (m *Manager) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
 	return sections
 }
 
-func (m *Manager) generateParkingButtons(
+func (b *Booking) generateParkingButtons(
 	space *spaces.Space,
 	userId string,
 ) []slack.BlockElement {
 	var buttons []slack.BlockElement
 
-	isAdminUser := m.userManager.IsAdminId(userId)
-	hasPermanentParkingUser := m.userManager.HasParkingById(userId)
+	isAdminUser := b.data.UserManager.IsAdminId(userId)
+	hasPermanentParkingUser := b.data.UserManager.HasParkingById(userId)
 
-	releaseInfo := m.parkingLot.ToBeReleased.Get(space.Key())
+	releaseInfo := b.data.ParkingLot.ToBeReleased.Get(space.Key())
 	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) &&
 		!releaseInfo.Cancelled {
 		cancelTempReleaseButton := slack.NewButtonBlockElement(
-			cancelTempReleaseParkingActionId,
+			CancelTempReleaseParkingActionId,
 			string(space.Key()),
 			slack.NewTextBlockObject(
 				"plain_text",
@@ -109,7 +115,7 @@ func (m *Manager) generateParkingButtons(
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
 		// space reserved but hasn't yet been schedule for release
 		if (isAdminUser || hasPermanentParkingUser) && releaseInfo == nil {
-			permanentSpace := m.userManager.HasParkingById(space.ReservedById)
+			permanentSpace := b.data.UserManager.HasParkingById(space.ReservedById)
 			if permanentSpace {
 				// Only allow the temporary parking button if the correct user is using
 				// the modal and the space hasn't already been released.
@@ -117,7 +123,7 @@ func (m *Manager) generateParkingButtons(
 				// owns the space & has permanent parking rights or if he is releasing
 				// the space on behalf of somebody that has a permanent parking rights
 				tempReleaseButton := slack.NewButtonBlockElement(
-					tempReleaseParkingActionId,
+					TempReleaseParkingActionId,
 					string(space.Key()),
 					slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
 				)
@@ -128,7 +134,7 @@ func (m *Manager) generateParkingButtons(
 
 		if isAdminUser || !hasPermanentParkingUser {
 			releaseButton := slack.NewButtonBlockElement(
-				releaseParkingActionId,
+				ReleaseParkingActionId,
 				string(space.Key()),
 				slack.NewTextBlockObject("plain_text", "Release!", true, false),
 			)
@@ -136,13 +142,13 @@ func (m *Manager) generateParkingButtons(
 			buttons = append(buttons, releaseButton)
 		}
 	} else if (!space.Reserved &&
-		!m.parkingLot.HasSpace(userId) &&
-		!m.parkingLot.HasTempRelease(userId) &&
+		!b.data.ParkingLot.HasSpace(userId) &&
+		!b.data.ParkingLot.HasTempRelease(userId) &&
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
-			reserveParkingActionId,
+			ReserveParkingActionId,
 			string(space.Key()),
 			slack.NewTextBlockObject("plain_text", fmt.Sprintf("%s :eject:", actionButtonText), true, false),
 		)
@@ -196,7 +202,7 @@ func generateParkingPlanBlocks() []slack.Block {
 
 	now := time.Now()
 
-	if now.Hour() >= ResetHour && now.Minute() > ResetMin {
+	if now.Hour() >= model.ResetHour && now.Minute() > model.ResetMin {
 		now = now.Add(24 * time.Hour)
 	}
 
@@ -225,7 +231,7 @@ func generateParkingPlanBlocks() []slack.Block {
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
-func (m *Manager) generateParkingInfoBlocks(
+func (b *Booking) generateParkingInfoBlocks(
 	userId, selectedFloor string, selectedShowTaken bool, errorTxt string,
 ) []slack.Block {
 	allBlocks := []slack.Block{}
@@ -233,10 +239,10 @@ func (m *Manager) generateParkingInfoBlocks(
 	descriptionBlocks := generateParkingPlanBlocks()
 	allBlocks = append(allBlocks, descriptionBlocks...)
 
-	floorOptionBlocks := m.generateFloorOptions(userId)
+	floorOptionBlocks := b.generateFloorOptions(userId)
 	allBlocks = append(allBlocks, floorOptionBlocks...)
 
-	showOptionBlocks := m.generateFreeTakenOptions(userId)
+	showOptionBlocks := b.generateFreeTakenOptions(userId)
 	allBlocks = append(allBlocks, showOptionBlocks...)
 
 	if errorTxt != "" {
@@ -253,17 +259,17 @@ func (m *Manager) generateParkingInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	spaces := m.parkingLot.GetSpacesByFloor(
+	spaces := b.data.ParkingLot.GetSpacesByFloor(
 		userId,
 		selectedFloor,
 		selectedShowTaken,
 	)
 
-	parkingSpaceSections := m.generateParkingInfo(spaces)
+	parkingSpaceSections := b.generateParkingInfo(spaces)
 
 	for idx, space := range spaces {
 		sectionBlock := parkingSpaceSections[idx]
-		buttons := m.generateParkingButtons(space, userId)
+		buttons := b.generateParkingButtons(space, userId)
 
 		allBlocks = append(allBlocks, sectionBlock)
 		if len(buttons) > 0 {
@@ -276,13 +282,13 @@ func (m *Manager) generateParkingInfoBlocks(
 	return allBlocks
 }
 
-func (m *Manager) generateFloorOptions(userId string) []slack.Block {
+func (b *Booking) generateFloorOptions(userId string) []slack.Block {
 	var allBlocks []slack.Block
 
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	for _, floor := range floors {
+	for _, floor := range model.Floors {
 		optionBlock := slack.NewOptionBlockObject(
 			floor,
 			slack.NewTextBlockObject("plain_text", floor, false, false),
@@ -291,8 +297,8 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
 
-	selectedFloor := defaultFloorOption
-	selected, ok := m.selectedFloor[userId]
+	selectedFloor := model.DefaultFloorOption
+	selected, ok := b.data.SelectedFloor[userId]
 	if ok {
 		selectedFloor = selected
 	}
@@ -313,23 +319,23 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupSelectBlockElement(
 		"static_select",
 		defaultOption,
-		floorOptionId,
+		FloorOptionId,
 		optionGroupBlockObject,
 	)
 
-	actionBlock := slack.NewActionBlock(floorActionId, newOptionsGroupSelectBlockElement)
+	actionBlock := slack.NewActionBlock(FloorActionId, newOptionsGroupSelectBlockElement)
 	allBlocks = append(allBlocks, actionBlock)
 
 	return allBlocks
 }
 
-func (m *Manager) generateFreeTakenOptions(userId string) []slack.Block {
+func (b *Booking) generateFreeTakenOptions(userId string) []slack.Block {
 	var allBlocks []slack.Block
 
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	for _, showOption := range showOptions {
+	for _, showOption := range model.ShowOptions {
 		optionBlock := slack.NewOptionBlockObject(
 			showOption,
 			slack.NewTextBlockObject("plain_text", showOption, false, false),
@@ -338,10 +344,10 @@ func (m *Manager) generateFreeTakenOptions(userId string) []slack.Block {
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
 
-	selectedOption := showFreeOption
-	showTaken := m.selectedShowTaken[userId]
+	selectedOption := model.ShowFreeOption
+	showTaken := b.data.SelectedShowTaken[userId]
 	if showTaken {
-		selectedOption = showTakenOption
+		selectedOption = model.ShowTakenOption
 	}
 
 	// Text shown as title when option box is opened/expanded
@@ -360,11 +366,11 @@ func (m *Manager) generateFreeTakenOptions(userId string) []slack.Block {
 	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupSelectBlockElement(
 		"static_select",
 		defaultOption,
-		showOptionId,
+		ShowOptionId,
 		optionGroupBlockObject,
 	)
 
-	actionBlock := slack.NewActionBlock(showActionId, newOptionsGroupSelectBlockElement)
+	actionBlock := slack.NewActionBlock(ShowActionId, newOptionsGroupSelectBlockElement)
 	allBlocks = append(allBlocks, actionBlock)
 
 	return allBlocks

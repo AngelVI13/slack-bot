@@ -1,37 +1,45 @@
-package parking_spaces
+package views
 
 import (
 	"fmt"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
-	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
+	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
 
 const (
-	releaseStartDateActionId = "releaseStartDate"
-	releaseEndDateActionId   = "releaseEndDate"
-	releaseBlockId           = "releaseBlockId"
+	ReleaseStartDateActionId = "releaseStartDate"
+	ReleaseEndDateActionId   = "releaseEndDate"
+	ReleaseBlockId           = "releaseBlockId"
 )
 
-var parkingReleaseTitle = Identifier + "Temporary release a parking spot"
+type Release struct {
+	Title       string
+	managerData *model.Data
+}
+
+func NewRelease(identifier string, managerData *model.Data) *Release {
+	return &Release{
+		Title:       identifier + "Temporary release a parking spot",
+		managerData: managerData,
+	}
+}
 
 // NOTE: this is triggered by a block action (i.e. when user presses the
 // release button for a parking space)
-func generateReleaseModalRequest(
-	command *slackApi.BlockAction,
+func (r *Release) Generate(
 	space *spaces.Space,
 	errorTxt string,
 ) slack.ModalViewRequest {
-	allBlocks := generateReleaseModalBlocks(command, space, errorTxt)
+	allBlocks := generateReleaseModalBlocks(space, errorTxt)
 	// NOTE: Since this is a modal thats pushed ontop of sth else,
 	// apparently the same title has to be used as the underneath modal.
-	return common.GenerateModalRequest(parkingBookingTitle, allBlocks)
+	return common.GenerateModalRequest(r.Title, allBlocks)
 }
 
 func generateReleaseModalBlocks(
-	command *slackApi.BlockAction,
 	space *spaces.Space,
 	errorTxt string,
 ) []slack.Block {
@@ -47,7 +55,7 @@ func generateReleaseModalBlocks(
 		nil,
 	)
 
-	startDate := slack.NewDatePickerBlockElement(releaseStartDateActionId)
+	startDate := slack.NewDatePickerBlockElement(ReleaseStartDateActionId)
 	startDate.Placeholder = slack.NewTextBlockObject(
 		"plain_text",
 		"Select START date",
@@ -55,7 +63,7 @@ func generateReleaseModalBlocks(
 		false,
 	)
 
-	endDate := slack.NewDatePickerBlockElement(releaseEndDateActionId)
+	endDate := slack.NewDatePickerBlockElement(ReleaseEndDateActionId)
 	endDate.Placeholder = slack.NewTextBlockObject(
 		"plain_text",
 		"Select END date",
@@ -64,7 +72,7 @@ func generateReleaseModalBlocks(
 	)
 
 	calendarsSection := slack.NewActionBlock(
-		releaseBlockId,
+		ReleaseBlockId,
 		startDate,
 		endDate,
 	)
