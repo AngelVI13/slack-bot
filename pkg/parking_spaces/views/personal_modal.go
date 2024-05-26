@@ -44,29 +44,35 @@ func (p *Personal) generateParkingSpaceBlock(space *spaces.Space) *slack.Section
 	status := space.GetStatusDescription()
 	emoji := space.GetStatusEmoji()
 
-	releaseScheduled := ""
-	releaseInfo := p.data.ParkingLot.ToBeReleased.Get(space.Key())
-	if releaseInfo != nil {
-		releaseScheduled = fmt.Sprintf(
-			"\n\t\tScheduled release from %s to %s",
-			releaseInfo.StartDate.Format("2006-01-02"),
-			releaseInfo.EndDate.Format("2006-01-02"),
-		)
-	}
-
 	spaceProps := space.GetPropsText()
 	text := fmt.Sprintf(
-		"%s *%s* \t%s\t %s%s",
+		"%s *%s* \t%s\t %s",
 		emoji,
 		fmt.Sprint(space.Number),
 		spaceProps,
 		status,
-		releaseScheduled,
 	)
 
 	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
 	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
 	return sectionBlock
+}
+
+func (p *Personal) generateTemporaryReleasesList(space *spaces.Space) []slack.Block {
+	releaseScheduled := ""
+	releaseInfo := p.data.ParkingLot.ToBeReleased.Get(space.Key())
+	if releaseInfo == nil {
+		return nil
+	}
+
+	releaseScheduled = fmt.Sprintf(
+		"\t\tScheduled release from %s to %s",
+		releaseInfo.StartDate.Format("2006-01-02"),
+		releaseInfo.EndDate.Format("2006-01-02"),
+	)
+	sectionText := slack.NewTextBlockObject("mrkdwn", releaseScheduled, false, false)
+	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
+	return []slack.Block{sectionBlock}
 }
 
 func (p *Personal) generateParkingButtons(
@@ -141,34 +147,50 @@ func (p *Personal) generateParkingButtons(
 	return buttons
 }
 
+const personalModelDescription = `This is your personal parking space page.
+Here you can add/delete/cancel temporary releases of your parking space.
+`
+
 // generatePersonalInfoBlocks Generates space block objects to be used as elements in modal
 func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.Block {
 	allBlocks := []slack.Block{}
 
+	allBlocks = append(allBlocks, createTextBlock(personalModelDescription))
+
 	if errorTxt != "" {
-		txt := fmt.Sprintf(`:warning: %s`, errorTxt)
-		errorSection := slack.NewSectionBlock(
-			slack.NewTextBlockObject("mrkdwn", txt, false, false),
-			nil,
-			nil,
-		)
-		// TODO: this should be in red color
-		allBlocks = append(allBlocks, errorSection)
+		errorBlock := createErrorTextBlock(errorTxt)
+		allBlocks = append(allBlocks, errorBlock)
 	}
 
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	space := p.data.ParkingLot.GetSpaceByUserId(userId)
-	sectionBlock := p.generateParkingSpaceBlock(space)
-	buttons := p.generateParkingButtons(space, userId)
+	space := p.data.ParkingLot.GetOwnedSpaceByUserId(userId)
 
-	allBlocks = append(allBlocks, sectionBlock)
+	// TODO: Add more information to parking block and idicate that its actually the
+	// user's space. If the space is temporarily booked by someone else then indicate that
+	spaceBlock := p.generateParkingSpaceBlock(space)
+	allBlocks = append(allBlocks, spaceBlock)
+
+	// TODO: update buttons to match new functionality
+	buttons := p.generateParkingButtons(space, userId)
 	if len(buttons) > 0 {
 		actions := slack.NewActionBlock("", buttons...)
 		allBlocks = append(allBlocks, actions)
 	}
-	allBlocks = append(allBlocks, div)
+
+	releaseInfoBlocks := p.generateTemporaryReleasesList(space)
+	allBlocks = append(allBlocks, releaseInfoBlocks...)
 
 	return allBlocks
+}
+
+func createErrorTextBlock(errorTxt string) *slack.SectionBlock {
+	txt := fmt.Sprintf(`:warning: %s`, errorTxt)
+	return createTextBlock(txt)
+}
+
+func createTextBlock(text string) *slack.SectionBlock {
+	return slack.NewSectionBlock(
+		slack.NewTextBlockObject("mrkdwn", text, false, false), nil, nil)
 }

@@ -114,7 +114,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
 
 	var modal slack.ModalViewRequest
-	if m.data.ParkingLot.HasSpace(data.UserId) {
+	if m.data.ParkingLot.OwnsSpace(data.UserId) {
 		modal = m.personalView.Generate(data.UserId, errorTxt)
 	} else {
 		modal = m.bookingView.Generate(data.UserId, errorTxt)
@@ -312,7 +312,14 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	}
 
 	errTxt := ""
-	modal := m.bookingView.Generate(data.UserId, errTxt)
+
+	var modal slack.ModalViewRequest
+	if m.data.ParkingLot.OwnsSpace(data.UserId) {
+		modal = m.personalView.Generate(data.UserId, errTxt)
+	} else {
+		modal = m.bookingView.Generate(data.UserId, errTxt)
+	}
+
 	updateAction := common.NewUpdateViewAction(data.TriggerId, rootViewId, modal, errTxt)
 	actions = append(actions, updateAction)
 
@@ -357,7 +364,13 @@ func (m *Manager) handleReserveParking(
 		autoRelease,
 	)
 
-	bookingModal := m.bookingView.Generate(data.UserId, errStr)
+	var bookingModal slack.ModalViewRequest
+	if m.data.ParkingLot.OwnsSpace(data.UserId) {
+		bookingModal = m.personalView.Generate(data.UserId, errStr)
+	} else {
+		bookingModal = m.bookingView.Generate(data.UserId, errStr)
+	}
+
 	action := common.NewUpdateViewAction(
 		data.TriggerId,
 		data.ViewId,
@@ -515,7 +528,13 @@ func (m *Manager) handleCancelTempReleaseParking(
 	}
 	m.data.ParkingLot.SynchronizeToFile()
 
-	bookingModal := m.bookingView.Generate(data.UserId, errorTxt)
+	var bookingModal slack.ModalViewRequest
+	if m.data.ParkingLot.OwnsSpace(data.UserId) {
+		bookingModal = m.personalView.Generate(data.UserId, errorTxt)
+	} else {
+		bookingModal = m.bookingView.Generate(data.UserId, errorTxt)
+	}
+
 	action := common.NewUpdateViewAction(
 		data.TriggerId,
 		data.ViewId,

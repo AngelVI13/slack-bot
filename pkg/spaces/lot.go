@@ -73,12 +73,33 @@ func (d *SpacesLot) HasSpace(userId string) bool {
 	return userAlreadyReservedSpace
 }
 
-func (d *SpacesLot) GetSpaceByUserId(userId string) *Space {
+func (d *SpacesLot) OwnsSpace(userId string) bool {
+	if d.HasSpace(userId) {
+		return true
+	}
+
+	if d.HasTempRelease(userId) {
+		return true
+	}
+
+	return false
+}
+
+// GetOwnedSpaceByUserId Returns owned space by user even if currently that
+// space is temporarily reserved by someone else.
+func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) *Space {
 	for _, space := range d.UnitSpaces {
 		if space.Reserved && space.ReservedById == userId {
 			return space
 		}
 	}
+
+	for _, releaseInfo := range d.ToBeReleased {
+		if releaseInfo.Submitted && releaseInfo.OwnerId == userId {
+			return releaseInfo.Space
+		}
+	}
+
 	return nil
 }
 
