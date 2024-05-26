@@ -73,6 +73,15 @@ func (d *SpacesLot) HasSpace(userId string) bool {
 	return userAlreadyReservedSpace
 }
 
+func (d *SpacesLot) GetSpaceByUserId(userId string) *Space {
+	for _, space := range d.UnitSpaces {
+		if space.Reserved && space.ReservedById == userId {
+			return space
+		}
+	}
+	return nil
+}
+
 func (d *SpacesLot) HasTempRelease(userId string) bool {
 	userAlreadyReleasedSpace := false
 	for _, releaseInfo := range d.ToBeReleased {

@@ -12,6 +12,7 @@ import (
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/user"
+	"github.com/slack-go/slack"
 )
 
 const (
@@ -30,9 +31,10 @@ type Manager struct {
 	// TODO: this is not used ????
 	releaseInfo *spaces.ReleaseInfo
 
-	data        *model.Data
-	bookingView *views.Booking
-	releaseView *views.Release
+	data         *model.Data
+	bookingView  *views.Booking
+	releaseView  *views.Release
+	personalView *views.Personal
 }
 
 func NewManager(
@@ -47,6 +49,7 @@ func NewManager(
 		data:         data,
 		bookingView:  views.NewBooking(Identifier, data),
 		releaseView:  views.NewRelease(Identifier, data),
+		personalView: views.NewPersonal(Identifier, data),
 	}
 }
 
@@ -109,7 +112,13 @@ func (m *Manager) Context() string {
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
-	modal := m.bookingView.Generate(data.UserId, errorTxt)
+
+	var modal slack.ModalViewRequest
+	if m.data.ParkingLot.HasSpace(data.UserId) {
+		modal = m.personalView.Generate(data.UserId, errorTxt)
+	} else {
+		modal = m.bookingView.Generate(data.UserId, errorTxt)
+	}
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
 	response := common.NewResponseEvent(data.UserName, action)
