@@ -75,76 +75,34 @@ func (p *Personal) generateTemporaryReleasesList(space *spaces.Space) []slack.Bl
 	return []slack.Block{sectionBlock}
 }
 
-func (p *Personal) generateParkingButtons(
-	space *spaces.Space,
-	userId string,
-) []slack.BlockElement {
-	var buttons []slack.BlockElement
+func generateFakeTemporaryRelease(release string, id int) *slack.SectionBlock {
+	clockN := (id % 12) + 1
+	releaseTxt := fmt.Sprintf(":clock%d: %s", clockN, release)
+	sectionText := slack.NewTextBlockObject("mrkdwn", releaseTxt, false, false)
+	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
+	return sectionBlock
+}
 
-	isAdminUser := p.data.UserManager.IsAdminId(userId)
-	hasPermanentParkingUser := p.data.UserManager.HasParkingById(userId)
+func generateReleaseButton(space *spaces.Space) *slack.ActionBlock {
+	cancelBtn := slack.NewButtonBlockElement(
+		CancelTempReleaseParkingActionId,
+		string(space.Key()),
+		slack.NewTextBlockObject("plain_text", "Add Temp Release!", true, false),
+	)
+	cancelBtn = cancelBtn.WithStyle(slack.StylePrimary)
+	actionBlock := slack.NewActionBlock("", cancelBtn)
+	return actionBlock
+}
 
-	releaseInfo := p.data.ParkingLot.ToBeReleased.Get(space.Key())
-	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) &&
-		!releaseInfo.Cancelled {
-		cancelTempReleaseButton := slack.NewButtonBlockElement(
-			CancelTempReleaseParkingActionId,
-			string(space.Key()),
-			slack.NewTextBlockObject(
-				"plain_text",
-				"Cancel Scheduled Release!",
-				true,
-				false,
-			),
-		)
-		cancelTempReleaseButton = cancelTempReleaseButton.WithStyle(slack.StyleDanger)
-		buttons = append(buttons, cancelTempReleaseButton)
-	}
-
-	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
-		// space reserved but hasn't yet been schedule for release
-		if (isAdminUser || hasPermanentParkingUser) && releaseInfo == nil {
-			permanentSpace := p.data.UserManager.HasParkingById(space.ReservedById)
-			if permanentSpace {
-				// Only allow the temporary parking button if the correct user is using
-				// the modal and the space hasn't already been released.
-				// For example, an admin can only temporary release a space if either he
-				// owns the space & has permanent parking rights or if he is releasing
-				// the space on behalf of somebody that has a permanent parking rights
-				tempReleaseButton := slack.NewButtonBlockElement(
-					TempReleaseParkingActionId,
-					string(space.Key()),
-					slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
-				)
-				tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
-				buttons = append(buttons, tempReleaseButton)
-			}
-		}
-
-		if isAdminUser || !hasPermanentParkingUser {
-			releaseButton := slack.NewButtonBlockElement(
-				ReleaseParkingActionId,
-				string(space.Key()),
-				slack.NewTextBlockObject("plain_text", "Release!", true, false),
-			)
-			releaseButton = releaseButton.WithStyle(slack.StyleDanger)
-			buttons = append(buttons, releaseButton)
-		}
-	} else if (!space.Reserved &&
-		!p.data.ParkingLot.HasSpace(userId) &&
-		!p.data.ParkingLot.HasTempRelease(userId) &&
-		!isAdminUser) || (!space.Reserved && isAdminUser) {
-		// Only allow user to reserve space if he hasn't already reserved one
-		actionButtonText := "Reserve!"
-		reserveWithAutoButton := slack.NewButtonBlockElement(
-			ReserveParkingActionId,
-			string(space.Key()),
-			slack.NewTextBlockObject("plain_text", fmt.Sprintf("%s :eject:", actionButtonText), true, false),
-		)
-		reserveWithAutoButton = reserveWithAutoButton.WithStyle(slack.StylePrimary)
-		buttons = append(buttons, reserveWithAutoButton)
-	}
-	return buttons
+func generateCancelReleaseButton(space *spaces.Space, id int) *slack.ActionBlock {
+	tempReleaseButton := slack.NewButtonBlockElement(
+		TempReleaseParkingActionId,
+		fmt.Sprintf("%s_%d", string(space.Key()), id),
+		slack.NewTextBlockObject("plain_text", "Cancel", true, false),
+	)
+	tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
+	actionBlock := slack.NewActionBlock("", tempReleaseButton)
+	return actionBlock
 }
 
 const personalModelDescription = `This is your personal parking space page.
@@ -172,15 +130,23 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	spaceBlock := p.generateParkingSpaceBlock(space)
 	allBlocks = append(allBlocks, spaceBlock)
 
-	// TODO: update buttons to match new functionality
-	buttons := p.generateParkingButtons(space, userId)
-	if len(buttons) > 0 {
-		actions := slack.NewActionBlock("", buttons...)
-		allBlocks = append(allBlocks, actions)
-	}
+	tempReleaseBtn := generateReleaseButton(space)
+	allBlocks = append(allBlocks, tempReleaseBtn)
 
-	releaseInfoBlocks := p.generateTemporaryReleasesList(space)
-	allBlocks = append(allBlocks, releaseInfoBlocks...)
+	allBlocks = append(allBlocks, div)
+
+	// releaseInfoBlocks := p.generateTemporaryReleasesList(space)
+	releases := []string{
+		"Scheduled release from 2024-05-29 to 2024-05-29",
+		"Scheduled release from 2024-06-01 to 2024-06-10",
+		"Scheduled release from 2024-06-20 to 2024-06-21",
+	}
+	for i, release := range releases {
+		releaseBlock := generateFakeTemporaryRelease(release, i)
+		allBlocks = append(allBlocks, releaseBlock)
+		cancelBtn := generateCancelReleaseButton(space, i)
+		allBlocks = append(allBlocks, cancelBtn)
+	}
 
 	return allBlocks
 }
