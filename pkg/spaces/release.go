@@ -17,6 +17,7 @@ type ReleaseInfo struct {
 	EndDate    *time.Time
 	Submitted  bool
 	Cancelled  bool
+	UniqueId   int
 
 	// These are only used while the user is choosing date range to refer
 	// between space selected and release range selected (i.e. between booking modal
@@ -82,6 +83,8 @@ func (i ReleaseInfo) String() string {
 	)
 }
 
+// TODO: redo this to be `map[SpaceKey]*RingBuf` and update
+// ReleaseMap methods to work with the ringbuf
 type ReleaseMap map[SpaceKey]*ReleaseInfo
 
 func (q ReleaseMap) Get(spaceKey SpaceKey) *ReleaseInfo {
@@ -156,6 +159,7 @@ func (q ReleaseMap) Add(
 	space *Space,
 ) (*ReleaseInfo, error) {
 	spaceKey := space.Key()
+	// TODO: add space validation logic here
 	if q.Get(spaceKey) != nil {
 		return nil, fmt.Errorf("Space %s already marked for release", spaceKey)
 	}
