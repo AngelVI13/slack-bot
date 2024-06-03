@@ -85,6 +85,8 @@ func (i ReleaseInfo) String() string {
 
 // TODO: redo this to be `map[SpaceKey]*RingBuf` and update
 // ReleaseMap methods to work with the ringbuf
+// Check for memory leaks afterward whole implementation is done
+// ... a lot of dangling pointers around..
 type ReleaseMap map[SpaceKey]*ReleaseInfo
 
 func (q ReleaseMap) Get(spaceKey SpaceKey) *ReleaseInfo {
