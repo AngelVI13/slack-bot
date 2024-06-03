@@ -173,6 +173,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 		case views.CancelTempReleaseParkingActionId:
 			parkingSpace := spaces.SpaceKey(action.Value)
+			// TODO: get release ID here as well
 			actions = m.handleCancelTempReleaseParking(
 				data,
 				parkingSpace,
@@ -426,6 +427,7 @@ func (m *Manager) handleTempReleaseParking(
 	return actions
 }
 
+// TODO: cancel temp release action should include which ID was cancelled
 func (m *Manager) handleCancelTempReleaseParking(
 	data *slackApi.BlockAction,
 	parkingSpace spaces.SpaceKey,

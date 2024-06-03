@@ -83,62 +83,53 @@ func (i ReleaseInfo) String() string {
 	)
 }
 
-// TODO: redo this to be `map[SpaceKey]*RingBuf` and update
-// ReleaseMap methods to work with the ringbuf
-// Check for memory leaks afterward whole implementation is done
+// TODO: Check for memory leaks afterward whole implementation is done
 // ... a lot of dangling pointers around..
-type ReleaseMap map[SpaceKey]*ReleaseInfo
+type ReleaseMap map[SpaceKey]*ReleasePool
 
-func (q ReleaseMap) Get(spaceKey SpaceKey) *ReleaseInfo {
-	releaseInfo, ok := q[spaceKey]
+func (q ReleaseMap) Get(spaceKey SpaceKey) []*ReleaseInfo {
+	releasePool, ok := q[spaceKey]
 	if !ok {
 		return nil
 	}
-	return releaseInfo
-}
-
-func (q ReleaseMap) GetByReleaserId(userId string) *ReleaseInfo {
-	for _, item := range q {
-		if item.ReleaserId == userId {
-			return item
-		}
-	}
-	return nil
+	return releasePool.All()
 }
 
 func (q ReleaseMap) GetByRootViewId(rootId string) *ReleaseInfo {
-	for _, item := range q {
-		if item.RootViewId == rootId {
-			return item
+	for _, pool := range q {
+		release := pool.ByRootViewId(rootId)
+		if release != nil {
+			return release
 		}
 	}
 	return nil
 }
 
 func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
-	for _, item := range q {
-		if item.ViewId == viewId {
-			return item
+	for _, pool := range q {
+		release := pool.ByViewId(viewId)
+		if release != nil {
+			return release
 		}
 	}
 	return nil
 }
 
-func (q ReleaseMap) Remove(spaceKey SpaceKey) bool {
-	_, ok := q[spaceKey]
+func (q ReleaseMap) Remove(spaceKey SpaceKey, id int) bool {
+	pool, ok := q[spaceKey]
 	if !ok {
 		return false
 	}
 
 	slog.Info("Removing from release map", "space", spaceKey)
-	delete(q, spaceKey)
+	pool.Remove(id)
 	return true
 }
 
 func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {
 	spaceKey := SpaceKey("")
-	for space, info := range q {
-		if info.ViewId == viewId {
+	for space, pool := range q {
+		if pool.ByViewId(viewId) != nil {
 			spaceKey = space
 			break
 		}
@@ -162,6 +153,7 @@ func (q ReleaseMap) Add(
 ) (*ReleaseInfo, error) {
 	spaceKey := space.Key()
 	// TODO: add space validation logic here
+	// allReleases := q.Get(spaceKey)
 	if q.Get(spaceKey) != nil {
 		return nil, fmt.Errorf("Space %s already marked for release", spaceKey)
 	}
@@ -184,6 +176,6 @@ func (q ReleaseMap) Add(
 		Submitted:  false,
 	}
 
-	q[spaceKey] = releaseInfo
+	q[spaceKey].Put(releaseInfo)
 	return releaseInfo, nil
 }
