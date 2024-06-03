@@ -33,13 +33,13 @@ func NewWithCapacity(cap int) (*ReleasePool, error) {
 }
 
 func New() *ReleasePool {
-	rb, _ := NewWithCapacity(defaultRingBufCapacity)
-	return rb
+	p, _ := NewWithCapacity(defaultRingBufCapacity)
+	return p
 }
 
 // freeIdx find first free index in the pool
-func (rb *ReleasePool) freeIdx() int {
-	for i, v := range rb.data {
+func (p *ReleasePool) freeIdx() int {
+	for i, v := range p.data {
 		if v == nil {
 			return i
 		}
@@ -48,45 +48,45 @@ func (rb *ReleasePool) freeIdx() int {
 	return -1
 }
 
-func (rb *ReleasePool) grow(new_size int) {
+func (p *ReleasePool) grow(new_size int) {
 	// Reallocate the whole array with 2x cap
 	new_data := make([]*ReleaseInfo, new_size)
 
 	// Realign start to the beginning of the array
-	n_copied := copy(new_data, rb.data)
-	if n_copied != rb.capacity {
-		log.Fatalf("copied %d but have %d data", n_copied, rb.capacity)
+	n_copied := copy(new_data, p.data)
+	if n_copied != p.capacity {
+		log.Fatalf("copied %d but have %d data", n_copied, p.capacity)
 	}
 
-	rb.data = new_data
-	rb.capacity = new_size
+	p.data = new_data
+	p.capacity = new_size
 }
 
-func (rb *ReleasePool) Put(v *ReleaseInfo) {
-	idx := rb.freeIdx()
+func (p *ReleasePool) Put(v *ReleaseInfo) {
+	idx := p.freeIdx()
 	if idx == -1 {
-		rb.grow(2 * rb.capacity)
-		idx = rb.freeIdx()
+		p.grow(2 * p.capacity)
+		idx = p.freeIdx()
 	}
 
-	v.UniqueId = rb.putNum
-	rb.data[idx] = v
-	rb.putNum++
+	v.UniqueId = p.putNum
+	p.data[idx] = v
+	p.putNum++
 }
 
 // Remove replace the first element of pool that matches the provided
 // value with an empty value
-func (rb *ReleasePool) Remove(release *ReleaseInfo) error {
-	if release.UniqueId < 0 && release.UniqueId > rb.capacity {
+func (p *ReleasePool) Remove(release *ReleaseInfo) error {
+	if release.UniqueId < 0 && release.UniqueId > p.capacity {
 		return fmt.Errorf(
 			"%w: can't remove release with id=%d from pool with size %d",
 			ErrOutOfRange,
 			release.UniqueId,
-			rb.capacity,
+			p.capacity,
 		)
 	}
 
-	if rb.data[release.UniqueId] == nil {
+	if p.data[release.UniqueId] == nil {
 		return fmt.Errorf(
 			"%w: can't remove release with id=%d from pool - no value at that idx",
 			ErrEmpty,
@@ -94,23 +94,23 @@ func (rb *ReleasePool) Remove(release *ReleaseInfo) error {
 		)
 	}
 
-	if rb.data[release.UniqueId].Space.Key() != release.Space.Key() {
+	if p.data[release.UniqueId].Space.Key() != release.Space.Key() {
 		return fmt.Errorf(
 			"%w: can't remove release with id=%d from pool - space mismatch."+
 				"Another space is at that localtion: %s vs %s",
 			ErrReleaseMismatch,
 			release.UniqueId,
 			release.Space.Key(),
-			rb.data[release.UniqueId].Space.Key(),
+			p.data[release.UniqueId].Space.Key(),
 		)
 	}
 
-	rb.data[release.UniqueId] = nil
+	p.data[release.UniqueId] = nil
 	return nil
 }
 
-func (rb *ReleasePool) ByRootViewId(id string) (*ReleaseInfo, error) {
-	for _, v := range rb.data {
+func (p *ReleasePool) ByRootViewId(id string) (*ReleaseInfo, error) {
+	for _, v := range p.data {
 		if v != nil && v.RootViewId == id {
 			return v, nil
 		}
@@ -118,8 +118,8 @@ func (rb *ReleasePool) ByRootViewId(id string) (*ReleaseInfo, error) {
 	return nil, ErrNotFound
 }
 
-func (rb *ReleasePool) ByViewId(id string) (*ReleaseInfo, error) {
-	for _, v := range rb.data {
+func (p *ReleasePool) ByViewId(id string) (*ReleaseInfo, error) {
+	for _, v := range p.data {
 		if v != nil && v.ViewId == id {
 			return v, nil
 		}
