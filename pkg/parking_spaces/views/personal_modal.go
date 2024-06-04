@@ -58,21 +58,20 @@ func (p *Personal) generateParkingSpaceBlock(space *spaces.Space) *slack.Section
 	return sectionBlock
 }
 
-func (p *Personal) generateTemporaryReleasesList(space *spaces.Space) []slack.Block {
-	releaseScheduled := ""
-	releaseInfo := p.data.ParkingLot.ToBeReleased.Get(space.Key())
-	if releaseInfo == nil {
-		return nil
-	}
-
-	releaseScheduled = fmt.Sprintf(
-		"\t\tScheduled release from %s to %s",
-		releaseInfo.StartDate.Format("2006-01-02"),
-		releaseInfo.EndDate.Format("2006-01-02"),
+func generateTemporaryReleaseBlock(
+	release *spaces.ReleaseInfo,
+) *slack.SectionBlock {
+	releaseId := release.UniqueId
+	clockN := (releaseId % 12) + 1
+	releaseScheduled := fmt.Sprintf(
+		":clock%d: Scheduled release from %s to %s",
+		clockN,
+		release.StartDate.Format("2006-01-02"),
+		release.EndDate.Format("2006-01-02"),
 	)
 	sectionText := slack.NewTextBlockObject("mrkdwn", releaseScheduled, false, false)
 	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
-	return []slack.Block{sectionBlock}
+	return sectionBlock
 }
 
 func generateFakeTemporaryRelease(release string, id int) *slack.SectionBlock {
@@ -84,24 +83,24 @@ func generateFakeTemporaryRelease(release string, id int) *slack.SectionBlock {
 }
 
 func generateReleaseButton(space *spaces.Space) *slack.ActionBlock {
-	cancelBtn := slack.NewButtonBlockElement(
-		CancelTempReleaseParkingActionId,
+	tempReleaseBtn := slack.NewButtonBlockElement(
+		TempReleaseParkingActionId,
 		string(space.Key()),
 		slack.NewTextBlockObject("plain_text", "Add Temp Release!", true, false),
 	)
-	cancelBtn = cancelBtn.WithStyle(slack.StylePrimary)
-	actionBlock := slack.NewActionBlock("", cancelBtn)
+	tempReleaseBtn = tempReleaseBtn.WithStyle(slack.StylePrimary)
+	actionBlock := slack.NewActionBlock("", tempReleaseBtn)
 	return actionBlock
 }
 
-func generateCancelReleaseButton(space *spaces.Space, id int) *slack.ActionBlock {
-	tempReleaseButton := slack.NewButtonBlockElement(
-		TempReleaseParkingActionId,
-		fmt.Sprintf("%s_%d", string(space.Key()), id),
+func generateCancelReleaseButton(space *spaces.Space, releaseId int) *slack.ActionBlock {
+	cancelBtn := slack.NewButtonBlockElement(
+		CancelTempReleaseParkingActionId,
+		fmt.Sprintf("%s__%d", string(space.Key()), releaseId),
 		slack.NewTextBlockObject("plain_text", "Cancel", true, false),
 	)
-	tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
-	actionBlock := slack.NewActionBlock("", tempReleaseButton)
+	cancelBtn = cancelBtn.WithStyle(slack.StyleDanger)
+	actionBlock := slack.NewActionBlock("", cancelBtn)
 	return actionBlock
 }
 
@@ -135,17 +134,16 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 
 	allBlocks = append(allBlocks, div)
 
-	// releaseInfoBlocks := p.generateTemporaryReleasesList(space)
-	releases := []string{
-		"Scheduled release from 2024-05-29 to 2024-05-29",
-		"Scheduled release from 2024-06-01 to 2024-06-10",
-		"Scheduled release from 2024-06-20 to 2024-06-21",
+	releases := p.data.ParkingLot.ToBeReleased.GetAll(space.Key())
+	if len(releases) == 0 {
+		// If not release available -> return early
+		return allBlocks
 	}
-	for i, release := range releases {
-		releaseBlock := generateFakeTemporaryRelease(release, i)
-		allBlocks = append(allBlocks, releaseBlock)
-		cancelBtn := generateCancelReleaseButton(space, i)
-		allBlocks = append(allBlocks, cancelBtn)
+
+	for _, release := range releases {
+		releaseBlock := generateTemporaryReleaseBlock(release)
+		cancelBtn := generateCancelReleaseButton(space, release.UniqueId)
+		allBlocks = append(allBlocks, releaseBlock, cancelBtn)
 	}
 
 	return allBlocks

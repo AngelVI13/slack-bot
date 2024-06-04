@@ -85,14 +85,23 @@ func (i ReleaseInfo) String() string {
 
 // TODO: Check for memory leaks afterward whole implementation is done
 // ... a lot of dangling pointers around..
+// TODO: update logging to reflect new structure
 type ReleaseMap map[SpaceKey]*ReleasePool
 
-func (q ReleaseMap) Get(spaceKey SpaceKey) []*ReleaseInfo {
+func (q ReleaseMap) GetAll(spaceKey SpaceKey) []*ReleaseInfo {
 	releasePool, ok := q[spaceKey]
 	if !ok {
 		return nil
 	}
 	return releasePool.All()
+}
+
+func (q ReleaseMap) Get(spaceKey SpaceKey, id int) *ReleaseInfo {
+	releasePool, ok := q[spaceKey]
+	if !ok {
+		return nil
+	}
+	return releasePool.ByIdx(id)
 }
 
 func (q ReleaseMap) GetByRootViewId(rootId string) *ReleaseInfo {
@@ -115,14 +124,25 @@ func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
 	return nil
 }
 
-func (q ReleaseMap) Remove(spaceKey SpaceKey, id int) bool {
+func (q ReleaseMap) RemoveRelease(spaceKey SpaceKey, id int) bool {
 	pool, ok := q[spaceKey]
 	if !ok {
 		return false
 	}
 
-	slog.Info("Removing from release map", "space", spaceKey)
+	slog.Info("Removing release from release map", "space", spaceKey, "release", id)
 	pool.Remove(id)
+	return true
+}
+
+func (q ReleaseMap) RemoveAllReleases(spaceKey SpaceKey) bool {
+	_, ok := q[spaceKey]
+	if !ok {
+		return false
+	}
+
+	delete(q, spaceKey)
+	slog.Info("Removing all releases from release map", "space", spaceKey)
 	return true
 }
 
@@ -154,9 +174,11 @@ func (q ReleaseMap) Add(
 	spaceKey := space.Key()
 	// TODO: add space validation logic here
 	// allReleases := q.Get(spaceKey)
-	if q.Get(spaceKey) != nil {
-		return nil, fmt.Errorf("Space %s already marked for release", spaceKey)
-	}
+	/*
+		if q.Get(spaceKey) != nil {
+			return nil, fmt.Errorf("Space %s already marked for release", spaceKey)
+		}
+	*/
 
 	slog.Info(
 		"Adding to release map",
@@ -174,6 +196,11 @@ func (q ReleaseMap) Add(
 		OwnerId:    ownerId,
 		Space:      space,
 		Submitted:  false,
+	}
+
+	_, found := q[spaceKey]
+	if !found {
+		q[spaceKey] = NewReleasePool()
 	}
 
 	q[spaceKey].Put(releaseInfo)

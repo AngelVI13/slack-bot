@@ -55,8 +55,18 @@ func (d *SpacesLot) synchronizeFromFile(data []byte) {
 	}
 
 	// Do not load any submitted items from to be released map
-	for space, info := range d.ToBeReleased {
-		if !info.Submitted {
+	for space, pool := range d.ToBeReleased {
+		releases := pool.All()
+		for _, release := range releases {
+			if !release.Submitted {
+				pool.Remove(release.UniqueId)
+			}
+		}
+
+		// Check if no finalized releases are associated with a space and
+		// remove them from the ToBeReleased map.
+		// NOTE: have to recompute pool.All() to get new value of releases
+		if len(pool.All()) == 0 {
 			delete(d.ToBeReleased, space)
 		}
 	}
@@ -94,9 +104,15 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) *Space {
 		}
 	}
 
-	for _, releaseInfo := range d.ToBeReleased {
-		if releaseInfo.Submitted && releaseInfo.OwnerId == userId {
-			return releaseInfo.Space
+	for _, pool := range d.ToBeReleased {
+		releases := pool.All()
+		if len(releases) == 0 {
+			continue
+		}
+
+		release := releases[0]
+		if release.Submitted && release.OwnerId == userId {
+			return release.Space
 		}
 	}
 
@@ -105,8 +121,13 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) *Space {
 
 func (d *SpacesLot) HasTempRelease(userId string) bool {
 	userAlreadyReleasedSpace := false
-	for _, releaseInfo := range d.ToBeReleased {
-		if releaseInfo.Submitted && releaseInfo.OwnerId == userId {
+	for _, pool := range d.ToBeReleased {
+		releases := pool.All()
+		if len(releases) == 0 {
+			continue
+		}
+		release := releases[0]
+		if release.Submitted && release.OwnerId == userId {
 			userAlreadyReleasedSpace = true
 			break
 		}
@@ -295,35 +316,41 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 		}
 
 		// If a scheduled release was setup
-		releaseInfo := l.ToBeReleased.Get(spaceKey)
-		if releaseInfo == nil {
-			continue
-		}
-
-		// On the day before the start of the release -> make the space
-		// available for selection
-		if releaseInfo.StartDate.Sub(cTime).Hours() < 24 &&
-			releaseInfo.StartDate.After(cTime) {
-			slog.Info("TempRelease", "space", spaceKey, "releaseInfo", releaseInfo)
-			space.Reserved = false
-			space.AutoRelease = false
-		} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
-			// On the day of the end of release -> reserve back the space
-			// for the correct user
-			slog.Info("TempReserve (return to owner)", "space", spaceKey, "releaseInfo", releaseInfo)
-			space.Reserved = true
-			space.AutoRelease = false
-			space.ReservedBy = releaseInfo.OwnerName
-			space.ReservedById = releaseInfo.OwnerId
-
-			ok := l.ToBeReleased.Remove(spaceKey)
-			if !ok {
-				slog.Error("Failed removing release info", "space", spaceKey)
-			}
+		for _, release := range l.ToBeReleased.GetAll(spaceKey) {
+			l.ReleaseTemp(space, spaceKey, cTime, release)
 		}
 	}
 
 	l.SynchronizeToFile()
+}
+
+func (l *SpacesLot) ReleaseTemp(
+	space *Space,
+	spaceKey SpaceKey,
+	cTime time.Time,
+	releaseInfo *ReleaseInfo,
+) {
+	// On the day before the start of the release -> make the space
+	// available for selection
+	if releaseInfo.StartDate.Sub(cTime).Hours() < 24 &&
+		releaseInfo.StartDate.After(cTime) {
+		slog.Info("TempRelease", "space", spaceKey, "releaseInfo", releaseInfo)
+		space.Reserved = false
+		space.AutoRelease = false
+	} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
+		// On the day of the end of release -> reserve back the space
+		// for the correct user
+		slog.Info("TempReserve (return to owner)", "space", spaceKey, "releaseInfo", releaseInfo)
+		space.Reserved = true
+		space.AutoRelease = false
+		space.ReservedBy = releaseInfo.OwnerName
+		space.ReservedById = releaseInfo.OwnerId
+
+		ok := l.ToBeReleased.RemoveRelease(spaceKey, releaseInfo.UniqueId)
+		if !ok {
+			slog.Error("Failed removing release info", "space", spaceKey)
+		}
+	}
 }
 
 func GetSpacesLot(filename string) (spacesLot SpacesLot) {

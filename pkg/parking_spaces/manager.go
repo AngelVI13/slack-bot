@@ -3,6 +3,8 @@ package parking_spaces
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -155,15 +157,12 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 		case views.ReleaseParkingActionId:
 			parkingSpace := spaces.SpaceKey(action.Value)
-			actions = m.handleReleaseParking(
-				data,
-				parkingSpace,
-				m.data.SelectedFloor[data.UserId],
-				m.data.SelectedShowTaken[data.UserId],
-			)
+			actions = m.handleReleaseParking(data, parkingSpace)
 
 		case views.TempReleaseParkingActionId:
 			parkingSpace := spaces.SpaceKey(action.Value)
+			// TODO: For some reason the temporary releases are not saved to file and reloaded
+			// on startup
 			actions = m.handleTempReleaseParking(
 				data,
 				parkingSpace,
@@ -172,14 +171,32 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 
 		case views.CancelTempReleaseParkingActionId:
-			parkingSpace := spaces.SpaceKey(action.Value)
+			// TODO: tidy this up... maybe move it inside handleCancelTempReleaseParking
+			if strings.Count(action.Value, "__") != 1 {
+				slog.Error(
+					"unexpected format of cancel action value",
+					"expected",
+					"1st floor 121__5",
+					"actual",
+					action.Value,
+				)
+				// TODO: maybe this should render error msg
+				return nil
+			}
+			parts := strings.Split(action.Value, "__")
+			parkingSpace := spaces.SpaceKey(parts[0])
 			// TODO: get release ID here as well
-			actions = m.handleCancelTempReleaseParking(
-				data,
-				parkingSpace,
-				m.data.SelectedFloor[data.UserId],
-				m.data.SelectedShowTaken[data.UserId],
-			)
+			releaseId, err := strconv.Atoi(parts[1])
+			if err != nil {
+				slog.Error(
+					"failed to convert release id to int",
+					"id",
+					parts[1],
+					"err",
+					err,
+				)
+			}
+			actions = m.handleCancelTempReleaseParking(data, parkingSpace, releaseId)
 
 		case views.ReleaseStartDateActionId, views.ReleaseEndDateActionId:
 			selectedDate := action.SelectedDate
@@ -431,8 +448,7 @@ func (m *Manager) handleTempReleaseParking(
 func (m *Manager) handleCancelTempReleaseParking(
 	data *slackApi.BlockAction,
 	parkingSpace spaces.SpaceKey,
-	selectedFloor string,
-	selectedShowTaken bool,
+	releaseId int,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 	// Special User handling
@@ -443,7 +459,10 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 	errorTxt := ""
 
-	releaseInfo := m.data.ParkingLot.ToBeReleased.Get(parkingSpace)
+	// TODO: this whole logic needs rework now that we support multiple releases
+	// TODO: here need to have the concept of active release on top of what the user
+	// chose to cancel
+	releaseInfo := m.data.ParkingLot.ToBeReleased.Get(parkingSpace, releaseId)
 	if releaseInfo == nil {
 		errorTxt = fmt.Sprintf("Couldn't find release info for space %s", parkingSpace)
 	} else if releaseInfo.StartDate.After(time.Now()) {
@@ -453,7 +472,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 		chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 		chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-		ok := m.data.ParkingLot.ToBeReleased.Remove(parkingSpace)
+		ok := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
 		if !ok {
 			errorTxt = fmt.Sprintf(
 				"Failed to cancel temporary release for space %s. Please contact an administrator",
@@ -487,7 +506,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-				ok := m.data.ParkingLot.ToBeReleased.Remove(parkingSpace)
+				ok := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
 				if !ok {
 					slog.Error("Failed removing release info", "space", parkingSpace)
 				}
@@ -521,7 +540,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-				ok := m.data.ParkingLot.ToBeReleased.Remove(parkingSpace)
+				ok := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
 				if !ok {
 					slog.Error("Failed removing release info", "space", parkingSpace)
 				}
@@ -550,8 +569,6 @@ func (m *Manager) handleCancelTempReleaseParking(
 func (m *Manager) handleReleaseParking(
 	data *slackApi.BlockAction,
 	parkingSpace spaces.SpaceKey,
-	selectedFloor string,
-	selectedShowTaken bool,
 ) []event.ResponseAction {
 	actions := []event.ResponseAction{}
 
@@ -569,7 +586,7 @@ func (m *Manager) handleReleaseParking(
 
 	// Only remove release info from a space if an Admin is permanently releasing the space
 	if m.data.UserManager.IsAdminId(data.UserId) {
-		ok := m.data.ParkingLot.ToBeReleased.Remove(parkingSpace)
+		ok := m.data.ParkingLot.ToBeReleased.RemoveAllReleases(parkingSpace)
 		if !ok {
 			slog.Error("Failed to remove release info", "space", parkingSpace)
 		}

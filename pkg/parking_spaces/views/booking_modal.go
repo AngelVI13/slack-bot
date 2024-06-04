@@ -58,14 +58,24 @@ func (b *Booking) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
 		emoji := space.GetStatusEmoji()
 
 		releaseScheduled := ""
-		releaseInfo := b.data.ParkingLot.ToBeReleased.Get(space.Key())
-		if releaseInfo != nil {
-			releaseScheduled = fmt.Sprintf(
-				"\n\t\tScheduled release from %s to %s",
-				releaseInfo.StartDate.Format("2006-01-02"),
-				releaseInfo.EndDate.Format("2006-01-02"),
-			)
-		}
+		/*
+		   TODO: No need to have the cancel temporary release button in this view
+		   because user will only schedule and cancel temporary releases in their
+		   personal view. If you're an admin, I dont see a use case for you to cancel
+		   temporary releases so only perma release the space button should be there.
+
+		   TODO: Implement ToBeReleased.GetActive(space.Key()) to get currently active
+		   temp release (just for visual representation of when a space is under release).
+
+		   releaseInfo := b.data.ParkingLot.ToBeReleased.Get(space.Key())
+		   if releaseInfo != nil {
+		       releaseScheduled = fmt.Sprintf(
+		           "\n\t\tScheduled release from %s to %s",
+		           releaseInfo.StartDate.Format("2006-01-02"),
+		           releaseInfo.EndDate.Format("2006-01-02"),
+		       )
+		   }
+		*/
 
 		spaceProps := space.GetPropsText()
 		text := fmt.Sprintf(
@@ -95,26 +105,9 @@ func (b *Booking) generateParkingButtons(
 	isAdminUser := b.data.UserManager.IsAdminId(userId)
 	hasPermanentParkingUser := b.data.UserManager.HasParkingById(userId)
 
-	releaseInfo := b.data.ParkingLot.ToBeReleased.Get(space.Key())
-	if releaseInfo != nil && (releaseInfo.OwnerId == userId || isAdminUser) &&
-		!releaseInfo.Cancelled {
-		cancelTempReleaseButton := slack.NewButtonBlockElement(
-			CancelTempReleaseParkingActionId,
-			string(space.Key()),
-			slack.NewTextBlockObject(
-				"plain_text",
-				"Cancel Scheduled Release!",
-				true,
-				false,
-			),
-		)
-		cancelTempReleaseButton = cancelTempReleaseButton.WithStyle(slack.StyleDanger)
-		buttons = append(buttons, cancelTempReleaseButton)
-	}
-
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
 		// space reserved but hasn't yet been schedule for release
-		if (isAdminUser || hasPermanentParkingUser) && releaseInfo == nil {
+		if isAdminUser {
 			permanentSpace := b.data.UserManager.HasParkingById(space.ReservedById)
 			if permanentSpace {
 				// Only allow the temporary parking button if the correct user is using

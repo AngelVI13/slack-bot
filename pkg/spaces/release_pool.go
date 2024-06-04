@@ -21,7 +21,7 @@ type ReleasePool struct {
 	putNum   int
 }
 
-func NewWithCapacity(cap int) (*ReleasePool, error) {
+func NewReleasePoolWithCapacity(cap int) (*ReleasePool, error) {
 	if cap <= 0 {
 		return nil, fmt.Errorf("capacity must be > 0: %d", cap)
 	}
@@ -32,8 +32,8 @@ func NewWithCapacity(cap int) (*ReleasePool, error) {
 	}, nil
 }
 
-func New() *ReleasePool {
-	p, _ := NewWithCapacity(defaultRingBufCapacity)
+func NewReleasePool() *ReleasePool {
+	p, _ := NewReleasePoolWithCapacity(defaultRingBufCapacity)
 	return p
 }
 
@@ -96,6 +96,10 @@ func (p *ReleasePool) Remove(id int) error {
 
 	p.data[id] = nil
 	return nil
+}
+
+func (p *ReleasePool) ByIdx(id int) *ReleaseInfo {
+	return p.data[id]
 }
 
 func (p *ReleasePool) ByRootViewId(id string) *ReleaseInfo {
