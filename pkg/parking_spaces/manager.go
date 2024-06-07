@@ -2,9 +2,8 @@ package parking_spaces
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -29,10 +28,6 @@ const (
 
 type Manager struct {
 	eventManager *event.EventManager
-
-	// TODO: this is not used ????
-	releaseInfo *spaces.ReleaseInfo
-
 	data         *model.Data
 	bookingView  *views.Booking
 	releaseView  *views.Release
@@ -47,7 +42,6 @@ func NewManager(
 	data := model.NewData(filename, userManager)
 	return &Manager{
 		eventManager: eventManager,
-		releaseInfo:  nil,
 		data:         data,
 		bookingView:  views.NewBooking(Identifier, data),
 		releaseView:  views.NewRelease(Identifier, data),
@@ -171,30 +165,9 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 
 		case views.CancelTempReleaseParkingActionId:
-			// TODO: tidy this up... maybe move it inside handleCancelTempReleaseParking
-			if strings.Count(action.Value, "__") != 1 {
-				slog.Error(
-					"unexpected format of cancel action value",
-					"expected",
-					"1st floor 121__5",
-					"actual",
-					action.Value,
-				)
-				// TODO: maybe this should render error msg
-				return nil
-			}
-			parts := strings.Split(action.Value, "__")
-			parkingSpace := spaces.SpaceKey(parts[0])
-			// TODO: get release ID here as well
-			releaseId, err := strconv.Atoi(parts[1])
+			parkingSpace, releaseId, err := views.ParseCancelActionValue(action.Value)
 			if err != nil {
-				slog.Error(
-					"failed to convert release id to int",
-					"id",
-					parts[1],
-					"err",
-					err,
-				)
+				log.Fatal(err) // NOTE: this should never happen
 			}
 			actions = m.handleCancelTempReleaseParking(data, parkingSpace, releaseId)
 
@@ -444,7 +417,6 @@ func (m *Manager) handleTempReleaseParking(
 	return actions
 }
 
-// TODO: cancel temp release action should include which ID was cancelled
 func (m *Manager) handleCancelTempReleaseParking(
 	data *slackApi.BlockAction,
 	parkingSpace spaces.SpaceKey,
@@ -459,12 +431,18 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 	errorTxt := ""
 
-	// TODO: this whole logic needs rework now that we support multiple releases
-	// TODO: here need to have the concept of active release on top of what the user
-	// chose to cancel
 	releaseInfo := m.data.ParkingLot.ToBeReleased.Get(parkingSpace, releaseId)
 	if releaseInfo == nil {
 		errorTxt = fmt.Sprintf("Couldn't find release info for space %s", parkingSpace)
+	} else if !releaseInfo.Active {
+		slog.Info("Cancel scheduled (not active) temp. release", "space", parkingSpace, "releaseInfo", releaseInfo)
+		err := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
+		if err != nil {
+			slog.Error(
+				"failed to remove release", "space", parkingSpace, "id", releaseId,
+				"releaseInfo", releaseInfo, "err", err,
+			)
+		}
 	} else if releaseInfo.StartDate.After(time.Now()) {
 		slog.Info("Cancel temp. release & return to owner", "space", parkingSpace, "releaseInfo", releaseInfo)
 		chosenParkingSpace.Reserved = true
@@ -472,14 +450,13 @@ func (m *Manager) handleCancelTempReleaseParking(
 		chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 		chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-		ok := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
-		if !ok {
+		err := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
+		if err != nil {
 			errorTxt = fmt.Sprintf(
-				"Failed to cancel temporary release for space %s. Please contact an administrator",
-				parkingSpace,
-			)
+				"Failed to cancel temporary release for space %s. %v. Please contact an administrator",
+				parkingSpace, err)
 		}
-	} else {
+	} else { // release data was before now - i.e. temp release is currently active
 		now := time.Now()
 		// If user cancelled before the daily reset
 		if (now.Hour() < ResetHour) || (now.Hour() == ResetHour && now.Minute() < ResetMin) {
@@ -489,7 +466,6 @@ func (m *Manager) handleCancelTempReleaseParking(
 					"Temporary release cancelled (before eod). Space is taken. Return to owner at eod.",
 					"space", parkingSpace, "releaseInfo", releaseInfo)
 				releaseInfo.EndDate = &now
-				releaseInfo.MarkCancelled()
 				errorTxt = fmt.Sprintf(
 					"Temporary release cancelled. The space %s will be returned to you today at %d:%d",
 					parkingSpace,
@@ -506,9 +482,9 @@ func (m *Manager) handleCancelTempReleaseParking(
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-				ok := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
-				if !ok {
-					slog.Error("Failed removing release info", "space", parkingSpace)
+				err := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
+				if err != nil {
+					slog.Error("Failed removing release info", "space", parkingSpace, "err", err)
 				}
 			}
 		} else { // User cancelled space after EOD
@@ -528,7 +504,6 @@ func (m *Manager) handleCancelTempReleaseParking(
 				hoursTillMidnight := 24 - now.Hour()
 				tomorrow := now.Add(time.Duration(hoursTillMidnight) * time.Hour)
 				releaseInfo.EndDate = &tomorrow
-				releaseInfo.MarkCancelled()
 			} else {
 				// if parking space was not already reserved for the next day
 				// transfer it to owner
@@ -540,9 +515,9 @@ func (m *Manager) handleCancelTempReleaseParking(
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-				ok := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
-				if !ok {
-					slog.Error("Failed removing release info", "space", parkingSpace)
+				err := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
+				if err != nil {
+					slog.Error("Failed removing release info", "space", parkingSpace, "err", err)
 				}
 			}
 		}

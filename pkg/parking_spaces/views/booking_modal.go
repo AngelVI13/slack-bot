@@ -11,14 +11,13 @@ import (
 )
 
 const (
-	FloorActionId                    = "floorActionId"
-	FloorOptionId                    = "floorOptionId"
-	ReserveParkingActionId           = "reserveParking"
-	ReleaseParkingActionId           = "releaseParking"
-	TempReleaseParkingActionId       = "tempReleaseParking"
-	CancelTempReleaseParkingActionId = "cancelTempReleaseParking"
-	ShowActionId                     = "showActionId"
-	ShowOptionId                     = "showOptionId"
+	FloorActionId              = "floorActionId"
+	FloorOptionId              = "floorOptionId"
+	ReserveParkingActionId     = "reserveParking"
+	ReleaseParkingActionId     = "releaseParking"
+	TempReleaseParkingActionId = "tempReleaseParking"
+	ShowActionId               = "showActionId"
+	ShowOptionId               = "showOptionId"
 )
 
 type Booking struct {
@@ -58,24 +57,14 @@ func (b *Booking) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
 		emoji := space.GetStatusEmoji()
 
 		releaseScheduled := ""
-		/*
-		   TODO: No need to have the cancel temporary release button in this view
-		   because user will only schedule and cancel temporary releases in their
-		   personal view. If you're an admin, I dont see a use case for you to cancel
-		   temporary releases so only perma release the space button should be there.
-
-		   TODO: Implement ToBeReleased.GetActive(space.Key()) to get currently active
-		   temp release (just for visual representation of when a space is under release).
-
-		   releaseInfo := b.data.ParkingLot.ToBeReleased.Get(space.Key())
-		   if releaseInfo != nil {
-		       releaseScheduled = fmt.Sprintf(
-		           "\n\t\tScheduled release from %s to %s",
-		           releaseInfo.StartDate.Format("2006-01-02"),
-		           releaseInfo.EndDate.Format("2006-01-02"),
-		       )
-		   }
-		*/
+		releaseInfo := b.data.ParkingLot.ToBeReleased.GetActive(space.Key())
+		if releaseInfo != nil {
+			releaseScheduled = fmt.Sprintf(
+				"\n\t\tScheduled release from %s to %s",
+				releaseInfo.StartDate.Format("2006-01-02"),
+				releaseInfo.EndDate.Format("2006-01-02"),
+			)
+		}
 
 		spaceProps := space.GetPropsText()
 		text := fmt.Sprintf(

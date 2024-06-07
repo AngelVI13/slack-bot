@@ -303,7 +303,6 @@ func (l *SpacesLot) GetSpace(unitSpace SpaceKey) *Space {
 	return space
 }
 
-// TODO: Test this
 func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 	for spaceKey, space := range l.UnitSpaces {
 		// Simple case
@@ -337,6 +336,7 @@ func (l *SpacesLot) ReleaseTemp(
 		slog.Info("TempRelease", "space", spaceKey, "releaseInfo", releaseInfo)
 		space.Reserved = false
 		space.AutoRelease = false
+		releaseInfo.MarkActive()
 	} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
 		// On the day of the end of release -> reserve back the space
 		// for the correct user
@@ -346,9 +346,9 @@ func (l *SpacesLot) ReleaseTemp(
 		space.ReservedBy = releaseInfo.OwnerName
 		space.ReservedById = releaseInfo.OwnerId
 
-		ok := l.ToBeReleased.RemoveRelease(spaceKey, releaseInfo.UniqueId)
-		if !ok {
-			slog.Error("Failed removing release info", "space", spaceKey)
+		err := l.ToBeReleased.RemoveRelease(spaceKey, releaseInfo.UniqueId)
+		if err != nil {
+			slog.Error("Failed removing release info", "space", spaceKey, "err", err)
 		}
 	}
 }

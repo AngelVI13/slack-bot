@@ -2,11 +2,18 @@ package views
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
+)
+
+const (
+	CancelActionValueSeparator       = "__"
+	CancelTempReleaseParkingActionId = "cancelTempReleaseParking"
 )
 
 type Personal struct {
@@ -96,12 +103,32 @@ func generateReleaseButton(space *spaces.Space) *slack.ActionBlock {
 func generateCancelReleaseButton(space *spaces.Space, releaseId int) *slack.ActionBlock {
 	cancelBtn := slack.NewButtonBlockElement(
 		CancelTempReleaseParkingActionId,
-		fmt.Sprintf("%s__%d", string(space.Key()), releaseId),
+		fmt.Sprintf("%s%s%d", string(space.Key()), CancelActionValueSeparator, releaseId),
 		slack.NewTextBlockObject("plain_text", "Cancel", true, false),
 	)
 	cancelBtn = cancelBtn.WithStyle(slack.StyleDanger)
 	actionBlock := slack.NewActionBlock("", cancelBtn)
 	return actionBlock
+}
+
+func ParseCancelActionValue(actionValue string) (spaces.SpaceKey, int, error) {
+	if strings.Count(actionValue, CancelActionValueSeparator) != 1 {
+		return "", -1, fmt.Errorf(
+			"unexpected format of cancel action value: epected %q;actual %q",
+			"1st floor 121__5",
+			actionValue,
+		)
+	}
+	parts := strings.Split(actionValue, CancelActionValueSeparator)
+	parkingSpace := spaces.SpaceKey(parts[0])
+	releaseId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return "", -1, fmt.Errorf(
+			"failed to convert release id to int: id %q; err: %v", parts[1], err,
+		)
+	}
+
+	return parkingSpace, releaseId, nil
 }
 
 const personalModelDescription = `This is your personal parking space page.

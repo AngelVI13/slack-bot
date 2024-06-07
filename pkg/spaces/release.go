@@ -16,8 +16,8 @@ type ReleaseInfo struct {
 	StartDate  *time.Time
 	EndDate    *time.Time
 	Submitted  bool
-	Cancelled  bool
 	UniqueId   int
+	Active     bool
 
 	// These are only used while the user is choosing date range to refer
 	// between space selected and release range selected (i.e. between booking modal
@@ -38,9 +38,9 @@ func (i *ReleaseInfo) MarkSubmitted() {
 	i.ViewId = ""
 }
 
-func (i *ReleaseInfo) MarkCancelled() {
-	slog.Info("ReleaseInfo Cancelled", "info", i)
-	i.Cancelled = true
+func (i *ReleaseInfo) MarkActive() {
+	slog.Info("ReleaseInfo Active", "info", i)
+	i.Active = true
 }
 
 func (i *ReleaseInfo) DataPresent() bool {
@@ -104,6 +104,14 @@ func (q ReleaseMap) Get(spaceKey SpaceKey, id int) *ReleaseInfo {
 	return releasePool.ByIdx(id)
 }
 
+func (q ReleaseMap) GetActive(spaceKey SpaceKey) *ReleaseInfo {
+	releasePool, ok := q[spaceKey]
+	if !ok {
+		return nil
+	}
+	return releasePool.Active()
+}
+
 func (q ReleaseMap) GetByRootViewId(rootId string) *ReleaseInfo {
 	for _, pool := range q {
 		release := pool.ByRootViewId(rootId)
@@ -124,15 +132,15 @@ func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
 	return nil
 }
 
-func (q ReleaseMap) RemoveRelease(spaceKey SpaceKey, id int) bool {
+func (q ReleaseMap) RemoveRelease(spaceKey SpaceKey, id int) error {
 	pool, ok := q[spaceKey]
 	if !ok {
-		return false
+		return fmt.Errorf("spaceKey not in release map: %q", spaceKey)
 	}
 
 	slog.Info("Removing release from release map", "space", spaceKey, "release", id)
-	pool.Remove(id)
-	return true
+	err := pool.Remove(id)
+	return err
 }
 
 func (q ReleaseMap) RemoveAllReleases(spaceKey SpaceKey) bool {

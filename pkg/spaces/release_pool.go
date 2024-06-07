@@ -133,3 +133,12 @@ func (p *ReleasePool) All() []*ReleaseInfo {
 
 	return releases
 }
+
+func (p *ReleasePool) Active() *ReleaseInfo {
+	for _, v := range p.data {
+		if v != nil && v.Active {
+			return v
+		}
+	}
+	return nil
+}
