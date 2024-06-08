@@ -149,6 +149,9 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
+	// TODO: Add button only for admins that have permanent space to switch between
+	// their personal page and the overall booking page
+
 	space := p.data.ParkingLot.GetOwnedSpaceByUserId(userId)
 
 	// TODO: Add more information to parking block and idicate that its actually the

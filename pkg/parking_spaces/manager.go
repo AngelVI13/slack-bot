@@ -207,83 +207,39 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 
 	startDateStr := submittedData[views.ReleaseStartDateActionId].SelectedDate
 	if startDateStr == "" {
-		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
-		errTxt := fmt.Sprintf(
-			"Failed to temporary release space %s: no start date provided",
-			spaceKey,
-		)
-		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
-		}
-		return common.NewResponseEvent(data.UserName, actions...)
+		return m.handleViewSubmissionError(data, "no start date provided")
 	}
 
 	currentLocation := time.Now().Location()
 
 	startDate, err := time.ParseInLocation("2006-01-02", startDateStr, currentLocation)
 	if err != nil {
-		// Remote space from temporary release queue
-		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
-		m.data.ParkingLot.SynchronizeToFile()
-
 		errTxt := fmt.Sprintf(
-			"Failed to temporary release space %s: failure to parse start date format %s: %v",
-			spaceKey,
+			"failure to parse start date format %s: %v",
 			startDateStr,
 			err,
 		)
-		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
-		}
-		return common.NewResponseEvent(data.UserName, actions...)
+		return m.handleViewSubmissionError(data, errTxt)
 	}
 
 	endDateStr := submittedData[views.ReleaseEndDateActionId].SelectedDate
 	if endDateStr == "" {
-		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
-		errTxt := fmt.Sprintf(
-			"Failed to temporary release space %s: no end date provided",
-			spaceKey,
-		)
-		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
-		}
-		return common.NewResponseEvent(data.UserName, actions...)
+		return m.handleViewSubmissionError(data, "no end date provided")
 	}
+
 	endDate, err := time.ParseInLocation("2006-01-02", endDateStr, currentLocation)
 	if err != nil {
-		// Remote space from temporary release queue
-		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
-		m.data.ParkingLot.SynchronizeToFile()
-
 		errTxt := fmt.Sprintf(
-			"Failed to temporary release space %s: failure to parse end date format %s: %v",
-			spaceKey,
+			"failure to parse end date format %s: %v",
 			endDateStr,
 			err,
 		)
-		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
-		}
-		return common.NewResponseEvent(data.UserName, actions...)
+		return m.handleViewSubmissionError(data, errTxt)
 	}
 
 	errorTxt := common.CheckDateRange(startDate, endDate)
 	if errorTxt != "" {
-		// Remote space from temporary release queue
-		spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
-		m.data.ParkingLot.SynchronizeToFile()
-
-		// TODO: maybe this should be a dialog window instead
-		errTxt := fmt.Sprintf(
-			"Failed to temporary release space %s: %s",
-			spaceKey,
-			errorTxt,
-		)
-		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
-		}
-		return common.NewResponseEvent(data.UserName, actions...)
+		return m.handleViewSubmissionError(data, errorTxt)
 	}
 
 	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
@@ -314,6 +270,22 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	updateAction := common.NewUpdateViewAction(data.TriggerId, rootViewId, modal, errTxt)
 	actions = append(actions, updateAction)
 
+	return common.NewResponseEvent(data.UserName, actions...)
+}
+
+func (m *Manager) handleViewSubmissionError(
+	data *slackApi.ViewSubmission,
+	errTxt string,
+) *common.Response {
+	// Remove space from temporary release queue
+	spaceKey, _ := m.data.ParkingLot.ToBeReleased.RemoveByViewId(data.ViewId)
+	m.data.ParkingLot.SynchronizeToFile()
+
+	errTxt = fmt.Sprintf("Failed to temporary release space %s: %s", spaceKey, errTxt)
+
+	actions := []event.ResponseAction{
+		common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
+	}
 	return common.NewResponseEvent(data.UserName, actions...)
 }
 
@@ -588,8 +560,8 @@ func (m *Manager) handleReleaseRange(
 	currentLocation := time.Now().Location()
 	date, err := time.ParseInLocation("2006-01-02", selectedDate, currentLocation)
 	if err != nil {
-		// TODO: should this return here or just log ?
 		slog.Error("Failed to parse date format", "date", selectedDate, "err", err)
+		return nil
 	}
 
 	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)

@@ -156,18 +156,9 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				m.userManager.InsertUser(selectedUser.UserId, selectedUser.UserName)
 			}
 
-			userHadParking := m.userManager.HasParkingById(selectedUser.UserId)
-
 			m.userManager.SetAccessRights(selectedUser.UserId, isAdmin)
 			m.userManager.SetParkingPermission(selectedUser.UserId, hasParkingSpace)
 			m.userManager.SynchronizeToFile()
-
-			// TODO: add automatic handling for these cases
-			if userHadParking && !hasParkingSpace {
-				// TODO: Make his space reservation to auto release
-			} else if !userHadParking && hasParkingSpace {
-				// TODO: make his space reservation to permanent
-			}
 
 			errTxt := ""
 			modal := m.generateUsersModalRequest(data, selectedUser.UserId)

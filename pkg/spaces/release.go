@@ -180,16 +180,7 @@ func (q ReleaseMap) Add(
 	space *Space,
 ) (*ReleaseInfo, error) {
 	spaceKey := space.Key()
-	// TODO: add space validation logic here
-	// allReleases := q.Get(spaceKey)
-	/*
-		if q.Get(spaceKey) != nil {
-			return nil, fmt.Errorf("Space %s already marked for release", spaceKey)
-		}
-	*/
-
-	slog.Info(
-		"Adding to release map",
+	slog.Info("Adding to release map",
 		"space",
 		spaceKey,
 		"releaser",
