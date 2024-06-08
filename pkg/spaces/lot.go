@@ -316,7 +316,7 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 
 		// If a scheduled release was setup
 		for _, release := range l.ToBeReleased.GetAll(spaceKey) {
-			l.ReleaseTemp(space, spaceKey, cTime, release)
+			l.ReleaseTemp(space, cTime, release)
 		}
 	}
 
@@ -325,10 +325,10 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 
 func (l *SpacesLot) ReleaseTemp(
 	space *Space,
-	spaceKey SpaceKey,
 	cTime time.Time,
 	releaseInfo *ReleaseInfo,
 ) {
+	spaceKey := releaseInfo.Space.Key()
 	// On the day before the start of the release -> make the space
 	// available for selection
 	if releaseInfo.StartDate.Sub(cTime).Hours() < 24 &&
@@ -346,7 +346,7 @@ func (l *SpacesLot) ReleaseTemp(
 		space.ReservedBy = releaseInfo.OwnerName
 		space.ReservedById = releaseInfo.OwnerId
 
-		err := l.ToBeReleased.RemoveRelease(spaceKey, releaseInfo.UniqueId)
+		err := l.ToBeReleased.Remove(releaseInfo)
 		if err != nil {
 			slog.Error("Failed removing release info", "space", spaceKey, "err", err)
 		}

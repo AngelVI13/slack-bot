@@ -205,51 +205,39 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return nil
 	}
 
-	startDateStr := submittedData[views.ReleaseStartDateActionId].SelectedDate
-	if startDateStr == "" {
-		return m.handleViewSubmissionError(data, "no start date provided")
-	}
-
-	currentLocation := time.Now().Location()
-
-	startDate, err := time.ParseInLocation("2006-01-02", startDateStr, currentLocation)
-	if err != nil {
-		errTxt := fmt.Sprintf(
-			"failure to parse start date format %s: %v",
-			startDateStr,
-			err,
-		)
-		return m.handleViewSubmissionError(data, errTxt)
-	}
-
-	endDateStr := submittedData[views.ReleaseEndDateActionId].SelectedDate
-	if endDateStr == "" {
-		return m.handleViewSubmissionError(data, "no end date provided")
-	}
-
-	endDate, err := time.ParseInLocation("2006-01-02", endDateStr, currentLocation)
-	if err != nil {
-		errTxt := fmt.Sprintf(
-			"failure to parse end date format %s: %v",
-			endDateStr,
-			err,
-		)
-		return m.handleViewSubmissionError(data, errTxt)
-	}
-
-	errorTxt := common.CheckDateRange(startDate, endDate)
-	if errorTxt != "" {
-		return m.handleViewSubmissionError(data, errorTxt)
+	startDate, endDate, errResp := m.validateTempReleaseDateInputs(data, submittedData)
+	if errResp != nil {
+		return errResp
 	}
 
 	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
 
 	rootViewId := releaseInfo.RootViewId
+
+	releaseInfo.StartDate = startDate
+	releaseInfo.EndDate = endDate
 	releaseInfo.MarkSubmitted()
+
+	err := m.data.ParkingLot.ToBeReleased.CheckOverlap(releaseInfo)
+	if err != nil {
+		// NOTE: can't use the handleViewSubmissionError because it removes releases
+		// based on ViewId and that is reset after a space is marked as submitted
+		spaceKey := releaseInfo.Space.Key()
+		m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
+		m.data.ParkingLot.SynchronizeToFile()
+
+		errTxt := fmt.Sprintf("Failed to temporary release space %s: %v", spaceKey, err)
+
+		actions = []event.ResponseAction{
+			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
+		}
+		return common.NewResponseEvent(data.UserName, actions...)
+	}
+
 	m.data.ParkingLot.SynchronizeToFile()
 	currentTime := time.Now()
 
-	if common.EqualDate(startDate, currentTime) || (currentTime.Before(startDate) &&
+	if common.EqualDate(*startDate, currentTime) || (currentTime.Before(*startDate) &&
 		startDate.Sub(currentTime).Hours() < 24 &&
 		currentTime.Hour() >= ResetHour && currentTime.Minute() >= ResetMin) {
 		// Directly release space in two cases:
@@ -271,6 +259,49 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	actions = append(actions, updateAction)
 
 	return common.NewResponseEvent(data.UserName, actions...)
+}
+
+func (m *Manager) validateTempReleaseDateInputs(
+	data *slackApi.ViewSubmission,
+	submittedData map[string]slack.BlockAction,
+) (*time.Time, *time.Time, *common.Response) {
+	startDateStr := submittedData[views.ReleaseStartDateActionId].SelectedDate
+	if startDateStr == "" {
+		return nil, nil, m.handleViewSubmissionError(data, "no start date provided")
+	}
+
+	currentLocation := time.Now().Location()
+
+	startDate, err := time.ParseInLocation("2006-01-02", startDateStr, currentLocation)
+	if err != nil {
+		errTxt := fmt.Sprintf(
+			"failure to parse start date format %s: %v",
+			startDateStr,
+			err,
+		)
+		return nil, nil, m.handleViewSubmissionError(data, errTxt)
+	}
+
+	endDateStr := submittedData[views.ReleaseEndDateActionId].SelectedDate
+	if endDateStr == "" {
+		return nil, nil, m.handleViewSubmissionError(data, "no end date provided")
+	}
+
+	endDate, err := time.ParseInLocation("2006-01-02", endDateStr, currentLocation)
+	if err != nil {
+		errTxt := fmt.Sprintf(
+			"failure to parse end date format %s: %v",
+			endDateStr,
+			err,
+		)
+		return nil, nil, m.handleViewSubmissionError(data, errTxt)
+	}
+
+	errorTxt := common.CheckDateRange(startDate, endDate)
+	if errorTxt != "" {
+		return nil, nil, m.handleViewSubmissionError(data, errorTxt)
+	}
+	return &startDate, &endDate, nil
 }
 
 func (m *Manager) handleViewSubmissionError(
@@ -408,7 +439,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 		errorTxt = fmt.Sprintf("Couldn't find release info for space %s", parkingSpace)
 	} else if !releaseInfo.Active {
 		slog.Info("Cancel scheduled (not active) temp. release", "space", parkingSpace, "releaseInfo", releaseInfo)
-		err := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
+		err := m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
 		if err != nil {
 			slog.Error(
 				"failed to remove release", "space", parkingSpace, "id", releaseId,
@@ -422,7 +453,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 		chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 		chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-		err := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
+		err := m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
 		if err != nil {
 			errorTxt = fmt.Sprintf(
 				"Failed to cancel temporary release for space %s. %v. Please contact an administrator",
@@ -454,7 +485,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-				err := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
+				err := m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
 				if err != nil {
 					slog.Error("Failed removing release info", "space", parkingSpace, "err", err)
 				}
@@ -487,7 +518,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 				chosenParkingSpace.ReservedBy = releaseInfo.OwnerName
 				chosenParkingSpace.ReservedById = releaseInfo.OwnerId
 
-				err := m.data.ParkingLot.ToBeReleased.RemoveRelease(parkingSpace, releaseId)
+				err := m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
 				if err != nil {
 					slog.Error("Failed removing release info", "space", parkingSpace, "err", err)
 				}

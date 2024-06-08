@@ -132,7 +132,15 @@ func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
 	return nil
 }
 
-func (q ReleaseMap) RemoveRelease(spaceKey SpaceKey, id int) error {
+func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) error {
+	return nil
+}
+
+func (q ReleaseMap) Remove(release *ReleaseInfo) error {
+	return q.removeRelease(release.Space.Key(), release.UniqueId)
+}
+
+func (q ReleaseMap) removeRelease(spaceKey SpaceKey, id int) error {
 	pool, ok := q[spaceKey]
 	if !ok {
 		return fmt.Errorf("spaceKey not in release map: %q", spaceKey)
