@@ -133,6 +133,16 @@ func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
 }
 
 func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) error {
+	spaceKey := release.Space.Key()
+
+	for _, r := range q.GetAll(spaceKey) {
+		if !r.Submitted || r.UniqueId == release.UniqueId {
+			continue
+		}
+
+		// TODO: check validation logic here
+	}
+
 	return nil
 }
 
