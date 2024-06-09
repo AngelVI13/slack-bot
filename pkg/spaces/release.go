@@ -83,6 +83,19 @@ func (i ReleaseInfo) String() string {
 	)
 }
 
+func (i ReleaseInfo) DateRange() string {
+	startDateStr := "nil"
+	if i.StartDate != nil {
+		startDateStr = i.StartDate.Format("2006-01-02")
+	}
+
+	endDateStr := "nil"
+	if i.EndDate != nil {
+		endDateStr = i.EndDate.Format("2006-01-02")
+	}
+	return fmt.Sprintf("%s -> %s", startDateStr, endDateStr)
+}
+
 // TODO: Check for memory leaks afterward whole implementation is done
 // ... a lot of dangling pointers around..
 // TODO: update logging to reflect new structure
@@ -132,18 +145,66 @@ func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
 	return nil
 }
 
-func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) error {
+func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) []string {
 	spaceKey := release.Space.Key()
+	var overlaps []string
 
 	for _, r := range q.GetAll(spaceKey) {
 		if !r.Submitted || r.UniqueId == release.UniqueId {
 			continue
 		}
 
-		// TODO: check validation logic here
+		// Overlap on start and end date
+		if common.EqualDate(*release.StartDate, *r.StartDate) ||
+			common.EqualDate(*release.EndDate, *r.EndDate) ||
+			common.EqualDate(*release.StartDate, *r.EndDate) ||
+			common.EqualDate(*release.EndDate, *r.StartDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
+
+		// Left overlap i.e. S ------ s ------- E ---- e
+		//                   |startA  |startB   |endA  |endb
+		if release.StartDate.Before(*r.StartDate) &&
+			release.EndDate.After(*r.StartDate) &&
+			release.EndDate.Before(*r.EndDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
+
+		// Right overlap i.e. s ------ S ------- e ---- E
+		//                    |startB  |startA   |endB  |endA
+		if release.StartDate.After(*r.StartDate) &&
+			release.StartDate.Before(*r.EndDate) &&
+			release.EndDate.After(*r.EndDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
+
+		// Inside overlap i.e. s ------ S ------- E ---- e
+		//                     |startB  |startA   |endA  |endB
+		if release.StartDate.After(*r.StartDate) &&
+			release.StartDate.Before(*r.EndDate) &&
+			release.EndDate.Before(*r.EndDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
+
+		// Outside overlap i.e. S ------ s ------- e ---- E
+		//                      |startA  |startB   |endB  |endA
+		if release.StartDate.Before(*r.StartDate) &&
+			release.EndDate.After(*r.EndDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
 	}
 
-	return nil
+	return overlaps
 }
 
 func (q ReleaseMap) Remove(release *ReleaseInfo) error {
