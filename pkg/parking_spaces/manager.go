@@ -216,22 +216,26 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 
 	releaseInfo.StartDate = startDate
 	releaseInfo.EndDate = endDate
-	releaseInfo.MarkSubmitted()
+	releaseInfo.MarkSubmitted(data.UserName)
 
 	overlaps := m.data.ParkingLot.ToBeReleased.CheckOverlap(releaseInfo)
 	if len(overlaps) > 0 {
-		// NOTE: can't use the handleViewSubmissionError because it removes releases
-		// based on ViewId and that is reset after a space is marked as submitted
 		spaceKey := releaseInfo.Space.Key()
-		m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
-		m.data.ParkingLot.SynchronizeToFile()
 
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %s: "+
-				"Overlaps with some of the previously scheduled releases: %v",
+				"Selected date range %s overlaps with "+
+				"some of the previously scheduled releases: %v",
 			spaceKey,
+			releaseInfo.DateRange(),
 			overlaps,
 		)
+		slog.Error(errTxt)
+
+		// NOTE: can't use the handleViewSubmissionError because it removes releases
+		// based on ViewId and that is reset after a space is marked as submitted
+		m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
+		m.data.ParkingLot.SynchronizeToFile()
 
 		actions = []event.ResponseAction{
 			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),

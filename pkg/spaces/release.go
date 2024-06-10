@@ -26,8 +26,8 @@ type ReleaseInfo struct {
 	ViewId     string
 }
 
-func (i *ReleaseInfo) MarkSubmitted() {
-	slog.Info("ReleaseInfo Submitted", "info", i)
+func (i *ReleaseInfo) MarkSubmitted(releaser string) {
+	slog.Info("ReleaseInfo Submitted", "releaser", releaser, "info", i)
 	i.Submitted = true
 
 	// Need to reset view IDs as they are no longer needed.
