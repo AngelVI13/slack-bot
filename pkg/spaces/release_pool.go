@@ -16,9 +16,9 @@ var (
 )
 
 type ReleasePool struct {
-	capacity int
-	data     []*ReleaseInfo
-	putNum   int
+	Capacity int
+	Data     []*ReleaseInfo
+	PutNum   int
 }
 
 func NewReleasePoolWithCapacity(cap int) (*ReleasePool, error) {
@@ -26,9 +26,9 @@ func NewReleasePoolWithCapacity(cap int) (*ReleasePool, error) {
 		return nil, fmt.Errorf("capacity must be > 0: %d", cap)
 	}
 	return &ReleasePool{
-		capacity: cap,
-		data:     make([]*ReleaseInfo, cap),
-		putNum:   0,
+		Capacity: cap,
+		Data:     make([]*ReleaseInfo, cap),
+		PutNum:   0,
 	}, nil
 }
 
@@ -39,7 +39,7 @@ func NewReleasePool() *ReleasePool {
 
 // freeIdx find first free index in the pool
 func (p *ReleasePool) freeIdx() int {
-	for i, v := range p.data {
+	for i, v := range p.Data {
 		if v == nil {
 			return i
 		}
@@ -53,40 +53,40 @@ func (p *ReleasePool) grow(new_size int) {
 	new_data := make([]*ReleaseInfo, new_size)
 
 	// Realign start to the beginning of the array
-	n_copied := copy(new_data, p.data)
-	if n_copied != p.capacity {
-		log.Fatalf("copied %d but have %d data", n_copied, p.capacity)
+	n_copied := copy(new_data, p.Data)
+	if n_copied != p.Capacity {
+		log.Fatalf("copied %d but have %d data", n_copied, p.Capacity)
 	}
 
-	p.data = new_data
-	p.capacity = new_size
+	p.Data = new_data
+	p.Capacity = new_size
 }
 
 func (p *ReleasePool) Put(v *ReleaseInfo) {
 	idx := p.freeIdx()
 	if idx == -1 {
-		p.grow(2 * p.capacity)
+		p.grow(2 * p.Capacity)
 		idx = p.freeIdx()
 	}
 
-	v.UniqueId = p.putNum
-	p.data[idx] = v
-	p.putNum++
+	v.UniqueId = p.PutNum
+	p.Data[idx] = v
+	p.PutNum++
 }
 
 // Remove replace the first element of pool that matches the provided
 // value with an empty value
 func (p *ReleasePool) Remove(id int) error {
-	if id < 0 && id > p.capacity {
+	if id < 0 && id > p.Capacity {
 		return fmt.Errorf(
 			"%w: can't remove release with id=%d from pool with size %d",
 			ErrOutOfRange,
 			id,
-			p.capacity,
+			p.Capacity,
 		)
 	}
 
-	if p.data[id] == nil {
+	if p.Data[id] == nil {
 		return fmt.Errorf(
 			"%w: can't remove release with id=%d from pool - no value at that idx",
 			ErrEmpty,
@@ -94,16 +94,16 @@ func (p *ReleasePool) Remove(id int) error {
 		)
 	}
 
-	p.data[id] = nil
+	p.Data[id] = nil
 	return nil
 }
 
 func (p *ReleasePool) ByIdx(id int) *ReleaseInfo {
-	return p.data[id]
+	return p.Data[id]
 }
 
 func (p *ReleasePool) ByRootViewId(id string) *ReleaseInfo {
-	for _, v := range p.data {
+	for _, v := range p.Data {
 		if v != nil && v.RootViewId == id {
 			return v
 		}
@@ -112,7 +112,7 @@ func (p *ReleasePool) ByRootViewId(id string) *ReleaseInfo {
 }
 
 func (p *ReleasePool) ByViewId(id string) *ReleaseInfo {
-	for _, v := range p.data {
+	for _, v := range p.Data {
 		if v != nil && v.ViewId == id {
 			return v
 		}
@@ -123,7 +123,7 @@ func (p *ReleasePool) ByViewId(id string) *ReleaseInfo {
 func (p *ReleasePool) All() []*ReleaseInfo {
 	var releases []*ReleaseInfo
 
-	for _, release := range p.data {
+	for _, release := range p.Data {
 		if release == nil {
 			continue
 		}
@@ -135,7 +135,7 @@ func (p *ReleasePool) All() []*ReleaseInfo {
 }
 
 func (p *ReleasePool) Active() *ReleaseInfo {
-	for _, v := range p.data {
+	for _, v := range p.Data {
 		if v != nil && v.Active {
 			return v
 		}

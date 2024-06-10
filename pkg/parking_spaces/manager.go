@@ -155,8 +155,6 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 		case views.TempReleaseParkingActionId:
 			parkingSpace := spaces.SpaceKey(action.Value)
-			// TODO: For some reason the temporary releases are not saved to file and reloaded
-			// on startup
 			actions = m.handleTempReleaseParking(
 				data,
 				parkingSpace,
