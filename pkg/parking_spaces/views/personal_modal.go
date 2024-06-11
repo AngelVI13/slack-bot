@@ -14,6 +14,7 @@ import (
 const (
 	CancelActionValueSeparator       = "__"
 	CancelTempReleaseParkingActionId = "cancelTempReleaseParking"
+	SwitchToAllSpacesOverviewId      = "switchToAllSpacesOverview"
 )
 
 type Personal struct {
@@ -103,6 +104,17 @@ func generateReleaseButton(space *spaces.Space) *slack.ActionBlock {
 	return actionBlock
 }
 
+func generateSwitchOverviewButton() *slack.ActionBlock {
+	switchOverviewBtn := slack.NewButtonBlockElement(
+		SwitchToAllSpacesOverviewId,
+		SwitchToAllSpacesOverviewId,
+		slack.NewTextBlockObject("plain_text", "All Spaces", true, false),
+	)
+	switchOverviewBtn = switchOverviewBtn.WithStyle(slack.StylePrimary)
+	actionBlock := slack.NewActionBlock("", switchOverviewBtn)
+	return actionBlock
+}
+
 func generateCancelReleaseButton(space *spaces.Space, releaseId int) *slack.ActionBlock {
 	cancelBtn := slack.NewButtonBlockElement(
 		CancelTempReleaseParkingActionId,
@@ -151,6 +163,13 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
+
+	// TODO: finish this
+	if true {
+		switchOverviewBtn := generateSwitchOverviewButton()
+		allBlocks = append(allBlocks, switchOverviewBtn)
+		allBlocks = append(allBlocks, div)
+	}
 
 	// TODO: Add button only for admins that have permanent space to switch between
 	// their personal page and the overall booking page

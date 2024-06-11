@@ -89,7 +89,6 @@ func generateReleaseModalBlocks(
 			nil,
 			nil,
 		)
-		// TODO: this should be in red color
 		allBlocks = append(allBlocks, errorSection)
 	}
 
