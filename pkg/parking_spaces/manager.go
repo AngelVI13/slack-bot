@@ -241,7 +241,6 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
 
-	m.data.ParkingLot.SynchronizeToFile()
 	currentTime := time.Now()
 
 	if common.EqualDate(*startDate, currentTime) || (currentTime.Before(*startDate) &&
@@ -251,7 +250,10 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		// * Release starts from today
 		// * Release starts from tomorrow & current time is after Reset time
 		m.data.ParkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
+		releaseInfo.MarkActive()
 	}
+
+	m.data.ParkingLot.SynchronizeToFile()
 
 	errTxt := ""
 

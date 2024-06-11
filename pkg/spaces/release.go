@@ -98,7 +98,6 @@ func (i ReleaseInfo) DateRange() string {
 
 // TODO: Check for memory leaks afterward whole implementation is done
 // ... a lot of dangling pointers around..
-// TODO: update logging to reflect new structure
 type ReleaseMap map[SpaceKey]*ReleasePool
 
 func (q ReleaseMap) GetAll(spaceKey SpaceKey) []*ReleaseInfo {

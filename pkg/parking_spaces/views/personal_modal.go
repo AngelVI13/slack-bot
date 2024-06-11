@@ -36,28 +36,31 @@ func (p *Personal) Generate(userId string, errorTxt string) slack.ModalViewReque
 	return common.GenerateInfoModalRequest(p.Title, spacesSectionBlocks)
 }
 
-// generateParkingInfo Generate sections of text that contain space info such as status (taken/free), taken by etc..
-func (p *Personal) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
-	var sections []slack.Block
-	for _, space := range spaces {
-		sectionBlock := p.generateParkingSpaceBlock(space)
-		sections = append(sections, *sectionBlock)
+func GetOwnerText(space *spaces.Space, ownerId string) string {
+	out := ""
+	if space.Reserved && space.ReservedById != ownerId {
+		out = fmt.Sprintf("\n\tOwner: <@%s>", ownerId)
 	}
-	return sections
+	return out
 }
 
 // TODO: make this a general method for all parking spaces (i.e. can be used by booking modal as well)
-func (p *Personal) generateParkingSpaceBlock(space *spaces.Space) *slack.SectionBlock {
+func (p *Personal) generateParkingSpaceBlock(
+	space *spaces.Space,
+	ownerId string,
+) *slack.SectionBlock {
 	status := space.GetStatusDescription()
 	emoji := space.GetStatusEmoji()
+	ownerTxt := GetOwnerText(space, ownerId)
 
 	spaceProps := space.GetPropsText()
 	text := fmt.Sprintf(
-		"%s *%s* \t%s\t %s",
+		"%s *%s* \t%s\t %s%s",
 		emoji,
 		fmt.Sprint(space.Number),
 		spaceProps,
 		status,
+		ownerTxt,
 	)
 
 	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
@@ -152,11 +155,14 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	// TODO: Add button only for admins that have permanent space to switch between
 	// their personal page and the overall booking page
 
-	space := p.data.ParkingLot.GetOwnedSpaceByUserId(userId)
+	space, err := p.data.ParkingLot.GetOwnedSpaceByUserId(userId)
+	if err != nil {
+		errorBlock := createErrorTextBlock(err.Error())
+		allBlocks = append(allBlocks, errorBlock)
+		return allBlocks
+	}
 
-	// TODO: Add more information to parking block and idicate that its actually the
-	// user's space. If the space is temporarily booked by someone else then indicate that
-	spaceBlock := p.generateParkingSpaceBlock(space)
+	spaceBlock := p.generateParkingSpaceBlock(space, userId)
 	allBlocks = append(allBlocks, spaceBlock)
 
 	tempReleaseBtn := generateReleaseButton(space)
