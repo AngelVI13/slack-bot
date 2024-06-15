@@ -185,6 +185,20 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 				actions,
 				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
+		case views.SwitchToAllSpacesOverviewId:
+			errorTxt := ""
+			modal := m.bookingView.Generate(data.UserId, errorTxt)
+			actions = append(
+				actions,
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
+			)
+		case views.SwitchToPersonalViewId:
+			errorTxt := ""
+			modal := m.personalView.Generate(data.UserId, errorTxt)
+			actions = append(
+				actions,
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
+			)
 		}
 	}
 

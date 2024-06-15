@@ -18,6 +18,7 @@ const (
 	TempReleaseParkingActionId = "tempReleaseParking"
 	ShowActionId               = "showActionId"
 	ShowOptionId               = "showOptionId"
+	SwitchToPersonalViewId     = "switchToPersonalView"
 )
 
 type Booking struct {
@@ -240,6 +241,20 @@ func (b *Booking) generateParkingInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
+	if b.data.ParkingLot.OwnsSpace(userId) {
+		switchPersonalBtn := generateSwitchPersonalButton()
+		allBlocks = append(allBlocks, switchPersonalBtn, div)
+	}
+
+	// TODO: what to do when admin is viewing ALL Spaces -
+	// what buttons should appear there for admin's space?
+	// maybe its best to not have any buttons there but to just redirect
+	// to the user's personal page
+
+	// TODO: when an admin is releasing a temporary taken space add option
+	// to release in general or to release the temp reserve itself so the original
+	// owner does not lose their space as well
+
 	spaces := b.data.ParkingLot.GetSpacesByFloor(
 		userId,
 		selectedFloor,
@@ -355,4 +370,14 @@ func (b *Booking) generateFreeTakenOptions(userId string) []slack.Block {
 	allBlocks = append(allBlocks, actionBlock)
 
 	return allBlocks
+}
+
+func generateSwitchPersonalButton() *slack.ActionBlock {
+	switchPersonalBtn := slack.NewButtonBlockElement(
+		SwitchToPersonalViewId,
+		SwitchToPersonalViewId,
+		slack.NewTextBlockObject("plain_text", "View My Space", true, false),
+	)
+	actionBlock := slack.NewActionBlock("", switchPersonalBtn)
+	return actionBlock
 }

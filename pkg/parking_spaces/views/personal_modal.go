@@ -108,9 +108,8 @@ func generateSwitchOverviewButton() *slack.ActionBlock {
 	switchOverviewBtn := slack.NewButtonBlockElement(
 		SwitchToAllSpacesOverviewId,
 		SwitchToAllSpacesOverviewId,
-		slack.NewTextBlockObject("plain_text", "All Spaces", true, false),
+		slack.NewTextBlockObject("plain_text", "View All Spaces", true, false),
 	)
-	switchOverviewBtn = switchOverviewBtn.WithStyle(slack.StylePrimary)
 	actionBlock := slack.NewActionBlock("", switchOverviewBtn)
 	return actionBlock
 }
@@ -161,18 +160,13 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 		allBlocks = append(allBlocks, errorBlock)
 	}
 
-	div := slack.NewDividerBlock()
-	allBlocks = append(allBlocks, div)
-
-	// TODO: finish this
-	if true {
+	if p.data.UserManager.IsAdminId(userId) {
 		switchOverviewBtn := generateSwitchOverviewButton()
 		allBlocks = append(allBlocks, switchOverviewBtn)
-		allBlocks = append(allBlocks, div)
 	}
 
-	// TODO: Add button only for admins that have permanent space to switch between
-	// their personal page and the overall booking page
+	div := slack.NewDividerBlock()
+	allBlocks = append(allBlocks, div)
 
 	space, err := p.data.ParkingLot.GetOwnedSpaceByUserId(userId)
 	if err != nil {
