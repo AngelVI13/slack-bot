@@ -110,7 +110,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
 
 	var modal slack.ModalViewRequest
-	if m.data.ParkingLot.OwnsSpace(data.UserId) {
+	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil {
 		modal = m.personalView.Generate(data.UserId, errorTxt)
 	} else {
 		modal = m.bookingView.Generate(data.UserId, errorTxt)
@@ -272,7 +272,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	errTxt := ""
 
 	var modal slack.ModalViewRequest
-	if m.data.ParkingLot.OwnsSpace(data.UserId) {
+	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil {
 		modal = m.personalView.Generate(data.UserId, errTxt)
 	} else {
 		modal = m.bookingView.Generate(data.UserId, errTxt)
@@ -382,7 +382,7 @@ func (m *Manager) handleReserveParking(
 	)
 
 	var bookingModal slack.ModalViewRequest
-	if m.data.ParkingLot.OwnsSpace(data.UserId) {
+	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil {
 		bookingModal = m.personalView.Generate(data.UserId, errStr)
 	} else {
 		bookingModal = m.bookingView.Generate(data.UserId, errStr)
@@ -551,7 +551,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 	m.data.ParkingLot.SynchronizeToFile()
 
 	var bookingModal slack.ModalViewRequest
-	if m.data.ParkingLot.OwnsSpace(data.UserId) {
+	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil {
 		bookingModal = m.personalView.Generate(data.UserId, errorTxt)
 	} else {
 		bookingModal = m.bookingView.Generate(data.UserId, errorTxt)

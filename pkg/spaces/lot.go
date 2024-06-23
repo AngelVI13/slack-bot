@@ -83,27 +83,24 @@ func (d *SpacesLot) HasSpace(userId string) bool {
 	return userAlreadyReservedSpace
 }
 
-func (d *SpacesLot) HasPermanentSpace(userId string) bool {
-	userAlreadyReservedSpace := false
+func (d *SpacesLot) HasPermanentSpace(userId string) *Space {
 	for _, space := range d.UnitSpaces {
 		if space.Reserved && space.ReservedById == userId && !space.AutoRelease {
-			userAlreadyReservedSpace = true
-			break
+			return space
 		}
 	}
-	return userAlreadyReservedSpace
+	return nil
 }
 
-func (d *SpacesLot) OwnsSpace(userId string) bool {
-	if d.HasPermanentSpace(userId) {
-		return true
+func (d *SpacesLot) OwnsSpace(userId string) *Space {
+	var foundSpace *Space
+	foundSpace = d.HasPermanentSpace(userId)
+	if foundSpace != nil {
+		return foundSpace
 	}
 
-	if d.HasTempRelease(userId) {
-		return true
-	}
-
-	return false
+	foundSpace = d.HasTempRelease(userId)
+	return foundSpace
 }
 
 // GetOwnedSpaceByUserId Returns owned space by user even if currently that
@@ -140,17 +137,15 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) (*Space, error) {
 	return nil, nil
 }
 
-func (d *SpacesLot) HasTempRelease(userId string) bool {
-	userAlreadyReleasedSpace := false
+func (d *SpacesLot) HasTempRelease(userId string) *Space {
 	for _, pool := range d.ToBeReleased {
 		release := pool.Active()
 		if release.OwnerId == userId {
-			userAlreadyReleasedSpace = true
-			break
+			return release.Space
 		}
 	}
 
-	return userAlreadyReleasedSpace
+	return nil
 }
 
 func (d *SpacesLot) GetSpacesByFloor(

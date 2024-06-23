@@ -126,7 +126,7 @@ func (b *Booking) generateParkingButtons(
 		}
 	} else if (!space.Reserved &&
 		!b.data.ParkingLot.HasSpace(userId) &&
-		!b.data.ParkingLot.HasTempRelease(userId) &&
+		b.data.ParkingLot.HasTempRelease(userId) == nil &&
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
@@ -241,15 +241,10 @@ func (b *Booking) generateParkingInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	if b.data.ParkingLot.OwnsSpace(userId) {
+	if b.data.ParkingLot.OwnsSpace(userId) != nil {
 		switchPersonalBtn := generateSwitchPersonalButton()
 		allBlocks = append(allBlocks, switchPersonalBtn, div)
 	}
-
-	// TODO: what to do when admin is viewing ALL Spaces -
-	// what buttons should appear there for admin's space?
-	// maybe its best to not have any buttons there but to just redirect
-	// to the user's personal page
 
 	// TODO: when an admin is releasing a temporary taken space add option
 	// to release in general or to release the temp reserve itself so the original
@@ -265,9 +260,18 @@ func (b *Booking) generateParkingInfoBlocks(
 
 	for idx, space := range spaces {
 		sectionBlock := parkingSpaceSections[idx]
-		buttons := b.generateParkingButtons(space, userId)
-
 		allBlocks = append(allBlocks, sectionBlock)
+
+		// Handle special case where user is browsing full spaces list and
+		// only show them `view my space` button for their space
+		userSpace := b.data.ParkingLot.OwnsSpace(userId)
+		if userSpace != nil && userSpace.Key() == space.Key() {
+			allBlocks = append(allBlocks, generateSwitchPersonalButton())
+			allBlocks = append(allBlocks, div)
+			continue
+		}
+
+		buttons := b.generateParkingButtons(space, userId)
 		if len(buttons) > 0 {
 			actions := slack.NewActionBlock("", buttons...)
 			allBlocks = append(allBlocks, actions)
