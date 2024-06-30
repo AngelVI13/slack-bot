@@ -18,7 +18,6 @@ var (
 type ReleasePool struct {
 	Capacity int
 	Data     []*ReleaseInfo
-	PutNum   int
 }
 
 func NewReleasePoolWithCapacity(cap int) (*ReleasePool, error) {
@@ -28,7 +27,6 @@ func NewReleasePoolWithCapacity(cap int) (*ReleasePool, error) {
 	return &ReleasePool{
 		Capacity: cap,
 		Data:     make([]*ReleaseInfo, cap),
-		PutNum:   0,
 	}, nil
 }
 
@@ -69,9 +67,8 @@ func (p *ReleasePool) Put(v *ReleaseInfo) {
 		idx = p.freeIdx()
 	}
 
-	v.UniqueId = p.PutNum
+	v.UniqueId = idx
 	p.Data[idx] = v
-	p.PutNum++
 }
 
 // Remove replace the first element of pool that matches the provided
