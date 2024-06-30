@@ -24,12 +24,14 @@ const (
 type Booking struct {
 	Title string
 	data  *model.Data
+	Type  ModalType
 }
 
 func NewBooking(identifier string, managerData *model.Data) *Booking {
 	return &Booking{
 		Title: identifier + "Booking",
 		data:  managerData,
+		Type:  BookingModal,
 	}
 }
 
@@ -107,7 +109,10 @@ func (b *Booking) generateParkingButtons(
 				// the space on behalf of somebody that has a permanent parking rights
 				tempReleaseButton := slack.NewButtonBlockElement(
 					TempReleaseParkingActionId,
-					string(space.Key()),
+					ActionValues{
+						SpaceKey:  space.Key(),
+						ModalType: b.Type,
+					}.Encode(),
 					slack.NewTextBlockObject("plain_text", "Temp Release!", true, false),
 				)
 				tempReleaseButton = tempReleaseButton.WithStyle(slack.StyleDanger)
@@ -118,7 +123,10 @@ func (b *Booking) generateParkingButtons(
 		if isAdminUser || !hasPermanentParkingUser {
 			releaseButton := slack.NewButtonBlockElement(
 				ReleaseParkingActionId,
-				string(space.Key()),
+				ActionValues{
+					SpaceKey:  space.Key(),
+					ModalType: b.Type,
+				}.Encode(),
 				slack.NewTextBlockObject("plain_text", "Release!", true, false),
 			)
 			releaseButton = releaseButton.WithStyle(slack.StyleDanger)
@@ -132,7 +140,10 @@ func (b *Booking) generateParkingButtons(
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
 			ReserveParkingActionId,
-			string(space.Key()),
+			ActionValues{
+				SpaceKey:  space.Key(),
+				ModalType: b.Type,
+			}.Encode(),
 			slack.NewTextBlockObject("plain_text", fmt.Sprintf("%s :eject:", actionButtonText), true, false),
 		)
 		reserveWithAutoButton = reserveWithAutoButton.WithStyle(slack.StylePrimary)
@@ -242,7 +253,7 @@ func (b *Booking) generateParkingInfoBlocks(
 	allBlocks = append(allBlocks, div)
 
 	if b.data.ParkingLot.OwnsSpace(userId) != nil {
-		switchPersonalBtn := generateSwitchPersonalButton()
+		switchPersonalBtn := generateSwitchPersonalButton(b.Type)
 		allBlocks = append(allBlocks, switchPersonalBtn, div)
 	}
 
@@ -266,7 +277,7 @@ func (b *Booking) generateParkingInfoBlocks(
 		// only show them `view my space` button for their space
 		userSpace := b.data.ParkingLot.OwnsSpace(userId)
 		if userSpace != nil && userSpace.Key() == space.Key() {
-			allBlocks = append(allBlocks, generateSwitchPersonalButton())
+			allBlocks = append(allBlocks, generateSwitchPersonalButton(b.Type))
 			allBlocks = append(allBlocks, div)
 			continue
 		}
@@ -376,10 +387,10 @@ func (b *Booking) generateFreeTakenOptions(userId string) []slack.Block {
 	return allBlocks
 }
 
-func generateSwitchPersonalButton() *slack.ActionBlock {
+func generateSwitchPersonalButton(modalType ModalType) *slack.ActionBlock {
 	switchPersonalBtn := slack.NewButtonBlockElement(
 		SwitchToPersonalViewId,
-		SwitchToPersonalViewId,
+		ActionValues{ModalType: modalType}.Encode(),
 		slack.NewTextBlockObject("plain_text", "View My Space", true, false),
 	)
 	actionBlock := slack.NewActionBlock("", switchPersonalBtn)

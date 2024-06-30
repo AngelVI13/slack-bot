@@ -20,12 +20,14 @@ const (
 type Personal struct {
 	Title string
 	data  *model.Data
+	Type  ModalType
 }
 
 func NewPersonal(identifier string, managerData *model.Data) *Personal {
 	return &Personal{
 		Title: identifier + "Personal",
 		data:  managerData,
+		Type:  PersonalModal,
 	}
 }
 
@@ -93,10 +95,16 @@ func generateFakeTemporaryRelease(release string, id int) *slack.SectionBlock {
 	return sectionBlock
 }
 
-func generateReleaseButton(space *spaces.Space) *slack.ActionBlock {
+func generateTempReleaseButton(
+	space *spaces.Space,
+	modalType ModalType,
+) *slack.ActionBlock {
 	tempReleaseBtn := slack.NewButtonBlockElement(
 		TempReleaseParkingActionId,
-		string(space.Key()),
+		ActionValues{
+			SpaceKey:  space.Key(),
+			ModalType: modalType,
+		}.Encode(),
 		slack.NewTextBlockObject("plain_text", "Add Temp Release!", true, false),
 	)
 	tempReleaseBtn = tempReleaseBtn.WithStyle(slack.StylePrimary)
@@ -104,20 +112,42 @@ func generateReleaseButton(space *spaces.Space) *slack.ActionBlock {
 	return actionBlock
 }
 
-func generateSwitchOverviewButton() *slack.ActionBlock {
+func generateReleaseButton(space *spaces.Space, modalType ModalType) *slack.ActionBlock {
+	releaseButton := slack.NewButtonBlockElement(
+		ReleaseParkingActionId,
+		ActionValues{
+			SpaceKey:  space.Key(),
+			ModalType: modalType,
+		}.Encode(),
+		slack.NewTextBlockObject("plain_text", "Release!", true, false),
+	)
+	releaseButton = releaseButton.WithStyle(slack.StyleDanger)
+	actionBlock := slack.NewActionBlock("", releaseButton)
+	return actionBlock
+}
+
+func generateSwitchOverviewButton(modalType ModalType) *slack.ActionBlock {
 	switchOverviewBtn := slack.NewButtonBlockElement(
 		SwitchToAllSpacesOverviewId,
-		SwitchToAllSpacesOverviewId,
+		ActionValues{ModalType: modalType}.Encode(),
 		slack.NewTextBlockObject("plain_text", "View All Spaces", true, false),
 	)
 	actionBlock := slack.NewActionBlock("", switchOverviewBtn)
 	return actionBlock
 }
 
-func generateCancelReleaseButton(space *spaces.Space, releaseId int) *slack.ActionBlock {
+func generateCancelReleaseButton(
+	space *spaces.Space,
+	releaseId int,
+	modalType ModalType,
+) *slack.ActionBlock {
 	cancelBtn := slack.NewButtonBlockElement(
 		CancelTempReleaseParkingActionId,
-		fmt.Sprintf("%s%s%d", string(space.Key()), CancelActionValueSeparator, releaseId),
+		ActionValues{
+			SpaceKey:  space.Key(),
+			ModalType: modalType,
+			ReleaseId: releaseId,
+		}.Encode(),
 		slack.NewTextBlockObject("plain_text", "Cancel", true, false),
 	)
 	cancelBtn = cancelBtn.WithStyle(slack.StyleDanger)
@@ -161,7 +191,7 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	}
 
 	if p.data.UserManager.IsAdminId(userId) {
-		switchOverviewBtn := generateSwitchOverviewButton()
+		switchOverviewBtn := generateSwitchOverviewButton(p.Type)
 		allBlocks = append(allBlocks, switchOverviewBtn)
 	}
 
@@ -178,8 +208,12 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	spaceBlock := p.generateParkingSpaceBlock(space, userId)
 	allBlocks = append(allBlocks, spaceBlock)
 
-	tempReleaseBtn := generateReleaseButton(space)
+	tempReleaseBtn := generateTempReleaseButton(space, p.Type)
 	allBlocks = append(allBlocks, tempReleaseBtn)
+
+	if p.data.UserManager.IsAdminId(userId) {
+		allBlocks = append(allBlocks, generateReleaseButton(space, p.Type))
+	}
 
 	allBlocks = append(allBlocks, div)
 
@@ -191,7 +225,7 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 
 	for _, release := range releases {
 		releaseBlock := generateTemporaryReleaseBlock(release)
-		cancelBtn := generateCancelReleaseButton(space, release.UniqueId)
+		cancelBtn := generateCancelReleaseButton(space, release.UniqueId, p.Type)
 		allBlocks = append(allBlocks, releaseBlock, cancelBtn)
 	}
 

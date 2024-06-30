@@ -2,7 +2,6 @@ package parking_spaces
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/slack-go/slack"
 )
@@ -139,35 +137,20 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 
 		case views.ReserveParkingActionId:
-			isSpecialUser := m.data.UserManager.HasParkingById(data.UserId)
-			parkingSpace := spaces.SpaceKey(action.Value)
-			actions = m.handleReserveParking(
-				data,
-				parkingSpace,
-				m.data.SelectedFloor[data.UserId],
-				m.data.SelectedShowTaken[data.UserId],
-				isSpecialUser,
-			)
+			actionValues := views.ActionValues{}.Decode(action.Value)
+			actions = m.handleReserveParking(data, actionValues)
 
 		case views.ReleaseParkingActionId:
-			parkingSpace := spaces.SpaceKey(action.Value)
-			actions = m.handleReleaseParking(data, parkingSpace)
+			actionValues := views.ActionValues{}.Decode(action.Value)
+			actions = m.handleReleaseParking(data, actionValues)
 
 		case views.TempReleaseParkingActionId:
-			parkingSpace := spaces.SpaceKey(action.Value)
-			actions = m.handleTempReleaseParking(
-				data,
-				parkingSpace,
-				m.data.SelectedFloor[data.UserId],
-				m.data.SelectedShowTaken[data.UserId],
-			)
+			actionValues := views.ActionValues{}.Decode(action.Value)
+			actions = m.handleTempReleaseParking(data, actionValues)
 
 		case views.CancelTempReleaseParkingActionId:
-			parkingSpace, releaseId, err := views.ParseCancelActionValue(action.Value)
-			if err != nil {
-				log.Fatal(err) // NOTE: this should never happen
-			}
-			actions = m.handleCancelTempReleaseParking(data, parkingSpace, releaseId)
+			actionValues := views.ActionValues{}.Decode(action.Value)
+			actions = m.handleCancelTempReleaseParking(data, actionValues)
 
 		case views.ReleaseStartDateActionId, views.ReleaseEndDateActionId:
 			selectedDate := action.SelectedDate
@@ -272,7 +255,10 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	errTxt := ""
 
 	var modal slack.ModalViewRequest
-	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil {
+	// only show personal view if owner is temp releasing their space
+	// if another user(admin) is temp releasing the space -> show overview modal
+	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil &&
+		data.UserId == releaseInfo.OwnerId {
 		modal = m.personalView.Generate(data.UserId, errTxt)
 	} else {
 		modal = m.bookingView.Generate(data.UserId, errTxt)
@@ -363,16 +349,17 @@ func (m *Manager) handleViewClosed(data *slackApi.ViewClosed) {
 
 func (m *Manager) handleReserveParking(
 	data *slackApi.BlockAction,
-	parkingSpace spaces.SpaceKey,
-	selectedFloor string,
-	selectedShowTaken bool,
-	isSpecialUser bool,
+	actionValues views.ActionValues,
 ) []event.ResponseAction {
 	// Check if an admin has made the request
+
 	autoRelease := true // by default parking reservation is always with auto release
-	if isSpecialUser {  // unless we have a special user (i.e. user with designated parking space)
+	if m.data.UserManager.HasParkingById(data.UserId) {
+		// unless we have a special user (i.e. user with designated parking space)
 		autoRelease = false
 	}
+
+	parkingSpace := actionValues.SpaceKey
 
 	errStr := m.data.ParkingLot.Reserve(
 		parkingSpace,
@@ -382,7 +369,7 @@ func (m *Manager) handleReserveParking(
 	)
 
 	var bookingModal slack.ModalViewRequest
-	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil {
+	if actionValues.ModalType == views.PersonalModal {
 		bookingModal = m.personalView.Generate(data.UserId, errStr)
 	} else {
 		bookingModal = m.bookingView.Generate(data.UserId, errStr)
@@ -399,10 +386,10 @@ func (m *Manager) handleReserveParking(
 
 func (m *Manager) handleTempReleaseParking(
 	data *slackApi.BlockAction,
-	parkingSpace spaces.SpaceKey,
-	selectedFloor string,
-	selectedShowTaken bool,
+	actionValues views.ActionValues,
 ) []event.ResponseAction {
+	parkingSpace := actionValues.SpaceKey
+
 	actions := []event.ResponseAction{}
 	// Special User handling
 	chosenParkingSpace := m.data.ParkingLot.GetSpace(parkingSpace)
@@ -445,9 +432,11 @@ func (m *Manager) handleTempReleaseParking(
 
 func (m *Manager) handleCancelTempReleaseParking(
 	data *slackApi.BlockAction,
-	parkingSpace spaces.SpaceKey,
-	releaseId int,
+	actionValues views.ActionValues,
 ) []event.ResponseAction {
+	parkingSpace := actionValues.SpaceKey
+	releaseId := actionValues.ReleaseId
+
 	actions := []event.ResponseAction{}
 	// Special User handling
 	chosenParkingSpace := m.data.ParkingLot.GetSpace(parkingSpace)
@@ -493,7 +482,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 					"space", parkingSpace, "releaseInfo", releaseInfo)
 				releaseInfo.EndDate = &now
 				errorTxt = fmt.Sprintf(
-					"Temporary release cancelled. The space %s will be returned to you today at %d:%d",
+					"Temporary release cancelled. The space %s will be returned to you today at %d:%02d",
 					parkingSpace,
 					ResetHour,
 					ResetMin,
@@ -522,7 +511,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 					"space", parkingSpace, "releaseInfo", releaseInfo)
 				errorTxt = fmt.Sprintf(
 					`Temporary release cancelled but someone already reserved the space 
-                    for tomorrow. The space %s will be returned to you tomorrow at %d:%d.`,
+                    for tomorrow. The space %s will be returned to you tomorrow at %d:%02d.`,
 					parkingSpace,
 					ResetHour,
 					ResetMin,
@@ -551,7 +540,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 	m.data.ParkingLot.SynchronizeToFile()
 
 	var bookingModal slack.ModalViewRequest
-	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil {
+	if actionValues.ModalType == views.PersonalModal {
 		bookingModal = m.personalView.Generate(data.UserId, errorTxt)
 	} else {
 		bookingModal = m.bookingView.Generate(data.UserId, errorTxt)
@@ -569,9 +558,21 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 func (m *Manager) handleReleaseParking(
 	data *slackApi.BlockAction,
-	parkingSpace spaces.SpaceKey,
+	actionValues views.ActionValues,
 ) []event.ResponseAction {
+	parkingSpace := actionValues.SpaceKey
+
 	actions := []event.ResponseAction{}
+
+	// TODO: there are 2 scenarios that should be handled here
+	// 1. User without a space has booked a space and decided to release it
+	//     - Check if space is temp reserved by user and that simple user is releasing it
+	//     - Just call ParkingLot.Release and thats it
+	// 2. Admin is releasing someone's space
+	//     - if space currently has a temp release active and someone has booked the space
+	//         - return the space to owner
+	//     - if space does not have a temp release
+	//         - fully release the space
 
 	// Handle general case: normal user releasing a space
 	victimId, errStr := m.data.ParkingLot.Release(
@@ -594,13 +595,14 @@ func (m *Manager) handleReleaseParking(
 	}
 
 	errorTxt := ""
-	bookingModal := m.bookingView.Generate(data.UserId, errorTxt)
-	action := common.NewUpdateViewAction(
-		data.TriggerId,
-		data.ViewId,
-		bookingModal,
-		errorTxt,
-	)
+	var modal slack.ModalViewRequest
+	if actionValues.ModalType == views.PersonalModal {
+		modal = m.personalView.Generate(data.UserId, errorTxt)
+	} else {
+		modal = m.bookingView.Generate(data.UserId, errorTxt)
+	}
+
+	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt)
 	actions = append(actions, action)
 
 	return actions

@@ -58,7 +58,11 @@ func (i *Interaction) IValue(blockId, actionId string) string {
 func (i *Interaction) ActionInfo() map[string]string {
 	out := map[string]string{}
 	for _, action := range i.Actions {
-		out[action.ActionID] = i.IValue(action.BlockID, action.ActionID)
+		value := i.IValue(action.BlockID, action.ActionID)
+		if value == "" {
+			value = action.Value
+		}
+		out[action.ActionID] = value
 	}
 
 	return out

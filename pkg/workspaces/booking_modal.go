@@ -76,6 +76,7 @@ func (m *Manager) generateParkingButtons(
 	isAdminUser := m.userManager.IsAdminId(userId)
 
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
+		// TODO: update this to use the ActionValues{}.encode() mechanism
 		releaseButton := slack.NewButtonBlockElement(
 			releaseWorkspaceActionId,
 			string(space.Key()),
@@ -88,6 +89,7 @@ func (m *Manager) generateParkingButtons(
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
+		// TODO: update this to use the ActionValues{}.encode() mechanism
 		reserveWithAutoButton := slack.NewButtonBlockElement(
 			reserveWorkspaceActionId,
 			string(space.Key()),
