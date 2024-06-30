@@ -2,6 +2,7 @@ package spaces
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
 	"time"
 
@@ -235,18 +236,20 @@ func (q ReleaseMap) RemoveAllReleases(spaceKey SpaceKey) bool {
 func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {
 	spaceKey := SpaceKey("")
 	for space, pool := range q {
-		if pool.ByViewId(viewId) != nil {
-			spaceKey = space
-			break
+		releaseInfo := pool.ByViewId(viewId)
+		if releaseInfo == nil {
+			continue
 		}
-	}
-	if spaceKey == "" {
-		return spaceKey, false
+
+		err := pool.Remove(releaseInfo.UniqueId)
+		if err != nil {
+			log.Fatalf("failed to remove release by view id: %v", err)
+		}
+		slog.Info("Removing from release map", "space", spaceKey)
+		return space, true
 	}
 
-	slog.Info("Removing from release map", "space", spaceKey)
-	delete(q, spaceKey)
-	return spaceKey, true
+	return spaceKey, false
 }
 
 func (q ReleaseMap) Add(

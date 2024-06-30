@@ -140,7 +140,7 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) (*Space, error) {
 func (d *SpacesLot) HasTempRelease(userId string) *Space {
 	for _, pool := range d.ToBeReleased {
 		release := pool.Active()
-		if release.OwnerId == userId {
+		if release != nil && release.OwnerId == userId {
 			return release.Space
 		}
 	}
