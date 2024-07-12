@@ -8,9 +8,9 @@ import (
 )
 
 type ActionValues struct {
-	SpaceKey  spaces.SpaceKey
-	ModalType ModalType
-	ReleaseId int
+	SpaceKey  spaces.SpaceKey `json:"space,omitempty"`
+	ModalType ModalType       `json:"modalType,omitempty"`
+	ReleaseId int             `json:"releaseId,omitempty"`
 }
 
 func (av ActionValues) Encode() string {

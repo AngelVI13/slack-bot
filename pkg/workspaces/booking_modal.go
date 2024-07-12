@@ -6,6 +6,7 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
@@ -76,10 +77,9 @@ func (m *Manager) generateParkingButtons(
 	isAdminUser := m.userManager.IsAdminId(userId)
 
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
-		// TODO: update this to use the ActionValues{}.encode() mechanism
 		releaseButton := slack.NewButtonBlockElement(
 			releaseWorkspaceActionId,
-			string(space.Key()),
+			views.ActionValues{SpaceKey: space.Key()}.Encode(),
 			slack.NewTextBlockObject("plain_text", "Release!", true, false),
 		)
 		releaseButton = releaseButton.WithStyle(slack.StyleDanger)
@@ -89,10 +89,9 @@ func (m *Manager) generateParkingButtons(
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
-		// TODO: update this to use the ActionValues{}.encode() mechanism
 		reserveWithAutoButton := slack.NewButtonBlockElement(
 			reserveWorkspaceActionId,
-			string(space.Key()),
+			views.ActionValues{SpaceKey: space.Key()}.Encode(),
 			slack.NewTextBlockObject("plain_text", actionButtonText, true, false),
 		)
 		reserveWithAutoButton = reserveWithAutoButton.WithStyle(slack.StylePrimary)
