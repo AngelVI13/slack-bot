@@ -222,15 +222,14 @@ func (q ReleaseMap) removeRelease(spaceKey SpaceKey, id int) error {
 	return err
 }
 
-func (q ReleaseMap) RemoveAllReleases(spaceKey SpaceKey) bool {
-	_, ok := q[spaceKey]
-	if !ok {
-		return false
+func (q ReleaseMap) RemoveAllReleases(spaceKey SpaceKey) {
+	_, found := q[spaceKey]
+	if !found {
+		return
 	}
 
 	delete(q, spaceKey)
 	slog.Info("Removing all releases from release map", "space", spaceKey)
-	return true
 }
 
 func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {

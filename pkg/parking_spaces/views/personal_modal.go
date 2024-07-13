@@ -190,7 +190,12 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 		allBlocks = append(allBlocks, errorBlock)
 	}
 
-	if p.data.UserManager.IsAdminId(userId) {
+	space, noSpaceErr := p.data.ParkingLot.GetOwnedSpaceByUserId(userId)
+
+	// If admin views this page add option to switch to overview.
+	// Additionally if somehow user who doesn't have space views
+	// this page -> add this button so he can go back to overview
+	if p.data.UserManager.IsAdminId(userId) || noSpaceErr != nil {
 		switchOverviewBtn := generateSwitchOverviewButton(p.Type)
 		allBlocks = append(allBlocks, switchOverviewBtn)
 	}
@@ -198,9 +203,8 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	space, err := p.data.ParkingLot.GetOwnedSpaceByUserId(userId)
-	if err != nil {
-		errorBlock := createErrorTextBlock(err.Error())
+	if noSpaceErr != nil {
+		errorBlock := createErrorTextBlock(noSpaceErr.Error())
 		allBlocks = append(allBlocks, errorBlock)
 		return allBlocks
 	}

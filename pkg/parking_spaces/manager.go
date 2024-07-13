@@ -561,37 +561,39 @@ func (m *Manager) handleReleaseParking(
 	actionValues views.ActionValues,
 ) []event.ResponseAction {
 	parkingSpace := actionValues.SpaceKey
+	isReleaserAdmin := m.data.UserManager.IsAdminId(data.UserId)
+	space := m.data.ParkingLot.GetSpace(parkingSpace)
+	isSpaceTempReserved := space.Reserved && space.AutoRelease
 
 	actions := []event.ResponseAction{}
 
-	// TODO: there are 2 scenarios that should be handled here
+	// NOTE: there are 2 scenarios that should be handled here
 	// 1. User without a space has booked a space and decided to release it
-	//     - Check if space is temp reserved by user and that simple user is releasing it
-	//     - Just call ParkingLot.Release and thats it
+	//     - Release space and inform victim if needed
 	// 2. Admin is releasing someone's space
 	//     - if space currently has a temp release active and someone has booked the space
-	//         - return the space to owner
+	//         - release space and inform victim if needed
 	//     - if space does not have a temp release
-	//         - fully release the space
+	//         - release space and inform victim if needed
+	//         - and remove any associated releases for that space (full release)
 
-	// Handle general case: normal user releasing a space
-	victimId, errStr := m.data.ParkingLot.Release(
-		parkingSpace,
-		data.UserName,
-		data.UserId,
-	)
-	if victimId != "" {
-		slog.Warn(errStr)
-		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
-		actions = append(actions, action)
+	if isSpaceTempReserved || isReleaserAdmin {
+		// Handle general case: normal user releasing a space
+		victimId, errStr := m.data.ParkingLot.Release(
+			parkingSpace,
+			data.UserName,
+			data.UserId,
+		)
+		if victimId != "" {
+			slog.Warn(errStr)
+			action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
+			actions = append(actions, action)
+		}
 	}
 
-	// Only remove release info from a space if an Admin is permanently releasing the space
-	if m.data.UserManager.IsAdminId(data.UserId) {
-		ok := m.data.ParkingLot.ToBeReleased.RemoveAllReleases(parkingSpace)
-		if !ok {
-			slog.Error("Failed to remove release info", "space", parkingSpace)
-		}
+	if isReleaserAdmin && !isSpaceTempReserved {
+		// Only remove release info from a space if an Admin is permanently releasing the space
+		m.data.ParkingLot.ToBeReleased.RemoveAllReleases(parkingSpace)
 	}
 
 	errorTxt := ""

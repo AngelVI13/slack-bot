@@ -134,7 +134,7 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) (*Space, error) {
 		}
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("no space for user: <@%s>", userId)
 }
 
 func (d *SpacesLot) HasTempRelease(userId string) *Space {

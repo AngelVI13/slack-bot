@@ -228,10 +228,7 @@ func (m *Manager) handleReleaseWorkspace(
 
 	// Only remove release info from a space if an Admin is permanently releasing the space
 	if m.userManager.IsAdminId(data.UserId) {
-		ok := m.workspacesLot.ToBeReleased.RemoveAllReleases(workSpace)
-		if !ok {
-			slog.Error("Failed to remove release info", "space", workSpace)
-		}
+		m.workspacesLot.ToBeReleased.RemoveAllReleases(workSpace)
 	}
 
 	errTxt := ""
