@@ -282,6 +282,15 @@ func (b *Booking) generateParkingInfoBlocks(
 			continue
 		}
 
+		// if user currently does not have a space but has rights for a space
+		// -> only let him reserve spaces that are not already owned by someone else
+		// i.e. don't already have temp release active for them
+		if userSpace == nil && b.data.UserManager.HasParkingById(userId) &&
+			b.data.ParkingLot.ToBeReleased.GetActive(space.Key()) != nil {
+			allBlocks = append(allBlocks, div)
+			continue
+		}
+
 		buttons := b.generateParkingButtons(space, userId)
 		if len(buttons) > 0 {
 			actions := slack.NewActionBlock("", buttons...)
