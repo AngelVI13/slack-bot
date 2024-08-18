@@ -5,6 +5,7 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/user"
@@ -136,19 +137,19 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			)
 
 		case reserveWorkspaceActionId:
-			workSpace := spaces.SpaceKey(action.Value)
+			actionValues := views.ActionValues{}.Decode(action.Value)
 			actions = m.handleReserveWorkspace(
 				data,
-				workSpace,
+				actionValues.SpaceKey,
 				m.selectedFloor[data.UserId],
 				m.selectedShowTaken[data.UserId],
 			)
 
 		case releaseWorkspaceActionId:
-			workSpace := spaces.SpaceKey(action.Value)
+			actionValues := views.ActionValues{}.Decode(action.Value)
 			actions = m.handleReleaseWorkspace(
 				data,
-				workSpace,
+				actionValues.SpaceKey,
 				m.selectedFloor[data.UserId],
 				m.selectedShowTaken[data.UserId],
 			)
@@ -227,10 +228,7 @@ func (m *Manager) handleReleaseWorkspace(
 
 	// Only remove release info from a space if an Admin is permanently releasing the space
 	if m.userManager.IsAdminId(data.UserId) {
-		ok := m.workspacesLot.ToBeReleased.Remove(workSpace)
-		if !ok {
-			slog.Error("Failed to remove release info", "space", workSpace)
-		}
+		m.workspacesLot.ToBeReleased.RemoveAllReleases(workSpace)
 	}
 
 	errTxt := ""

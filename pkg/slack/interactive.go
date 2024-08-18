@@ -22,7 +22,7 @@ func (i *Interaction) HasContext(c string) bool {
 	return strings.Contains(i.Title, c)
 }
 
-func (i *Interaction) value(blockId, actionId string) string {
+func (i *Interaction) IValue(blockId, actionId string) string {
 	values := i.Values[blockId][actionId]
 
 	if values.Value != "" {
@@ -58,7 +58,11 @@ func (i *Interaction) value(blockId, actionId string) string {
 func (i *Interaction) ActionInfo() map[string]string {
 	out := map[string]string{}
 	for _, action := range i.Actions {
-		out[action.ActionID] = i.value(action.BlockID, action.ActionID)
+		value := i.IValue(action.BlockID, action.ActionID)
+		if value == "" {
+			value = action.Value
+		}
+		out[action.ActionID] = value
 	}
 
 	return out

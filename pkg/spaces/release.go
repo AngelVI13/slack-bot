@@ -2,6 +2,7 @@ package spaces
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
 	"time"
 
@@ -16,7 +17,8 @@ type ReleaseInfo struct {
 	StartDate  *time.Time
 	EndDate    *time.Time
 	Submitted  bool
-	Cancelled  bool
+	UniqueId   int
+	Active     bool
 
 	// These are only used while the user is choosing date range to refer
 	// between space selected and release range selected (i.e. between booking modal
@@ -25,8 +27,8 @@ type ReleaseInfo struct {
 	ViewId     string
 }
 
-func (i *ReleaseInfo) MarkSubmitted() {
-	slog.Info("ReleaseInfo Submitted", "info", i)
+func (i *ReleaseInfo) MarkSubmitted(releaser string) {
+	slog.Info("ReleaseInfo Submitted", "releaser", releaser, "info", i)
 	i.Submitted = true
 
 	// Need to reset view IDs as they are no longer needed.
@@ -37,9 +39,9 @@ func (i *ReleaseInfo) MarkSubmitted() {
 	i.ViewId = ""
 }
 
-func (i *ReleaseInfo) MarkCancelled() {
-	slog.Info("ReleaseInfo Cancelled", "info", i)
-	i.Cancelled = true
+func (i *ReleaseInfo) MarkActive() {
+	slog.Info("ReleaseInfo Active", "info", i)
+	i.Active = true
 }
 
 func (i *ReleaseInfo) DataPresent() bool {
@@ -82,69 +84,171 @@ func (i ReleaseInfo) String() string {
 	)
 }
 
-type ReleaseMap map[SpaceKey]*ReleaseInfo
+func (i ReleaseInfo) DateRange() string {
+	startDateStr := "nil"
+	if i.StartDate != nil {
+		startDateStr = i.StartDate.Format("2006-01-02")
+	}
 
-func (q ReleaseMap) Get(spaceKey SpaceKey) *ReleaseInfo {
-	releaseInfo, ok := q[spaceKey]
+	endDateStr := "nil"
+	if i.EndDate != nil {
+		endDateStr = i.EndDate.Format("2006-01-02")
+	}
+	return fmt.Sprintf("%s -> %s", startDateStr, endDateStr)
+}
+
+// TODO: Check for memory leaks afterward whole implementation is done
+// ... a lot of dangling pointers around..
+type ReleaseMap map[SpaceKey]*ReleasePool
+
+func (q ReleaseMap) GetAll(spaceKey SpaceKey) []*ReleaseInfo {
+	releasePool, ok := q[spaceKey]
 	if !ok {
 		return nil
 	}
-	return releaseInfo
+	return releasePool.All()
 }
 
-func (q ReleaseMap) GetByReleaserId(userId string) *ReleaseInfo {
-	for _, item := range q {
-		if item.ReleaserId == userId {
-			return item
-		}
+func (q ReleaseMap) Get(spaceKey SpaceKey, id int) *ReleaseInfo {
+	releasePool, ok := q[spaceKey]
+	if !ok {
+		return nil
 	}
-	return nil
+	return releasePool.ByIdx(id)
+}
+
+func (q ReleaseMap) GetActive(spaceKey SpaceKey) *ReleaseInfo {
+	releasePool, ok := q[spaceKey]
+	if !ok {
+		return nil
+	}
+	return releasePool.Active()
 }
 
 func (q ReleaseMap) GetByRootViewId(rootId string) *ReleaseInfo {
-	for _, item := range q {
-		if item.RootViewId == rootId {
-			return item
+	for _, pool := range q {
+		release := pool.ByRootViewId(rootId)
+		if release != nil {
+			return release
 		}
 	}
 	return nil
 }
 
 func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
-	for _, item := range q {
-		if item.ViewId == viewId {
-			return item
+	for _, pool := range q {
+		release := pool.ByViewId(viewId)
+		if release != nil {
+			return release
 		}
 	}
 	return nil
 }
 
-func (q ReleaseMap) Remove(spaceKey SpaceKey) bool {
-	_, ok := q[spaceKey]
-	if !ok {
-		return false
+func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) []string {
+	spaceKey := release.Space.Key()
+	var overlaps []string
+
+	for _, r := range q.GetAll(spaceKey) {
+		if !r.Submitted || r.UniqueId == release.UniqueId {
+			continue
+		}
+
+		// Overlap on start and end date
+		if common.EqualDate(*release.StartDate, *r.StartDate) ||
+			common.EqualDate(*release.EndDate, *r.EndDate) ||
+			common.EqualDate(*release.StartDate, *r.EndDate) ||
+			common.EqualDate(*release.EndDate, *r.StartDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
+
+		// Left overlap i.e. S ------ s ------- E ---- e
+		//                   |startA  |startB   |endA  |endb
+		if release.StartDate.Before(*r.StartDate) &&
+			release.EndDate.After(*r.StartDate) &&
+			release.EndDate.Before(*r.EndDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
+
+		// Right overlap i.e. s ------ S ------- e ---- E
+		//                    |startB  |startA   |endB  |endA
+		if release.StartDate.After(*r.StartDate) &&
+			release.StartDate.Before(*r.EndDate) &&
+			release.EndDate.After(*r.EndDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
+
+		// Inside overlap i.e. s ------ S ------- E ---- e
+		//                     |startB  |startA   |endA  |endB
+		if release.StartDate.After(*r.StartDate) &&
+			release.StartDate.Before(*r.EndDate) &&
+			release.EndDate.Before(*r.EndDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
+
+		// Outside overlap i.e. S ------ s ------- e ---- E
+		//                      |startA  |startB   |endB  |endA
+		if release.StartDate.Before(*r.StartDate) &&
+			release.EndDate.After(*r.EndDate) {
+
+			overlaps = append(overlaps, r.DateRange())
+			continue
+		}
 	}
 
-	slog.Info("Removing from release map", "space", spaceKey)
+	return overlaps
+}
+
+func (q ReleaseMap) Remove(release *ReleaseInfo) error {
+	return q.removeRelease(release.Space.Key(), release.UniqueId)
+}
+
+func (q ReleaseMap) removeRelease(spaceKey SpaceKey, id int) error {
+	pool, ok := q[spaceKey]
+	if !ok {
+		return fmt.Errorf("spaceKey not in release map: %q", spaceKey)
+	}
+
+	slog.Info("Removing release from release map", "space", spaceKey, "release", id)
+	err := pool.Remove(id)
+	return err
+}
+
+func (q ReleaseMap) RemoveAllReleases(spaceKey SpaceKey) {
+	_, found := q[spaceKey]
+	if !found {
+		return
+	}
+
 	delete(q, spaceKey)
-	return true
+	slog.Info("Removing all releases from release map", "space", spaceKey)
 }
 
 func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {
 	spaceKey := SpaceKey("")
-	for space, info := range q {
-		if info.ViewId == viewId {
-			spaceKey = space
-			break
+	for space, pool := range q {
+		releaseInfo := pool.ByViewId(viewId)
+		if releaseInfo == nil {
+			continue
 		}
-	}
-	if spaceKey == "" {
-		return spaceKey, false
+
+		err := pool.Remove(releaseInfo.UniqueId)
+		if err != nil {
+			log.Fatalf("failed to remove release by view id: %v", err)
+		}
+		slog.Info("Removing from release map", "space", spaceKey)
+		return space, true
 	}
 
-	slog.Info("Removing from release map", "space", spaceKey)
-	delete(q, spaceKey)
-	return spaceKey, true
+	return spaceKey, false
 }
 
 func (q ReleaseMap) Add(
@@ -156,12 +260,7 @@ func (q ReleaseMap) Add(
 	space *Space,
 ) (*ReleaseInfo, error) {
 	spaceKey := space.Key()
-	if q.Get(spaceKey) != nil {
-		return nil, fmt.Errorf("Space %s already marked for release", spaceKey)
-	}
-
-	slog.Info(
-		"Adding to release map",
+	slog.Info("Adding to release map",
 		"space",
 		spaceKey,
 		"releaser",
@@ -178,6 +277,11 @@ func (q ReleaseMap) Add(
 		Submitted:  false,
 	}
 
-	q[spaceKey] = releaseInfo
+	_, found := q[spaceKey]
+	if !found {
+		q[spaceKey] = NewReleasePool()
+	}
+
+	q[spaceKey].Put(releaseInfo)
 	return releaseInfo, nil
 }
