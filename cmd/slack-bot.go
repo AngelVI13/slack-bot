@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
+	"github.com/AngelVI13/slack-bot/pkg/edit_parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/parking_users"
@@ -94,6 +95,21 @@ func main() {
 	)
 	eventManager.SubscribeWithContext(
 		parkingUsersManager,
+		event.SlashCmdEvent,
+		event.ViewSubmissionEvent,
+		event.BlockActionEvent,
+		event.ViewOpenedEvent,
+		event.ViewClosedEvent,
+		event.TimerEvent,
+	)
+
+	editParkingSpacesManager := edit_parking_spaces.NewManager(
+		eventManager,
+		userManager,
+		parkingSpacesManager,
+	)
+	eventManager.SubscribeWithContext(
+		editParkingSpacesManager,
 		event.SlashCmdEvent,
 		event.ViewSubmissionEvent,
 		event.BlockActionEvent,
