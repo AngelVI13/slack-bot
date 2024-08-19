@@ -1,6 +1,8 @@
 package edit_parking_spaces
 
 import (
+	"log"
+
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/slack-go/slack"
@@ -19,26 +21,28 @@ const (
 	removeSpaceOption editOption = "Remove"
 )
 
-var editOptions = [3]editOption{
+var editOptions = []editOption{
 	notSelectedOption,
 	addSpaceOption,
 	removeSpaceOption,
 }
 
-var usersManagementTitle = Identifier
+var parkSpaceManagementTitle = Identifier
 
 func (m *Manager) generateEditSpacesModalRequest(
 	command event.Event,
 	userId string,
 ) slack.ModalViewRequest {
 	sectionBlocks := m.generateAddRemoveBlocks(userId)
-	return common.GenerateModalRequest(usersManagementTitle, sectionBlocks)
+	return common.GenerateModalRequest(parkSpaceManagementTitle, sectionBlocks)
 }
 
 func (m *Manager) generateAddRemoveBlocks(userId string) []slack.Block {
 	allBlocks := []slack.Block{}
 
-	text := "Select user for which to change settings"
+	selectedOption := m.selectedEditOption.Get(userId)
+
+	text := "Select operation you want to perform"
 	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
 	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
 	allBlocks = append(allBlocks, sectionBlock)
@@ -46,12 +50,23 @@ func (m *Manager) generateAddRemoveBlocks(userId string) []slack.Block {
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	addRemoveOptionBlocks := m.generateAddRemoveOptions(userId)
+	addRemoveOptionBlocks := m.generateAddRemoveOptions(selectedOption)
 	allBlocks = append(allBlocks, addRemoveOptionBlocks...)
+
+	switch selectedOption {
+	case addSpaceOption:
+		allBlocks = append(allBlocks, m.generateAddSpaceBlocks()...)
+	case removeSpaceOption:
+		allBlocks = append(allBlocks, m.generateRemoveSpaceBlocks()...)
+	case notSelectedOption:
+		// do nothing
+	default:
+		log.Fatalf("Unsupported edit parking space option: %q", selectedOption)
+	}
 	return allBlocks
 }
 
-func (m *Manager) generateAddRemoveOptions(userId string) []slack.Block {
+func (m *Manager) generateAddRemoveOptions(selectedOption editOption) []slack.Block {
 	var allBlocks []slack.Block
 
 	// Options
@@ -65,8 +80,6 @@ func (m *Manager) generateAddRemoveOptions(userId string) []slack.Block {
 		)
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
-
-	selectedOption := m.selectedEditOption.Get(userId)
 
 	// Text shown as title when option box is opened/expanded
 	optionLabel := slack.NewTextBlockObject(
@@ -98,6 +111,28 @@ func (m *Manager) generateAddRemoveOptions(userId string) []slack.Block {
 		newOptionsGroupSelectBlockElement,
 	)
 	allBlocks = append(allBlocks, actionBlock)
+
+	return allBlocks
+}
+
+func (m *Manager) generateAddSpaceBlocks() []slack.Block {
+	var allBlocks []slack.Block
+
+	text := "Add space"
+	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
+	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
+	allBlocks = append(allBlocks, sectionBlock)
+
+	return allBlocks
+}
+
+func (m *Manager) generateRemoveSpaceBlocks() []slack.Block {
+	var allBlocks []slack.Block
+
+	text := "Remove space"
+	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
+	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
+	allBlocks = append(allBlocks, sectionBlock)
 
 	return allBlocks
 }

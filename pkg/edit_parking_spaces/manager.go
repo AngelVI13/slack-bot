@@ -2,6 +2,8 @@ package edit_parking_spaces
 
 import (
 	"fmt"
+	"log"
+	"slices"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -19,11 +21,6 @@ const (
 	defaultUserOption = ""
 )
 
-type selectedUser struct {
-	UserId   string
-	UserName string
-}
-
 type SelectedEditOptionMap map[string]editOption
 
 // TODO: do any of the below methods copy or mutate the map????
@@ -33,6 +30,13 @@ func (m SelectedEditOptionMap) Get(userId string) editOption {
 		return notSelectedOption
 	}
 	return val
+}
+
+func (m SelectedEditOptionMap) Set(userId string, option editOption) {
+	if !slices.Contains(editOptions, option) {
+		log.Fatalf("Unsupported park space edit option: %q", option)
+	}
+	m[userId] = option
 }
 
 func (m SelectedEditOptionMap) ResetSelectionForUser(userId string) {
@@ -84,7 +88,7 @@ func (m *Manager) Consume(e event.Event) {
 	case event.ViewSubmissionEvent:
 		data := e.(*slackApi.ViewSubmission)
 
-		if data.Title != usersManagementTitle {
+		if data.Title != parkSpaceManagementTitle {
 			return
 		}
 
@@ -122,6 +126,13 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 
 	for _, action := range data.Actions {
 		switch action.ActionID {
+		case selectEditOptionId:
+			selectedEditAction := data.IValue(selectEditActionId, selectEditOptionId)
+			m.selectedEditOption.Set(data.UserId, editOption(selectedEditAction))
+			modal := m.generateEditSpacesModalRequest(data, data.UserId)
+
+			action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, "")
+			actions = append(actions, action)
 		}
 	}
 
