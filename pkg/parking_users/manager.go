@@ -83,7 +83,7 @@ func (m *Manager) Context() string {
 }
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
-	if !m.data.UserManager().IsAdminId(data.UserId) {
+	if !m.data.UserManager.IsAdminId(data.UserId) {
 		errTxt := fmt.Sprintf(
 			"You don't have permission to execute '%s' command",
 			SlashCmd,
@@ -149,15 +149,15 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			}
 
 			selectedUser := m.selectedUser[data.UserId]
-			if !m.data.UserManager().Exists(selectedUser.UserId) {
-				m.data.UserManager().
+			if !m.data.UserManager.Exists(selectedUser.UserId) {
+				m.data.UserManager.
 					InsertUser(selectedUser.UserId, selectedUser.UserName)
 			}
 
-			m.data.UserManager().SetAccessRights(selectedUser.UserId, isAdmin)
-			m.data.UserManager().
+			m.data.UserManager.SetAccessRights(selectedUser.UserId, isAdmin)
+			m.data.UserManager.
 				SetParkingPermission(selectedUser.UserId, hasParkingSpace)
-			m.data.UserManager().SynchronizeToFile()
+			m.data.UserManager.SynchronizeToFile()
 
 			errTxt := ""
 			modal := m.generateUsersModalRequest(data, selectedUser.UserId)

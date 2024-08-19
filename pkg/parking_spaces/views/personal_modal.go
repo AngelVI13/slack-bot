@@ -190,12 +190,12 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 		allBlocks = append(allBlocks, errorBlock)
 	}
 
-	space, noSpaceErr := p.data.ParkingLot().GetOwnedSpaceByUserId(userId)
+	space, noSpaceErr := p.data.ParkingLot.GetOwnedSpaceByUserId(userId)
 
 	// If admin views this page add option to switch to overview.
 	// Additionally if somehow user who doesn't have space views
 	// this page -> add this button so he can go back to overview
-	if p.data.UserManager().IsAdminId(userId) || noSpaceErr != nil {
+	if p.data.UserManager.IsAdminId(userId) || noSpaceErr != nil {
 		switchOverviewBtn := generateSwitchOverviewButton(p.Type)
 		allBlocks = append(allBlocks, switchOverviewBtn)
 	}
@@ -215,13 +215,13 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	tempReleaseBtn := generateTempReleaseButton(space, p.Type)
 	allBlocks = append(allBlocks, tempReleaseBtn)
 
-	if p.data.UserManager().IsAdminId(userId) {
+	if p.data.UserManager.IsAdminId(userId) {
 		allBlocks = append(allBlocks, generateReleaseButton(space, p.Type))
 	}
 
 	allBlocks = append(allBlocks, div)
 
-	releases := p.data.ParkingLot().ToBeReleased.GetAll(space.Key())
+	releases := p.data.ParkingLot.ToBeReleased.GetAll(space.Key())
 	if len(releases) == 0 {
 		// If not release available -> return early
 		return allBlocks

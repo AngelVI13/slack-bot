@@ -14,8 +14,8 @@ import (
 
 const (
 	Identifier = "Edit Parking Spaces: "
-	// SlashCmd   = "/spaces-parking"
-	SlashCmd = "/test-spaces"
+	SlashCmd   = "/spaces-parking"
+	// SlashCmd = "/test-spaces"
 
 	defaultUserOption = ""
 )
@@ -101,7 +101,7 @@ func (m *Manager) Context() string {
 }
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
-	if !m.data.UserManager().IsAdminId(data.UserId) {
+	if !m.data.UserManager.IsAdminId(data.UserId) {
 		errTxt := fmt.Sprintf(
 			"You don't have permission to execute '%s' command",
 			SlashCmd,

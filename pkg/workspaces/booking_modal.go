@@ -74,7 +74,7 @@ func (m *Manager) generateParkingButtons(
 ) []slack.BlockElement {
 	var buttons []slack.BlockElement
 
-	isAdminUser := m.data.UserManager().IsAdminId(userId)
+	isAdminUser := m.data.UserManager.IsAdminId(userId)
 
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
 		releaseButton := slack.NewButtonBlockElement(
@@ -85,7 +85,7 @@ func (m *Manager) generateParkingButtons(
 		releaseButton = releaseButton.WithStyle(slack.StyleDanger)
 		buttons = append(buttons, releaseButton)
 	} else if (!space.Reserved &&
-		!m.data.WorkspacesLot().HasSpace(userId) &&
+		!m.data.WorkspacesLot.HasSpace(userId) &&
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
@@ -157,7 +157,7 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	spaces := m.data.WorkspacesLot().
+	spaces := m.data.WorkspacesLot.
 		GetSpacesByFloor(userId, selectedFloor, selectedShowTaken)
 	workspaceSections := m.generateSpacesInfo(spaces)
 

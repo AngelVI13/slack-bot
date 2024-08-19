@@ -79,7 +79,7 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		slog.Info("ReleaseWorkspaces")
-		m.data.WorkspacesLot().ReleaseSpaces(data.Time)
+		m.data.WorkspacesLot.ReleaseSpaces(data.Time)
 	}
 }
 
@@ -183,7 +183,7 @@ func (m *Manager) handleReserveWorkspace(
 ) []event.ResponseAction {
 	autoRelease := true // by default workspace reservation is always with auto release
 
-	errStr := m.data.WorkspacesLot().Reserve(
+	errStr := m.data.WorkspacesLot.Reserve(
 		workSpace,
 		data.UserName,
 		data.UserId,
@@ -215,7 +215,7 @@ func (m *Manager) handleReleaseWorkspace(
 	actions := []event.ResponseAction{}
 
 	// Handle general case: normal user releasing a space
-	victimId, errStr := m.data.WorkspacesLot().
+	victimId, errStr := m.data.WorkspacesLot.
 		Release(workSpace, data.UserName, data.UserId)
 	if victimId != "" {
 		slog.Info(errStr)
@@ -224,8 +224,8 @@ func (m *Manager) handleReleaseWorkspace(
 	}
 
 	// Only remove release info from a space if an Admin is permanently releasing the space
-	if m.data.UserManager().IsAdminId(data.UserId) {
-		m.data.WorkspacesLot().ToBeReleased.RemoveAllReleases(workSpace)
+	if m.data.UserManager.IsAdminId(data.UserId) {
+		m.data.WorkspacesLot.ToBeReleased.RemoveAllReleases(workSpace)
 	}
 
 	errTxt := ""

@@ -96,14 +96,14 @@ func (m *Manager) generateUsersBlocks(selectedUserId string) []slack.Block {
 		sectionBlocks...)
 
 	if selectedUserId != defaultUserOption &&
-		m.data.UserManager().IsAdminId(selectedUserId) {
+		m.data.UserManager.IsAdminId(selectedUserId) {
 		deviceCheckboxGroup.InitialOptions = append(
 			deviceCheckboxGroup.InitialOptions, adminOptionSectionBlock,
 		)
 	}
 
 	if selectedUserId != defaultUserOption &&
-		m.data.UserManager().HasParkingById(selectedUserId) {
+		m.data.UserManager.HasParkingById(selectedUserId) {
 		deviceCheckboxGroup.InitialOptions = append(
 			deviceCheckboxGroup.InitialOptions, hasParkingOptionSectionBlock,
 		)
