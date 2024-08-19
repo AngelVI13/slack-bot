@@ -5,7 +5,6 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
-	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/slack-go/slack"
@@ -25,23 +24,20 @@ type selectedUser struct {
 }
 
 type Manager struct {
-	eventManager   *event.EventManager
-	userManager    *user.Manager
-	parkingManager *parking_spaces.Manager
-	slackClient    *slack.Client
-	selectedUser   map[string]*selectedUser
+	eventManager *event.EventManager
+	userManager  *user.Manager
+	slackClient  *slack.Client
+	selectedUser map[string]*selectedUser
 }
 
 func NewManager(
 	eventManager *event.EventManager,
 	userManager *user.Manager,
-	parkingManager *parking_spaces.Manager,
 ) *Manager {
 	return &Manager{
-		eventManager:   eventManager,
-		userManager:    userManager,
-		parkingManager: parkingManager,
-		selectedUser:   map[string]*selectedUser{},
+		eventManager: eventManager,
+		userManager:  userManager,
+		selectedUser: map[string]*selectedUser{},
 	}
 }
 

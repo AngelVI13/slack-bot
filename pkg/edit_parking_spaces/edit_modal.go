@@ -11,6 +11,9 @@ import (
 const (
 	selectEditActionId = "selectEditActionId"
 	selectEditOptionId = "selectEditOptionId"
+
+	selectSpaceActionId = "selectSpaceActionId"
+	selectSpaceOptionId = "selectSpaceOptionId"
 )
 
 type editOption string
@@ -22,7 +25,6 @@ const (
 )
 
 var editOptions = []editOption{
-	notSelectedOption,
 	addSpaceOption,
 	removeSpaceOption,
 }
@@ -84,7 +86,7 @@ func (m *Manager) generateAddRemoveOptions(selectedOption editOption) []slack.Bl
 	// Text shown as title when option box is opened/expanded
 	optionLabel := slack.NewTextBlockObject(
 		"plain_text",
-		"Choose what spaces to show",
+		"Choose an action",
 		false,
 		false,
 	)
@@ -129,10 +131,56 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 func (m *Manager) generateRemoveSpaceBlocks() []slack.Block {
 	var allBlocks []slack.Block
 
-	text := "Remove space"
-	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
-	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
-	allBlocks = append(allBlocks, sectionBlock)
+	allBlocks = append(allBlocks, m.generateSelectSpaceOptions()...)
+
+	return allBlocks
+}
+
+func (m *Manager) generateSelectSpaceOptions() []slack.Block {
+	var allBlocks []slack.Block
+
+	// Options
+	var optionBlocks []*slack.OptionBlockObject
+
+	for _, editOpt := range editOptions {
+		optionBlock := slack.NewOptionBlockObject(
+			string(editOpt),
+			slack.NewTextBlockObject("plain_text", string(editOpt), false, false),
+			slack.NewTextBlockObject("plain_text", " ", false, false),
+		)
+		optionBlocks = append(optionBlocks, optionBlock)
+	}
+
+	// Text shown as title when option box is opened/expanded
+	optionLabel := slack.NewTextBlockObject(
+		"plain_text",
+		"Choose what spaces to show",
+		false,
+		false,
+	)
+	// Default option shown for option box
+	defaultOption := slack.NewTextBlockObject(
+		"plain_text",
+		"Select space to remove",
+		false,
+		false,
+	)
+
+	optionGroupBlockObject := slack.NewOptionGroupBlockElement(
+		optionLabel,
+		optionBlocks...)
+	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupSelectBlockElement(
+		"static_select",
+		defaultOption,
+		selectSpaceOptionId,
+		optionGroupBlockObject,
+	)
+
+	actionBlock := slack.NewActionBlock(
+		selectSpaceActionId,
+		newOptionsGroupSelectBlockElement,
+	)
+	allBlocks = append(allBlocks, actionBlock)
 
 	return allBlocks
 }
