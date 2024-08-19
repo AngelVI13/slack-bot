@@ -2,8 +2,8 @@ package model
 
 import (
 	"github.com/AngelVI13/slack-bot/pkg/config"
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
-	"github.com/AngelVI13/slack-bot/pkg/user"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
+	"github.com/AngelVI13/slack-bot/pkg/model/user"
 )
 
 type Data struct {

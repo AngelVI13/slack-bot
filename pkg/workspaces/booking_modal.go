@@ -6,8 +6,8 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
 

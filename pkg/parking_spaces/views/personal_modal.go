@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
 	parkingModel "github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
 
