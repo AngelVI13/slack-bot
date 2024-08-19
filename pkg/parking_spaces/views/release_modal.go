@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
-	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
+	parkingModel "github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
 	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
@@ -17,10 +17,10 @@ const (
 
 type Release struct {
 	Title       string
-	managerData *model.Data
+	managerData *parkingModel.ParkingData
 }
 
-func NewRelease(identifier string, managerData *model.Data) *Release {
+func NewRelease(identifier string, managerData *parkingModel.ParkingData) *Release {
 	return &Release{
 		Title:       identifier + "Release a spot",
 		managerData: managerData,

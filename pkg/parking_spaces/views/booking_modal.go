@@ -23,11 +23,11 @@ const (
 
 type Booking struct {
 	Title string
-	data  *model.Data
+	data  *model.ParkingData
 	Type  ModalType
 }
 
-func NewBooking(identifier string, managerData *model.Data) *Booking {
+func NewBooking(identifier string, managerData *model.ParkingData) *Booking {
 	return &Booking{
 		Title: identifier + "Booking",
 		data:  managerData,
@@ -60,7 +60,7 @@ func (b *Booking) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
 		emoji := space.GetStatusEmoji()
 
 		releaseScheduled := ""
-		releaseInfo := b.data.ParkingLot.ToBeReleased.GetActive(space.Key())
+		releaseInfo := b.data.ParkingLot().ToBeReleased.GetActive(space.Key())
 		if releaseInfo != nil {
 			releaseScheduled = fmt.Sprintf(
 				"\n\t\tScheduled release from %s to %s",
@@ -94,13 +94,13 @@ func (b *Booking) generateParkingButtons(
 ) []slack.BlockElement {
 	var buttons []slack.BlockElement
 
-	isAdminUser := b.data.UserManager.IsAdminId(userId)
-	hasPermanentParkingUser := b.data.UserManager.HasParkingById(userId)
+	isAdminUser := b.data.UserManager().IsAdminId(userId)
+	hasPermanentParkingUser := b.data.UserManager().HasParkingById(userId)
 
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
 		// space reserved but hasn't yet been schedule for release
 		if isAdminUser {
-			permanentSpace := b.data.UserManager.HasParkingById(space.ReservedById)
+			permanentSpace := b.data.UserManager().HasParkingById(space.ReservedById)
 			if permanentSpace {
 				// Only allow the temporary parking button if the correct user is using
 				// the modal and the space hasn't already been released.
@@ -133,8 +133,8 @@ func (b *Booking) generateParkingButtons(
 			buttons = append(buttons, releaseButton)
 		}
 	} else if (!space.Reserved &&
-		!b.data.ParkingLot.HasSpace(userId) &&
-		b.data.ParkingLot.HasTempRelease(userId) == nil &&
+		!b.data.ParkingLot().HasSpace(userId) &&
+		b.data.ParkingLot().HasTempRelease(userId) == nil &&
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
@@ -252,7 +252,7 @@ func (b *Booking) generateParkingInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	if b.data.ParkingLot.OwnsSpace(userId) != nil {
+	if b.data.ParkingLot().OwnsSpace(userId) != nil {
 		switchPersonalBtn := generateSwitchPersonalButton(b.Type)
 		allBlocks = append(allBlocks, switchPersonalBtn, div)
 	}
@@ -261,7 +261,7 @@ func (b *Booking) generateParkingInfoBlocks(
 	// to release in general or to release the temp reserve itself so the original
 	// owner does not lose their space as well
 
-	spaces := b.data.ParkingLot.GetSpacesByFloor(
+	spaces := b.data.ParkingLot().GetSpacesByFloor(
 		userId,
 		selectedFloor,
 		selectedShowTaken,
@@ -275,7 +275,7 @@ func (b *Booking) generateParkingInfoBlocks(
 
 		// Handle special case where user is browsing full spaces list and
 		// only show them `view my space` button for their space
-		userSpace := b.data.ParkingLot.OwnsSpace(userId)
+		userSpace := b.data.ParkingLot().OwnsSpace(userId)
 		if userSpace != nil && userSpace.Key() == space.Key() {
 			allBlocks = append(allBlocks, generateSwitchPersonalButton(b.Type))
 			allBlocks = append(allBlocks, div)
@@ -285,8 +285,8 @@ func (b *Booking) generateParkingInfoBlocks(
 		// if user currently does not have a space but has rights for a space
 		// -> only let him reserve spaces that are not already owned by someone else
 		// i.e. don't already have temp release active for them
-		if userSpace == nil && b.data.UserManager.HasParkingById(userId) &&
-			b.data.ParkingLot.ToBeReleased.GetActive(space.Key()) != nil {
+		if userSpace == nil && b.data.UserManager().HasParkingById(userId) &&
+			b.data.ParkingLot().ToBeReleased.GetActive(space.Key()) != nil {
 			allBlocks = append(allBlocks, div)
 			continue
 		}

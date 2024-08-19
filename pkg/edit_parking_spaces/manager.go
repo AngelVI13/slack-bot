@@ -7,9 +7,8 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
-	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
+	"github.com/AngelVI13/slack-bot/pkg/model"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
-	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/slack-go/slack"
 )
 
@@ -45,21 +44,18 @@ func (m SelectedEditOptionMap) ResetSelectionForUser(userId string) {
 
 type Manager struct {
 	eventManager       *event.EventManager
-	userManager        *user.Manager
-	parkingManager     *parking_spaces.Manager
+	data               *model.Data
 	slackClient        *slack.Client
 	selectedEditOption SelectedEditOptionMap
 }
 
 func NewManager(
 	eventManager *event.EventManager,
-	userManager *user.Manager,
-	parkingManager *parking_spaces.Manager,
+	data *model.Data,
 ) *Manager {
 	return &Manager{
 		eventManager:       eventManager,
-		userManager:        userManager,
-		parkingManager:     parkingManager,
+		data:               data,
 		selectedEditOption: SelectedEditOptionMap{},
 	}
 }
@@ -105,7 +101,7 @@ func (m *Manager) Context() string {
 }
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
-	if !m.userManager.IsAdminId(data.UserId) {
+	if !m.data.UserManager().IsAdminId(data.UserId) {
 		errTxt := fmt.Sprintf(
 			"You don't have permission to execute '%s' command",
 			SlashCmd,

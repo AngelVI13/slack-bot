@@ -1,8 +1,7 @@
 package model
 
 import (
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
-	"github.com/AngelVI13/slack-bot/pkg/user"
+	"github.com/AngelVI13/slack-bot/pkg/model"
 )
 
 var (
@@ -18,24 +17,21 @@ const (
 	ResetMin  = 0
 )
 
-type Data struct {
-	ParkingLot        *spaces.SpacesLot
-	UserManager       *user.Manager
+type ParkingData struct {
+	*model.Data
 	SelectedFloor     map[string]string
 	SelectedShowTaken map[string]bool
 }
 
-func NewData(filename string, userManager *user.Manager) *Data {
-	parkingLot := spaces.GetSpacesLot(filename)
-	return &Data{
-		UserManager:       userManager,
-		ParkingLot:        &parkingLot,
+func NewParkingData(data *model.Data) *ParkingData {
+	return &ParkingData{
+		Data:              data,
 		SelectedFloor:     map[string]string{},
 		SelectedShowTaken: map[string]bool{},
 	}
 }
 
-func (d *Data) SetDefaultFloorIfMissing(userId, floor string) {
+func (d *ParkingData) SetDefaultFloorIfMissing(userId, floor string) {
 	if _, ok := d.SelectedFloor[userId]; !ok {
 		d.SelectedFloor[userId] = floor
 	}

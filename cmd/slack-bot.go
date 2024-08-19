@@ -9,11 +9,11 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/edit_parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/model"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/parking_users"
 	"github.com/AngelVI13/slack-bot/pkg/roll"
 	"github.com/AngelVI13/slack-bot/pkg/slack"
-	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/AngelVI13/slack-bot/pkg/workspaces"
 )
 
@@ -53,6 +53,7 @@ func main() {
 	defer logFile.Close()
 
 	config := config.NewConfigFromEnv(".env")
+	data := model.NewData(config)
 
 	eventManager := event.NewEventManager()
 
@@ -61,30 +62,16 @@ func main() {
 
 	addTimerEvents(eventManager)
 
-	userManager := user.NewManager(config)
-
-	parkingSpacesManager := parking_spaces.NewManager(
-		eventManager,
-		userManager,
-		config.ParkingFilename,
-	)
+	parkingSpacesManager := parking_spaces.NewManager(eventManager, data)
 	eventManager.SubscribeWithContext(parkingSpacesManager, event.AnyEvent)
 
-	workspacesManager := workspaces.NewManager(
-		eventManager,
-		userManager,
-		config.WorkspacesFilename,
-	)
+	workspacesManager := workspaces.NewManager(eventManager, data)
 	eventManager.SubscribeWithContext(workspacesManager, event.AnyEvent)
 
-	parkingUsersManager := parking_users.NewManager(eventManager, userManager)
+	parkingUsersManager := parking_users.NewManager(eventManager, data)
 	eventManager.SubscribeWithContext(parkingUsersManager, event.AnyEvent)
 
-	editParkingSpacesManager := edit_parking_spaces.NewManager(
-		eventManager,
-		userManager,
-		parkingSpacesManager,
-	)
+	editParkingSpacesManager := edit_parking_spaces.NewManager(eventManager, data)
 	eventManager.SubscribeWithContext(editParkingSpacesManager, event.AnyEvent)
 
 	rollManager := roll.NewManager(eventManager)

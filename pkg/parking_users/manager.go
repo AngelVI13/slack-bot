@@ -5,6 +5,7 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/model"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/slack-go/slack"
@@ -25,18 +26,18 @@ type selectedUser struct {
 
 type Manager struct {
 	eventManager *event.EventManager
-	userManager  *user.Manager
+	data         *model.Data
 	slackClient  *slack.Client
 	selectedUser map[string]*selectedUser
 }
 
 func NewManager(
 	eventManager *event.EventManager,
-	userManager *user.Manager,
+	data *model.Data,
 ) *Manager {
 	return &Manager{
 		eventManager: eventManager,
-		userManager:  userManager,
+		data:         data,
 		selectedUser: map[string]*selectedUser{},
 	}
 }
@@ -82,7 +83,7 @@ func (m *Manager) Context() string {
 }
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
-	if !m.userManager.IsAdminId(data.UserId) {
+	if !m.data.UserManager().IsAdminId(data.UserId) {
 		errTxt := fmt.Sprintf(
 			"You don't have permission to execute '%s' command",
 			SlashCmd,
@@ -148,13 +149,15 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			}
 
 			selectedUser := m.selectedUser[data.UserId]
-			if !m.userManager.Exists(selectedUser.UserId) {
-				m.userManager.InsertUser(selectedUser.UserId, selectedUser.UserName)
+			if !m.data.UserManager().Exists(selectedUser.UserId) {
+				m.data.UserManager().
+					InsertUser(selectedUser.UserId, selectedUser.UserName)
 			}
 
-			m.userManager.SetAccessRights(selectedUser.UserId, isAdmin)
-			m.userManager.SetParkingPermission(selectedUser.UserId, hasParkingSpace)
-			m.userManager.SynchronizeToFile()
+			m.data.UserManager().SetAccessRights(selectedUser.UserId, isAdmin)
+			m.data.UserManager().
+				SetParkingPermission(selectedUser.UserId, hasParkingSpace)
+			m.data.UserManager().SynchronizeToFile()
 
 			errTxt := ""
 			modal := m.generateUsersModalRequest(data, selectedUser.UserId)
