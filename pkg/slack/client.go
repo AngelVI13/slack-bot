@@ -92,13 +92,20 @@ func (c *Client) Consume(e event.Event) {
 				newView *slack.ViewResponse
 			)
 
+			/*
+				b, marshallErr := json.Marshal(view.ModalRequest)
+				if marshallErr == nil {
+					slog.Info("Serialized modal request", "req", string(b))
+				}
+			*/
+
 			switch viewAction {
 			case event.OpenView:
 				newView, err = c.socket.OpenView(view.TriggerId, view.ModalRequest)
 			case event.PushView:
 				newView, err = c.socket.PushView(view.TriggerId, view.ModalRequest)
 			case event.UpdateView:
-				_, err = c.socket.UpdateView(view.ModalRequest, "", "", view.ViewId)
+				newView, err = c.socket.UpdateView(view.ModalRequest, "", "", view.ViewId)
 			default:
 				slog.Error("Unsupported view action", "viewAction", viewAction)
 			}

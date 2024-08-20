@@ -6,8 +6,8 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
+	"github.com/AngelVI13/slack-bot/pkg/model/user"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
-	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/slack-go/slack"
 )
 
