@@ -123,7 +123,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	for _, action := range data.Actions {
 		switch action.ActionID {
 		case selectEditOptionId:
-			selectedEditAction := data.IValue(selectEditActionId, selectEditOptionId)
+			selectedEditAction := data.IValue("", selectEditOptionId)
 			m.selectedEditOption.Set(data.UserId, editOption(selectedEditAction))
 			modal := m.generateEditSpacesModalRequest(data, data.UserId)
 

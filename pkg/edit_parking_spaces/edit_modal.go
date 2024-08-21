@@ -9,10 +9,7 @@ import (
 )
 
 const (
-	selectEditActionId = "selectEditActionId"
-	selectEditOptionId = "selectEditOptionId"
-
-	selectSpaceActionId = "selectSpaceActionId"
+	selectEditOptionId  = "selectEditOptionId"
 	selectSpaceOptionId = "selectSpaceOptionId"
 )
 
@@ -20,8 +17,8 @@ type editOption string
 
 const (
 	notSelectedOption editOption = "Not Selected"
-	addSpaceOption    editOption = "Add"
-	removeSpaceOption editOption = "Remove"
+	addSpaceOption    editOption = "Add Space"
+	removeSpaceOption editOption = "Remove Space/s"
 )
 
 var editOptions = []editOption{
@@ -43,14 +40,6 @@ func (m *Manager) generateAddRemoveBlocks(userId string) []slack.Block {
 	allBlocks := []slack.Block{}
 
 	selectedOption := m.selectedEditOption.Get(userId)
-
-	text := "Select operation you want to perform"
-	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
-	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
-	allBlocks = append(allBlocks, sectionBlock)
-
-	div := slack.NewDividerBlock()
-	allBlocks = append(allBlocks, div)
 
 	addRemoveOptionBlocks := m.generateAddRemoveOptions(selectedOption)
 	allBlocks = append(allBlocks, addRemoveOptionBlocks...)
@@ -108,11 +97,13 @@ func (m *Manager) generateAddRemoveOptions(selectedOption editOption) []slack.Bl
 		optionGroupBlockObject,
 	)
 
-	actionBlock := slack.NewActionBlock(
-		selectEditActionId,
-		newOptionsGroupSelectBlockElement,
-	)
-	allBlocks = append(allBlocks, actionBlock)
+	accessory := slack.NewAccessory(newOptionsGroupSelectBlockElement)
+
+	text := "Select operation you want to perform"
+	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
+	sectionBlock := slack.NewSectionBlock(sectionText, nil, accessory)
+
+	allBlocks = append(allBlocks, sectionBlock)
 
 	return allBlocks
 }

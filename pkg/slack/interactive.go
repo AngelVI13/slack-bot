@@ -23,7 +23,21 @@ func (i *Interaction) HasContext(c string) bool {
 }
 
 func (i *Interaction) IValue(blockId, actionId string) string {
-	values := i.Values[blockId][actionId]
+	var values slack.BlockAction
+	if blockId == "" {
+		// incase element is provided as attachment object then it has a randomly
+		// provided blockId -> search through all of them and select the one which has
+		// the same expected actionId
+		var found bool
+		for _, v := range i.Values {
+			values, found = v[actionId]
+			if found {
+				break
+			}
+		}
+	} else {
+		values = i.Values[blockId][actionId]
+	}
 
 	if values.Value != "" {
 		return values.Value
