@@ -57,7 +57,7 @@ func (p *Space) Smaller(other *Space) bool {
 	}
 }
 
-func MakeSpaceKey(number, floor int) SpaceKey {
+func MakeFloorStr(floor int) string {
 	postfix := "th"
 
 	postfixes := []string{"st", "nd", "rd"}
@@ -65,8 +65,11 @@ func MakeSpaceKey(number, floor int) SpaceKey {
 	if 1 <= absFloor && absFloor <= 3 {
 		postfix = postfixes[absFloor-1]
 	}
+	return fmt.Sprintf("%d%s floor", floor, postfix)
+}
 
-	return SpaceKey(fmt.Sprintf("%d%s floor %d", floor, postfix, number))
+func MakeSpaceKey(number, floor int) SpaceKey {
+	return SpaceKey(fmt.Sprintf("%s %d", MakeFloorStr(floor), number))
 }
 
 func abs(n int) int {

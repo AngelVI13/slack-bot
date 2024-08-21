@@ -233,6 +233,21 @@ func (d *SpacesLot) GetSpacesInfo(userId string) SpacesInfo {
 	return allSpaces
 }
 
+func (d *SpacesLot) GetAllFloors() []string {
+	floorMap := map[int]int{}
+	var floors []string
+
+	for _, space := range d.UnitSpaces {
+		floorMap[space.Floor] = 1
+	}
+
+	for floor := range floorMap {
+		floors = append(floors, MakeFloorStr(floor))
+	}
+
+	return floors
+}
+
 func (l *SpacesLot) Reserve(
 	unitSpace SpaceKey,
 	user, userId string,

@@ -127,25 +127,40 @@ func (m *Manager) generateRemoveSpaceBlocks() []slack.Block {
 	return allBlocks
 }
 
-func (m *Manager) generateSelectSpaceOptions() []slack.Block {
-	var allBlocks []slack.Block
-
+func (m *Manager) generateSpaceOptionsByFloor(
+	floor string,
+) *slack.OptionGroupBlockObject {
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	// TODO: rework the Add/Remove select menu to the same approach with Section+Accessory
+	onlyTaken := false
+	userId := "" // we don't care about spaces that belong to a user
 
-	// TODO: sort these spaces for easier searching
-	// TODO: only 100 elements are supported in multi select
-	// TODO: use multiple option groups to group each floor spaces separately
-	//   each group can handle up to 100 elements
-	for spaceKey := range m.data.ParkingLot.UnitSpaces {
+	// NOTE: slack only supports 100 elements in each floor group
+	for _, space := range m.data.ParkingLot.GetSpacesByFloor(userId, floor, onlyTaken) {
+		spaceKey := space.Key()
 		optionBlock := slack.NewOptionBlockObject(
 			string(spaceKey),
 			slack.NewTextBlockObject("plain_text", string(spaceKey), false, false),
 			slack.NewTextBlockObject("plain_text", " ", false, false),
 		)
 		optionBlocks = append(optionBlocks, optionBlock)
+	}
+
+	floorLabel := slack.NewTextBlockObject("plain_text", floor, false, false)
+	optionsGroup := slack.NewOptionGroupBlockElement(floorLabel, optionBlocks...)
+	return optionsGroup
+}
+
+func (m *Manager) generateSelectSpaceOptions() []slack.Block {
+	var allBlocks []slack.Block
+
+	// Options
+	var optionGroups []*slack.OptionGroupBlockObject
+
+	for _, floor := range m.data.ParkingLot.GetAllFloors() {
+		optionGroup := m.generateSpaceOptionsByFloor(floor)
+		optionGroups = append(optionGroups, optionGroup)
 	}
 
 	// Default option shown for option box
@@ -156,11 +171,11 @@ func (m *Manager) generateSelectSpaceOptions() []slack.Block {
 		false,
 	)
 
-	newOptionsGroupSelectBlockElement := slack.NewOptionsMultiSelectBlockElement(
+	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupMultiSelectBlockElement(
 		"multi_static_select",
 		defaultOption,
 		selectSpaceOptionId,
-		optionBlocks...,
+		optionGroups...,
 	)
 
 	accessory := slack.NewAccessory(newOptionsGroupSelectBlockElement)
