@@ -126,7 +126,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	for _, action := range data.Actions {
 		switch action.ActionID {
 		case views.FloorOptionId:
-			selectedFloor := data.IValue(views.FloorActionId, views.FloorOptionId)
+			selectedFloor := data.IValueSingle(views.FloorActionId, views.FloorOptionId)
 			m.data.SelectedFloor[data.UserId] = selectedFloor
 			errorTxt := ""
 			modal := m.bookingView.Generate(data.UserId, errorTxt)
@@ -158,7 +158,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			actions = m.handleReleaseRange(data, selectedDate, isStartDate)
 
 		case views.ShowOptionId:
-			selectedShowValue := data.IValue(views.ShowActionId, views.ShowOptionId)
+			selectedShowValue := data.IValueSingle(views.ShowActionId, views.ShowOptionId)
 			selectedShowOption := selectedShowValue == parkingModel.ShowTakenOption
 			m.data.SelectedShowTaken[data.UserId] = selectedShowOption
 			errorTxt := ""

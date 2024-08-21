@@ -133,8 +133,8 @@ func (m *Manager) generateSpaceOptionsByFloor(
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	onlyTaken := false
-	userId := "" // we don't care about spaces that belong to a user
+	onlyTaken := false // free & taken spaces
+	userId := ""       // we don't care about spaces that belong to a specific user
 
 	// NOTE: slack only supports 100 elements in each floor group
 	for _, space := range m.data.ParkingLot.GetSpacesByFloor(userId, floor, onlyTaken) {

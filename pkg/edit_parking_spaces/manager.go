@@ -88,11 +88,11 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
-		// Reset selected user
-		m.selectedEditOption.ResetSelectionForUser(data.UserId)
-
-		// Changes take place as soon as user clicks checkbox
-		// There is nothing to do on view submission
+		response := m.handleViewSubmission(data)
+		if response == nil {
+			return
+		}
+		m.eventManager.Publish(response)
 	}
 }
 
@@ -123,13 +123,50 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	for _, action := range data.Actions {
 		switch action.ActionID {
 		case selectEditOptionId:
-			selectedEditAction := data.IValue("", selectEditOptionId)
+			selectedEditAction := data.IValueSingle("", selectEditOptionId)
 			m.selectedEditOption.Set(data.UserId, editOption(selectedEditAction))
 			modal := m.generateEditSpacesModalRequest(data, data.UserId)
 
 			action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, "")
 			actions = append(actions, action)
 		}
+	}
+
+	if len(actions) == 0 {
+		return nil
+	}
+
+	return common.NewResponseEvent(data.UserName, actions...)
+}
+
+func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
+	var actions []event.ResponseAction
+
+	selectedAction := m.selectedEditOption.Get(data.UserId)
+	// Reset selected user
+	m.selectedEditOption.ResetSelectionForUser(data.UserId)
+
+	switch selectedAction {
+	case removeSpaceOption:
+		selectedSpaces := data.IValue("", selectSpaceOptionId)
+		if len(selectedSpaces) < 1 {
+			errTxt := "No spaces selected for removal -> nothing was done"
+			action := common.NewPostEphemeralAction(
+				data.UserId,
+				data.UserId,
+				errTxt,
+				false,
+			)
+			actions = append(actions, action)
+		}
+
+		// TODO: remove spaces here
+	case addSpaceOption:
+		// TODO: add support for this
+	case notSelectedOption:
+		// Do nothing
+	default:
+		log.Fatalf("unsupported action: %v", selectedAction)
 	}
 
 	if len(actions) == 0 {
