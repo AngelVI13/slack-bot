@@ -6,9 +6,18 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"time"
+)
+
+type SpaceType int
+
+const (
+	SpaceFree SpaceType = iota
+	SpaceTaken
+	SpaceAny
 )
 
 type SpacesInfo []*Space
@@ -150,7 +159,7 @@ func (d *SpacesLot) HasTempRelease(userId string) *Space {
 
 func (d *SpacesLot) GetSpacesByFloor(
 	userId, floor string,
-	onlyTaken bool,
+	spaceType SpaceType,
 ) SpacesInfo {
 	floorSpaces := make(SpacesInfo, 0)
 	allSpaces := d.GetSpacesInfo(userId)
@@ -171,9 +180,18 @@ func (d *SpacesLot) GetSpacesByFloor(
 			continue
 		}
 
-		if onlyTaken && space.Reserved {
-			floorSpaces = append(floorSpaces, space)
-		} else if !onlyTaken && !space.Reserved {
+		addCondition := false
+		switch spaceType {
+		case SpaceFree:
+			addCondition = !space.Reserved
+		case SpaceTaken:
+			addCondition = space.Reserved
+		case SpaceAny:
+			addCondition = true
+		default:
+			log.Fatalf("unsupported space type: %v", spaceType)
+		}
+		if addCondition {
 			floorSpaces = append(floorSpaces, space)
 		}
 	}
@@ -233,8 +251,10 @@ func (d *SpacesLot) GetSpacesInfo(userId string) SpacesInfo {
 	return allSpaces
 }
 
+// NOTE: the implementation looks stupid but can't think of better way
 func (d *SpacesLot) GetAllFloors() []string {
 	floorMap := map[int]int{}
+	var floorsNum []int
 	var floors []string
 
 	for _, space := range d.UnitSpaces {
@@ -242,6 +262,11 @@ func (d *SpacesLot) GetAllFloors() []string {
 	}
 
 	for floor := range floorMap {
+		floorsNum = append(floorsNum, floor)
+	}
+	slices.Sort(floorsNum)
+
+	for _, floor := range floorsNum {
 		floors = append(floors, MakeFloorStr(floor))
 	}
 

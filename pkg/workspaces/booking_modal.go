@@ -157,8 +157,12 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
+	selectedSpaceType := spaces.SpaceFree
+	if selectedShowTaken {
+		selectedSpaceType = spaces.SpaceTaken
+	}
 	spaces := m.data.WorkspacesLot.
-		GetSpacesByFloor(userId, selectedFloor, selectedShowTaken)
+		GetSpacesByFloor(userId, selectedFloor, selectedSpaceType)
 	workspaceSections := m.generateSpacesInfo(spaces)
 
 	for idx, space := range spaces {

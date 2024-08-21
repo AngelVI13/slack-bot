@@ -257,11 +257,11 @@ func (b *Booking) generateParkingInfoBlocks(
 		allBlocks = append(allBlocks, switchPersonalBtn, div)
 	}
 
-	spaces := b.data.ParkingLot.GetSpacesByFloor(
-		userId,
-		selectedFloor,
-		selectedShowTaken,
-	)
+	selectedSpaceType := spaces.SpaceFree
+	if selectedShowTaken {
+		selectedSpaceType = spaces.SpaceTaken
+	}
+	spaces := b.data.ParkingLot.GetSpacesByFloor(userId, selectedFloor, selectedSpaceType)
 
 	parkingSpaceSections := b.generateParkingInfo(spaces)
 

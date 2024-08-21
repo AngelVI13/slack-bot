@@ -2,9 +2,11 @@ package edit_parking_spaces
 
 import (
 	"log"
+	"slices"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
 	"github.com/slack-go/slack"
 )
 
@@ -133,11 +135,19 @@ func (m *Manager) generateSpaceOptionsByFloor(
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	onlyTaken := false // free & taken spaces
-	userId := ""       // we don't care about spaces that belong to a specific user
+	userId := "" // we don't care about spaces that belong to a specific user
+
+	allSpaces := m.data.ParkingLot.GetSpacesByFloor(userId, floor, spaces.SpaceAny)
+	slices.SortFunc(allSpaces, // sort spaces based on their number
+		func(a, b *spaces.Space) int {
+			if a.Number <= b.Number {
+				return -1
+			}
+			return 1
+		})
 
 	// NOTE: slack only supports 100 elements in each floor group
-	for _, space := range m.data.ParkingLot.GetSpacesByFloor(userId, floor, onlyTaken) {
+	for _, space := range allSpaces {
 		spaceKey := space.Key()
 		optionBlock := slack.NewOptionBlockObject(
 			string(spaceKey),

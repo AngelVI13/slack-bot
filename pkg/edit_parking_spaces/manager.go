@@ -3,11 +3,13 @@ package edit_parking_spaces
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"slices"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 	"github.com/slack-go/slack"
 )
@@ -149,8 +151,9 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	switch selectedAction {
 	case removeSpaceOption:
 		selectedSpaces := data.IValue("", selectSpaceOptionId)
-		if len(selectedSpaces) < 1 {
+		if len(selectedSpaces) == 0 {
 			errTxt := "No spaces selected for removal -> nothing was done"
+			slog.Error(errTxt, "requestor", data.UserName)
 			action := common.NewPostEphemeralAction(
 				data.UserId,
 				data.UserId,
@@ -160,11 +163,25 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 			actions = append(actions, action)
 		}
 
-		// TODO: remove spaces here
+		slog.Info(
+			"Removing spaces from DB",
+			"requestor",
+			data.UserName,
+			"spaces",
+			selectedSpaces,
+		)
+		for _, space := range selectedSpaces {
+			spaceKey := spaces.SpaceKey(space)
+			m.data.ParkingLot.ToBeReleased.RemoveAllReleases(spaceKey)
+			delete(m.data.ParkingLot.UnitSpaces, spaceKey)
+		}
+		m.data.ParkingLot.SynchronizeToFile()
+
+		// TODO: Should I inform the requestor that the action was completed successfully ?
 	case addSpaceOption:
 		// TODO: add support for this
 	case notSelectedOption:
-		// Do nothing
+		return nil // do nothing
 	default:
 		log.Fatalf("unsupported action: %v", selectedAction)
 	}
