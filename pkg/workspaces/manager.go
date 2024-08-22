@@ -30,19 +30,26 @@ type Manager struct {
 	data         *model.Data
 	slackClient  *slack.Client
 
-	selectedFloor     map[string]string
-	selectedShowTaken map[string]bool
+	selectedFloor      map[string]string
+	selectedShowTaken  map[string]bool
+	defaultFloorOption string
 }
 
 func NewManager(
 	eventManager *event.EventManager,
 	data *model.Data,
 ) *Manager {
+	allFloors := data.WorkspacesLot.GetAllFloors()
+	defaultFloorOption := ""
+	if len(allFloors) > 0 {
+		defaultFloorOption = allFloors[0]
+	}
 	return &Manager{
-		eventManager:      eventManager,
-		data:              data,
-		selectedFloor:     map[string]string{},
-		selectedShowTaken: map[string]bool{},
+		eventManager:       eventManager,
+		data:               data,
+		selectedFloor:      map[string]string{},
+		selectedShowTaken:  map[string]bool{},
+		defaultFloorOption: defaultFloorOption,
 	}
 }
 
@@ -89,7 +96,7 @@ func (m *Manager) Context() string {
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
-	selectedFloor := defaultFloorOption
+	selectedFloor := m.defaultFloorOption
 	selected, ok := m.selectedFloor[data.UserId]
 	if ok {
 		selectedFloor = selected
@@ -111,7 +118,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	var actions []event.ResponseAction
 
 	if _, ok := m.selectedFloor[data.UserId]; !ok {
-		m.selectedFloor[data.UserId] = defaultFloorOption
+		m.selectedFloor[data.UserId] = m.defaultFloorOption
 	}
 
 	for _, action := range data.Actions {

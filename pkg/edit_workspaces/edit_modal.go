@@ -36,6 +36,7 @@ var editOptions = []editOption{
 
 var workSpaceManagementTitle = Identifier
 
+// NOTE: this file is a copy of edit_parking_spaces package
 func (m *Manager) generateEditSpacesModalRequest(
 	command event.Event,
 	userId string,
@@ -120,7 +121,7 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 	var allBlocks []slack.Block
 
 	// Floor Input
-	floorPlaceholder := slack.NewTextBlockObject("plain_text", "-2", false, false)
+	floorPlaceholder := slack.NewTextBlockObject("plain_text", "4", false, false)
 	isDecimalAllowed := false
 	floorInput := slack.NewNumberInputBlockElement(
 		floorPlaceholder,
@@ -146,14 +147,14 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 	allBlocks = append(allBlocks, floorInputBlock)
 
 	// Space Number Input
-	numberPlaceholder := slack.NewTextBlockObject("plain_text", "48", false, false)
+	numberPlaceholder := slack.NewTextBlockObject("plain_text", "7", false, false)
 	numberInput := slack.NewNumberInputBlockElement(
 		numberPlaceholder,
 		addSpaceActionId,
 		isDecimalAllowed,
 	)
 	numberInput.MinValue = "1"
-	numberInput.MaxValue = "255"
+	numberInput.MaxValue = "100"
 	numberLabel := slack.NewTextBlockObject(
 		"plain_text",
 		"Workspace Number",
@@ -174,6 +175,35 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 		numberInput,
 	)
 	allBlocks = append(allBlocks, numberInputBlock)
+
+	// Description
+	descPlaceholder := slack.NewTextBlockObject(
+		"plain_text",
+		"Verification Room",
+		false,
+		false,
+	)
+	descInput := slack.NewPlainTextInputBlockElement(descPlaceholder, addDescActionId)
+	descLabel := slack.NewTextBlockObject(
+		"plain_text",
+		"Description/Space location",
+		false,
+		false,
+	)
+	descHint := slack.NewTextBlockObject(
+		"plain_text",
+		"For example, 'Verification Room' or 'Development Room'. Keep it short.",
+		false,
+		false,
+	)
+
+	descInputBlock := slack.NewInputBlock(
+		addDescBlockId,
+		descLabel,
+		descHint,
+		descInput,
+	)
+	allBlocks = append(allBlocks, descInputBlock)
 
 	return allBlocks
 }

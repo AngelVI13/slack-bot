@@ -121,7 +121,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Response {
 	var actions []event.ResponseAction
 
-	m.data.SetDefaultFloorIfMissing(data.UserId, parkingModel.DefaultFloorOption)
+	m.data.SetDefaultFloorIfMissing(data.UserId)
 
 	for _, action := range data.Actions {
 		switch action.ActionID {

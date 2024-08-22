@@ -21,11 +21,9 @@ const (
 )
 
 var (
-	floors             = [...]string{"4th floor"}
-	defaultFloorOption = floors[0]
-	showOptions        = [2]string{"Free", "Taken"}
-	showFreeOption     = showOptions[0]
-	showTakenOption    = showOptions[1]
+	showOptions     = [2]string{"Free", "Taken"}
+	showFreeOption  = showOptions[0]
+	showTakenOption = showOptions[1]
 )
 
 var workspaceBookingTitle = Identifier + "Booking"
@@ -186,7 +184,12 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	for _, floor := range floors {
+	allFloors := m.data.WorkspacesLot.GetAllFloors()
+	if len(allFloors) == 0 {
+		return allBlocks
+	}
+
+	for _, floor := range allFloors {
 		optionBlock := slack.NewOptionBlockObject(
 			floor,
 			slack.NewTextBlockObject("plain_text", floor, false, false),
@@ -195,7 +198,7 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
 
-	selectedFloor := defaultFloorOption
+	selectedFloor := m.defaultFloorOption
 	selected, ok := m.selectedFloor[userId]
 	if ok {
 		selectedFloor = selected

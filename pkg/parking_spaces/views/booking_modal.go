@@ -36,7 +36,7 @@ func NewBooking(identifier string, managerData *model.ParkingData) *Booking {
 }
 
 func (b *Booking) Generate(userId string, errorTxt string) slack.ModalViewRequest {
-	selectedFloor := model.DefaultFloorOption
+	selectedFloor := b.data.DefaultFloor
 	selected, ok := b.data.SelectedFloor[userId]
 	if ok {
 		selectedFloor = selected
@@ -304,7 +304,12 @@ func (b *Booking) generateFloorOptions(userId string) []slack.Block {
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	for _, floor := range model.Floors {
+	allFloors := b.data.ParkingLot.GetAllFloors()
+	if len(allFloors) == 0 {
+		return allBlocks
+	}
+
+	for _, floor := range allFloors {
 		optionBlock := slack.NewOptionBlockObject(
 			floor,
 			slack.NewTextBlockObject("plain_text", floor, false, false),
@@ -313,7 +318,7 @@ func (b *Booking) generateFloorOptions(userId string) []slack.Block {
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
 
-	selectedFloor := model.DefaultFloorOption
+	selectedFloor := b.data.DefaultFloor
 	selected, ok := b.data.SelectedFloor[userId]
 	if ok {
 		selectedFloor = selected

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -17,8 +18,8 @@ import (
 
 const (
 	Identifier = "Edit Workspaces: "
-	// SlashCmd   = "/spaces-workspace"
-	SlashCmd = "/test-wospaces"
+	SlashCmd   = "/spaces-workspace"
+	// SlashCmd = "/test-wospaces"
 
 	defaultUserOption = ""
 )
@@ -190,7 +191,7 @@ func (m *Manager) handleAddSpaceSubmission(
 	var actions []event.ResponseAction
 	floorStr := data.IValueSingle("", addFloorActionId)
 	spaceNumberStr := data.IValueSingle("", addSpaceActionId)
-	// TODO: add description
+	description := data.IValueSingle("", addDescActionId)
 
 	// NOTE: slack does a lot of validation for correct inputs
 	// so this in theory shouldn't fail
@@ -201,12 +202,6 @@ func (m *Manager) handleAddSpaceSubmission(
 			floorStr,
 			err,
 		)
-		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
-		return actions
-	}
-
-	if floor == 0 {
-		errTxt := "Workspace was not added - invalid floor value (0). allowed values are: -2, -1, 1"
 		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
 		return actions
 	}
@@ -222,7 +217,8 @@ func (m *Manager) handleAddSpaceSubmission(
 		return actions
 	}
 
-	space := spaces.NewSpace(spaceNumber, floor, "")
+	description = strings.Trim(description, " ")
+	space := spaces.NewSpace(spaceNumber, floor, description)
 	spaceKey := space.Key()
 
 	_, found := m.data.WorkspacesLot.UnitSpaces[spaceKey]
