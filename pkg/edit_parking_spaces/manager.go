@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"slices"
+	"strconv"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -141,45 +142,117 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	return common.NewResponseEvent(data.UserName, actions...)
 }
 
+func (m *Manager) errorMessageAction(
+	data *slackApi.BaseEvent,
+	errTxt string,
+) *common.PostEphemeralAction {
+	slog.Error(errTxt, "requestor", data.UserName)
+	action := common.NewPostEphemeralAction(
+		data.UserId,
+		data.UserId,
+		errTxt,
+		false,
+	)
+	return action
+}
+
+func (m *Manager) handleRemoveSpaceSubmission(
+	data *slackApi.ViewSubmission,
+) []event.ResponseAction {
+	var actions []event.ResponseAction
+	selectedSpaces := data.IValue("", selectSpaceOptionId)
+	if len(selectedSpaces) == 0 {
+		errTxt := "No spaces selected for removal -> nothing was done"
+		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
+	}
+
+	slog.Info(
+		"Removing spaces from DB",
+		"requestor",
+		data.UserName,
+		"spaces",
+		selectedSpaces,
+	)
+	for _, space := range selectedSpaces {
+		spaceKey := spaces.SpaceKey(space)
+		m.data.ParkingLot.ToBeReleased.RemoveAllReleases(spaceKey)
+		delete(m.data.ParkingLot.UnitSpaces, spaceKey)
+	}
+
+	m.data.ParkingLot.SynchronizeToFile()
+
+	// TODO: Should I inform the requestor that the action was completed successfully ?
+	return actions
+}
+
+func (m *Manager) handleAddSpaceSubmission(
+	data *slackApi.ViewSubmission,
+) []event.ResponseAction {
+	var actions []event.ResponseAction
+	floorStr := data.IValueSingle("", addFloorActionId)
+	spaceNumberStr := data.IValueSingle("", addSpaceActionId)
+
+	// NOTE: slack does a lot of validation for correct inputs
+	// so this in theory shouldn't fail
+	floor, err := strconv.Atoi(floorStr)
+	if err != nil {
+		errTxt := fmt.Sprintf(
+			"Space was not added - error while trying to convert floor %q to int: %v",
+			floorStr,
+			err,
+		)
+		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
+		return actions
+	}
+
+	if floor == 0 {
+		errTxt := "Space was not added - invalid floor value (0). allowed values are: -2, -1, 1"
+		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
+		return actions
+	}
+
+	spaceNumber, err := strconv.Atoi(spaceNumberStr)
+	if err != nil {
+		errTxt := fmt.Sprintf(
+			"Space was not added - error while trying to convert spaceNumber %q to int: %v",
+			spaceNumberStr,
+			err,
+		)
+		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
+		return actions
+	}
+
+	space := spaces.NewSpace(spaceNumber, floor, "")
+	spaceKey := space.Key()
+
+	_, found := m.data.ParkingLot.UnitSpaces[spaceKey]
+	if found {
+		errTxt := fmt.Sprintf(
+			"Can't add parking space %q because it already exists",
+			spaceKey,
+		)
+		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
+		return actions
+	}
+
+	m.data.ParkingLot.UnitSpaces[spaceKey] = space
+	m.data.ParkingLot.SynchronizeToFile()
+
+	return actions
+}
+
 func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
 	var actions []event.ResponseAction
 
 	selectedAction := m.selectedEditOption.Get(data.UserId)
-	// Reset selected user
+	// Reset selected action
 	m.selectedEditOption.ResetSelectionForUser(data.UserId)
 
 	switch selectedAction {
 	case removeSpaceOption:
-		selectedSpaces := data.IValue("", selectSpaceOptionId)
-		if len(selectedSpaces) == 0 {
-			errTxt := "No spaces selected for removal -> nothing was done"
-			slog.Error(errTxt, "requestor", data.UserName)
-			action := common.NewPostEphemeralAction(
-				data.UserId,
-				data.UserId,
-				errTxt,
-				false,
-			)
-			actions = append(actions, action)
-		}
-
-		slog.Info(
-			"Removing spaces from DB",
-			"requestor",
-			data.UserName,
-			"spaces",
-			selectedSpaces,
-		)
-		for _, space := range selectedSpaces {
-			spaceKey := spaces.SpaceKey(space)
-			m.data.ParkingLot.ToBeReleased.RemoveAllReleases(spaceKey)
-			delete(m.data.ParkingLot.UnitSpaces, spaceKey)
-		}
-		m.data.ParkingLot.SynchronizeToFile()
-
-		// TODO: Should I inform the requestor that the action was completed successfully ?
+		actions = append(actions, m.handleRemoveSpaceSubmission(data)...)
 	case addSpaceOption:
-		// TODO: add support for this
+		actions = append(actions, m.handleAddSpaceSubmission(data)...)
 	case notSelectedOption:
 		return nil // do nothing
 	default:

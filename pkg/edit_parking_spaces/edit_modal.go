@@ -13,6 +13,10 @@ import (
 const (
 	selectEditOptionId  = "selectEditOptionId"
 	selectSpaceOptionId = "selectSpaceOptionId"
+	addFloorActionId    = "addFloorActionId"
+	addFloorBlockId     = "addFloorBlockId"
+	addSpaceActionId    = "addSpaceActionId"
+	addSpaceBlockId     = "addSpaceBlockId"
 )
 
 type editOption string
@@ -113,10 +117,61 @@ func (m *Manager) generateAddRemoveOptions(selectedOption editOption) []slack.Bl
 func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 	var allBlocks []slack.Block
 
-	text := "Add space"
-	sectionText := slack.NewTextBlockObject("mrkdwn", text, false, false)
-	sectionBlock := slack.NewSectionBlock(sectionText, nil, nil)
-	allBlocks = append(allBlocks, sectionBlock)
+	// Floor Input
+	floorPlaceholder := slack.NewTextBlockObject("plain_text", "-2", false, false)
+	isDecimalAllowed := false
+	floorInput := slack.NewNumberInputBlockElement(
+		floorPlaceholder,
+		addFloorActionId,
+		isDecimalAllowed,
+	)
+	floorInput.MinValue = "-2"
+	floorInput.MaxValue = "1"
+	floorLabel := slack.NewTextBlockObject("plain_text", "Floor", false, false)
+	floorHint := slack.NewTextBlockObject(
+		"plain_text",
+		"The floor where the space is located",
+		false,
+		false,
+	)
+
+	floorInputBlock := slack.NewInputBlock(
+		addFloorBlockId,
+		floorLabel,
+		floorHint,
+		floorInput,
+	)
+	allBlocks = append(allBlocks, floorInputBlock)
+
+	// Space Number Input
+	numberPlaceholder := slack.NewTextBlockObject("plain_text", "48", false, false)
+	numberInput := slack.NewNumberInputBlockElement(
+		numberPlaceholder,
+		addSpaceActionId,
+		isDecimalAllowed,
+	)
+	numberInput.MinValue = "1"
+	numberInput.MaxValue = "255"
+	numberLabel := slack.NewTextBlockObject(
+		"plain_text",
+		"Parking Space Number",
+		false,
+		false,
+	)
+	numberHint := slack.NewTextBlockObject(
+		"plain_text",
+		"Based on the building parking plan",
+		false,
+		false,
+	)
+
+	numberInputBlock := slack.NewInputBlock(
+		addSpaceBlockId,
+		numberLabel,
+		numberHint,
+		numberInput,
+	)
+	allBlocks = append(allBlocks, numberInputBlock)
 
 	return allBlocks
 }

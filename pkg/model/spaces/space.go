@@ -15,6 +15,14 @@ type Space struct {
 	common.ReservedProps
 }
 
+func NewSpace(number, floor int, description string) *Space {
+	return &Space{
+		Number:      number,
+		Floor:       floor,
+		Description: description,
+	}
+}
+
 func (p *Space) GetPropsText() string {
 	description := ""
 	if p.Description != "" {
