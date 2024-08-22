@@ -1,4 +1,4 @@
-package edit_parking_spaces
+package edit_workspaces
 
 import (
 	"fmt"
@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	Identifier = "Edit Parking Spaces: "
-	SlashCmd   = "/spaces-parking"
-	// SlashCmd = "/test-spaces"
+	Identifier = "Edit Workspaces: "
+	// SlashCmd   = "/spaces-workspace"
+	SlashCmd = "/test-wospaces"
 
 	defaultUserOption = ""
 )
@@ -35,7 +35,7 @@ func (m selectedEditOptionMap) Get(userId string) editOption {
 
 func (m selectedEditOptionMap) Set(userId string, option editOption) {
 	if !slices.Contains(editOptions, option) {
-		log.Fatalf("Unsupported park space edit option: %q", option)
+		log.Fatalf("Unsupported work space edit option: %q", option)
 	}
 	m[userId] = option
 }
@@ -86,7 +86,7 @@ func (m *Manager) Consume(e event.Event) {
 	case event.ViewSubmissionEvent:
 		data := e.(*slackApi.ViewSubmission)
 
-		if data.Title != parkSpaceManagementTitle {
+		if data.Title != workSpaceManagementTitle {
 			return
 		}
 
@@ -161,12 +161,12 @@ func (m *Manager) handleRemoveSpaceSubmission(
 	var actions []event.ResponseAction
 	selectedSpaces := data.IValue("", selectSpaceOptionId)
 	if len(selectedSpaces) == 0 {
-		errTxt := "No parking spaces selected for removal -> nothing was done"
+		errTxt := "No workspaces selected for removal -> nothing was done"
 		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
 	}
 
 	slog.Info(
-		"Removing parking spaces from DB",
+		"Removing workspaces from DB",
 		"requestor",
 		data.UserName,
 		"spaces",
@@ -174,11 +174,11 @@ func (m *Manager) handleRemoveSpaceSubmission(
 	)
 	for _, space := range selectedSpaces {
 		spaceKey := spaces.SpaceKey(space)
-		m.data.ParkingLot.ToBeReleased.RemoveAllReleases(spaceKey)
-		delete(m.data.ParkingLot.UnitSpaces, spaceKey)
+		m.data.WorkspacesLot.ToBeReleased.RemoveAllReleases(spaceKey)
+		delete(m.data.WorkspacesLot.UnitSpaces, spaceKey)
 	}
 
-	m.data.ParkingLot.SynchronizeToFile()
+	m.data.WorkspacesLot.SynchronizeToFile()
 
 	// TODO: Should I inform the requestor that the action was completed successfully ?
 	return actions
@@ -190,13 +190,14 @@ func (m *Manager) handleAddSpaceSubmission(
 	var actions []event.ResponseAction
 	floorStr := data.IValueSingle("", addFloorActionId)
 	spaceNumberStr := data.IValueSingle("", addSpaceActionId)
+	// TODO: add description
 
 	// NOTE: slack does a lot of validation for correct inputs
 	// so this in theory shouldn't fail
 	floor, err := strconv.Atoi(floorStr)
 	if err != nil {
 		errTxt := fmt.Sprintf(
-			"Parking space was not added - error while trying to convert floor %q to int: %v",
+			"Workspace was not added - error while trying to convert floor %q to int: %v",
 			floorStr,
 			err,
 		)
@@ -205,7 +206,7 @@ func (m *Manager) handleAddSpaceSubmission(
 	}
 
 	if floor == 0 {
-		errTxt := "Parking space was not added - invalid floor value (0). allowed values are: -2, -1, 1"
+		errTxt := "Workspace was not added - invalid floor value (0). allowed values are: -2, -1, 1"
 		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
 		return actions
 	}
@@ -213,7 +214,7 @@ func (m *Manager) handleAddSpaceSubmission(
 	spaceNumber, err := strconv.Atoi(spaceNumberStr)
 	if err != nil {
 		errTxt := fmt.Sprintf(
-			"Parking space was not added - error while trying to convert spaceNumber %q to int: %v",
+			"Workspace was not added - error while trying to convert spaceNumber %q to int: %v",
 			spaceNumberStr,
 			err,
 		)
@@ -224,18 +225,18 @@ func (m *Manager) handleAddSpaceSubmission(
 	space := spaces.NewSpace(spaceNumber, floor, "")
 	spaceKey := space.Key()
 
-	_, found := m.data.ParkingLot.UnitSpaces[spaceKey]
+	_, found := m.data.WorkspacesLot.UnitSpaces[spaceKey]
 	if found {
 		errTxt := fmt.Sprintf(
-			"Can't add parking space %q because it already exists",
+			"Can't add workspace %q because it already exists",
 			spaceKey,
 		)
 		actions = append(actions, m.errorMessageAction(&data.BaseEvent, errTxt))
 		return actions
 	}
 
-	m.data.ParkingLot.UnitSpaces[spaceKey] = space
-	m.data.ParkingLot.SynchronizeToFile()
+	m.data.WorkspacesLot.UnitSpaces[spaceKey] = space
+	m.data.WorkspacesLot.SynchronizeToFile()
 
 	return actions
 }
@@ -255,7 +256,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	case notSelectedOption:
 		return nil // do nothing
 	default:
-		log.Fatalf("unsupported parking space action: %v", selectedAction)
+		log.Fatalf("unsupported edit workspace action: %v", selectedAction)
 	}
 
 	if len(actions) == 0 {

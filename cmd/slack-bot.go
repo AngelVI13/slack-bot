@@ -8,6 +8,7 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/edit_parking_spaces"
+	"github.com/AngelVI13/slack-bot/pkg/edit_workspaces"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
@@ -73,6 +74,9 @@ func main() {
 
 	editParkingSpacesManager := edit_parking_spaces.NewManager(eventManager, data)
 	eventManager.SubscribeWithContext(editParkingSpacesManager, event.AnyEvent)
+
+	editWorkspacesManager := edit_workspaces.NewManager(eventManager, data)
+	eventManager.SubscribeWithContext(editWorkspacesManager, event.AnyEvent)
 
 	rollManager := roll.NewManager(eventManager)
 	eventManager.Subscribe(rollManager, event.SlashCmdEvent)

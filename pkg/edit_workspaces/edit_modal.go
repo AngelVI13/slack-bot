@@ -1,4 +1,4 @@
-package edit_parking_spaces
+package edit_workspaces
 
 import (
 	"log"
@@ -17,6 +17,8 @@ const (
 	addFloorBlockId     = "addFloorBlockId"
 	addSpaceActionId    = "addSpaceActionId"
 	addSpaceBlockId     = "addSpaceBlockId"
+	addDescActionId     = "addDescActionId"
+	addDescBlockId      = "addDescBlockId"
 )
 
 type editOption string
@@ -32,14 +34,14 @@ var editOptions = []editOption{
 	removeSpaceOption,
 }
 
-var parkSpaceManagementTitle = Identifier
+var workSpaceManagementTitle = Identifier
 
 func (m *Manager) generateEditSpacesModalRequest(
 	command event.Event,
 	userId string,
 ) slack.ModalViewRequest {
 	sectionBlocks := m.generateAddRemoveBlocks(userId)
-	return common.GenerateModalRequest(parkSpaceManagementTitle, sectionBlocks)
+	return common.GenerateModalRequest(workSpaceManagementTitle, sectionBlocks)
 }
 
 func (m *Manager) generateAddRemoveBlocks(userId string) []slack.Block {
@@ -58,7 +60,7 @@ func (m *Manager) generateAddRemoveBlocks(userId string) []slack.Block {
 	case notSelectedOption:
 		// do nothing
 	default:
-		log.Fatalf("Unsupported edit parking space option: %q", selectedOption)
+		log.Fatalf("Unsupported edit workspace option: %q", selectedOption)
 	}
 	return allBlocks
 }
@@ -125,12 +127,12 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 		addFloorActionId,
 		isDecimalAllowed,
 	)
-	floorInput.MinValue = "-2"
-	floorInput.MaxValue = "1"
+	floorInput.MinValue = "2"
+	floorInput.MaxValue = "8"
 	floorLabel := slack.NewTextBlockObject("plain_text", "Floor", false, false)
 	floorHint := slack.NewTextBlockObject(
 		"plain_text",
-		"The floor where the space is located",
+		"The floor where the workspace is located",
 		false,
 		false,
 	)
@@ -154,13 +156,13 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 	numberInput.MaxValue = "255"
 	numberLabel := slack.NewTextBlockObject(
 		"plain_text",
-		"Parking Space Number",
+		"Workspace Number",
 		false,
 		false,
 	)
 	numberHint := slack.NewTextBlockObject(
 		"plain_text",
-		"Based on the building parking plan",
+		"Don't forget to add a sticker or sign to the workspace",
 		false,
 		false,
 	)
@@ -188,7 +190,7 @@ func (m *Manager) generateSpaceOptionsByFloor(
 
 	userId := "" // we don't care about spaces that belong to a specific user
 
-	allSpaces := m.data.ParkingLot.GetSpacesByFloor(userId, floor, spaces.SpaceAny)
+	allSpaces := m.data.WorkspacesLot.GetSpacesByFloor(userId, floor, spaces.SpaceAny)
 	slices.SortFunc(allSpaces, // sort spaces based on their number
 		func(a, b *spaces.Space) int {
 			if a.Number <= b.Number {
@@ -219,7 +221,7 @@ func (m *Manager) generateSelectSpaceOptions() []slack.Block {
 	// Options
 	var optionGroups []*slack.OptionGroupBlockObject
 
-	for _, floor := range m.data.ParkingLot.GetAllFloors() {
+	for _, floor := range m.data.WorkspacesLot.GetAllFloors() {
 		optionGroup := m.generateSpaceOptionsByFloor(floor)
 		optionGroups = append(optionGroups, optionGroup)
 	}
