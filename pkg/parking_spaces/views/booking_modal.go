@@ -132,10 +132,9 @@ func (b *Booking) generateParkingButtons(
 			releaseButton = releaseButton.WithStyle(slack.StyleDanger)
 			buttons = append(buttons, releaseButton)
 		}
-	} else if (!space.Reserved &&
+	} else if !space.Reserved &&
 		!b.data.ParkingLot.HasSpace(userId) &&
-		b.data.ParkingLot.HasTempRelease(userId) == nil &&
-		!isAdminUser) || (!space.Reserved && isAdminUser) {
+		b.data.ParkingLot.HasTempRelease(userId) == nil {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
 		reserveWithAutoButton := slack.NewButtonBlockElement(
