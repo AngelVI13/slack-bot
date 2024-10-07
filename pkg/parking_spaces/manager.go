@@ -480,6 +480,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 					"Temporary release cancelled (before eod). Space is taken. Return to owner at eod.",
 					"space", parkingSpace, "releaseInfo", releaseInfo)
 				releaseInfo.EndDate = &now
+				releaseInfo.MarkCancelled()
 				errorTxt = fmt.Sprintf(
 					"Temporary release cancelled. The space %s will be returned to you today at %d:%02d",
 					parkingSpace,
@@ -518,6 +519,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 				hoursTillMidnight := 24 - now.Hour()
 				tomorrow := now.Add(time.Duration(hoursTillMidnight) * time.Hour)
 				releaseInfo.EndDate = &tomorrow
+				releaseInfo.MarkCancelled()
 			} else {
 				// if parking space was not already reserved for the next day
 				// transfer it to owner

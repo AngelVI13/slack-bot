@@ -229,8 +229,12 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 
 	for _, release := range releases {
 		releaseBlock := generateTemporaryReleaseBlock(release)
-		cancelBtn := generateCancelReleaseButton(space, release.UniqueId, p.Type)
-		allBlocks = append(allBlocks, releaseBlock, cancelBtn)
+		allBlocks = append(allBlocks, releaseBlock)
+
+		if !release.Cancelled {
+			cancelBtn := generateCancelReleaseButton(space, release.UniqueId, p.Type)
+			allBlocks = append(allBlocks, cancelBtn)
+		}
 	}
 
 	return allBlocks

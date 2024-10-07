@@ -16,6 +16,7 @@ type ReleaseInfo struct {
 	Space      *Space
 	StartDate  *time.Time
 	EndDate    *time.Time
+	Cancelled  bool
 	Submitted  bool
 	UniqueId   int
 	Active     bool
@@ -42,6 +43,11 @@ func (i *ReleaseInfo) MarkSubmitted(releaser string) {
 func (i *ReleaseInfo) MarkActive() {
 	slog.Info("ReleaseInfo Active", "info", i)
 	i.Active = true
+}
+
+func (i *ReleaseInfo) MarkCancelled() {
+	slog.Info("ReleaseInfo Cancelled", "info", i)
+	i.Cancelled = true
 }
 
 func (i *ReleaseInfo) DataPresent() bool {
