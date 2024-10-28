@@ -22,6 +22,8 @@ type Config struct {
 	TaEndpoint      string
 	WorkersEndpoint string
 	ProxyEndpoint   string
+
+	ReportPersonId string
 }
 
 // ConfigFromEnv Creates config instance by reading corresponding ENV variables.
@@ -53,5 +55,7 @@ func NewConfigFromEnv(envPath string) *Config {
 		TaEndpoint:      taEndpoint,
 		WorkersEndpoint: fmt.Sprintf("%s/workers", taEndpoint),
 		ProxyEndpoint:   fmt.Sprintf("%s/proxy", taEndpoint),
+
+		ReportPersonId: os.Getenv("REPORT_PERSON_ID"),
 	}
 }

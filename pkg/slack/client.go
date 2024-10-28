@@ -1,8 +1,11 @@
 package slack
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"log/slog"
+	"strings"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
@@ -13,8 +16,9 @@ import (
 )
 
 type Client struct {
-	socket       *socketmode.Client
-	eventManager *event.EventManager
+	socket         *socketmode.Client
+	eventManager   *event.EventManager
+	reportPersonId string
 }
 
 func NewClient(config *config.Config, eventManager *event.EventManager) *Client {
@@ -36,8 +40,9 @@ func NewClient(config *config.Config, eventManager *event.EventManager) *Client 
 		),
 	)
 	c := &Client{
-		socket:       socketClient,
-		eventManager: eventManager,
+		socket:         socketClient,
+		eventManager:   eventManager,
+		reportPersonId: config.ReportPersonId,
 	}
 	// This actually performs the connection to slack (its blocking)
 	go c.socket.Run()
@@ -74,10 +79,21 @@ func (c *Client) Listen() {
 	}
 }
 
+func (c *Client) ReportError(msg string) {
+	if c.reportPersonId == "" {
+		slog.Error("REPORT", "err", msg)
+		return
+	}
+	post := common.NewPostEphemeralAction(c.reportPersonId, c.reportPersonId, msg, false)
+	c.socket.PostEphemeral(post.ChannelId, post.UserId, post.MsgOption)
+}
+
 func (c *Client) Consume(e event.Event) {
 	data, ok := e.(event.Response)
 	if !ok {
-		slog.Error("Slack client expected Response but got sth else", "event", e)
+		msg := "Slack client expected Response but got sth else"
+		slog.Error(msg, "event", e)
+		c.ReportError(msg)
 		return
 	}
 
@@ -126,15 +142,73 @@ func (c *Client) Consume(e event.Event) {
 				actionName := event.ResponseActionNames[action.Action()]
 				details := newView.ResponseMetadata.Messages
 				slog.Error("", "action", actionName, "err", err, "details", details)
+
+				jsonRequest, marshallErr := json.MarshalIndent(
+					&view.ModalRequest,
+					"",
+					"\t",
+				)
+				var jsonRequestStr string
+				if marshallErr == nil {
+					jsonRequestStr = string(jsonRequest)
+				} else {
+					// in the case of error while marshalling request json
+					//-> show error in that field
+					jsonRequestStr = marshallErr.Error()
+				}
+				msgTxt := fmt.Sprintf(
+					"Slack open view error.\nUser: %s\nAction: %s\nError:%s\nDetails:%s\nJsonRequest: %s\n",
+					e.User(),
+					actionName,
+					err,
+					strings.Join(details, "\n"),
+					jsonRequestStr,
+				)
+				c.ReportError(msgTxt)
 			}
 		case event.PostEphemeral:
 			post := action.(*common.PostEphemeralAction)
-			c.socket.PostEphemeral(post.ChannelId, post.UserId, post.MsgOption)
+			timestamp, err := c.socket.PostEphemeral(
+				post.ChannelId,
+				post.UserId,
+				post.MsgOption,
+			)
+			msgTxt := fmt.Sprintf(
+				"Slack post ephemeral error.\nUser: %s\nActions: %s\nTimestamp: %s\nError:%s\nTxt: %s\nChannelId: %s\n",
+				e.User(),
+				event.ResponseActionNames[post.Action()],
+				timestamp,
+				err,
+				post.Txt,
+				post.ChannelId,
+			)
+			c.ReportError(msgTxt)
 		case event.Post:
 			post := action.(*common.PostAction)
-			c.socket.PostMessage(post.ChannelId, post.MsgOption)
+			respChannel, respTimestamp, err := c.socket.PostMessage(
+				post.ChannelId,
+				post.MsgOption,
+			)
+			msgTxt := fmt.Sprintf(
+				"Slack post error.\nUser: %s\nAction: %s\nRespChannel: %s\nTimestamp: %s\nError:%s\nTxt: %s\nChannelId: %s\n",
+				e.User(),
+				event.ResponseActionNames[post.Action()],
+				respChannel,
+				respTimestamp,
+				err,
+				post.Txt,
+				post.ChannelId,
+			)
+			c.ReportError(msgTxt)
 		default:
 			slog.Error("Unsupported action", "action", action.Action())
+			c.ReportError(
+				fmt.Sprintf(
+					"Unsupported action:\nUser: %s\nAction: %s\n",
+					e.User(),
+					event.ResponseActionNames[action.Action()],
+				),
+			)
 		}
 	}
 }
