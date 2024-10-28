@@ -80,8 +80,8 @@ func (c *Client) Listen() {
 }
 
 func (c *Client) ReportError(msg string) {
+	slog.Error("REPORT", "err", msg)
 	if c.reportPersonId == "" {
-		slog.Error("REPORT", "err", msg)
 		return
 	}
 	post := common.NewPostEphemeralAction(c.reportPersonId, c.reportPersonId, msg, false)
