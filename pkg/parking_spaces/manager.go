@@ -3,6 +3,7 @@ package parking_spaces
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -110,7 +111,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	if m.data.ParkingLot.OwnsSpace(data.UserId) != nil {
 		modal = m.personalView.Generate(data.UserId, errorTxt)
 	} else {
-		modal = m.bookingView.Generate(data.UserId, errorTxt)
+		modal = m.bookingView.Generate(data.UserId, views.DefaultPageNum, errorTxt)
 	}
 
 	action := common.NewOpenViewAction(data.TriggerId, modal)
@@ -129,7 +130,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			selectedFloor := data.IValueSingle(views.FloorActionId, views.FloorOptionId)
 			m.data.SelectedFloor[data.UserId] = selectedFloor
 			errorTxt := ""
-			modal := m.bookingView.Generate(data.UserId, errorTxt)
+			modal := m.bookingView.Generate(data.UserId, views.DefaultPageNum, errorTxt)
 			actions = append(
 				actions,
 				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
@@ -162,14 +163,29 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			selectedShowOption := selectedShowValue == parkingModel.ShowTakenOption
 			m.data.SelectedShowTaken[data.UserId] = selectedShowOption
 			errorTxt := ""
-			modal := m.bookingView.Generate(data.UserId, errorTxt)
+			modal := m.bookingView.Generate(data.UserId, views.DefaultPageNum, errorTxt)
+			actions = append(
+				actions,
+				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
+			)
+		case views.PagingOptionId:
+			selectedPageValue := data.IValueSingle(
+				views.PagingActionId,
+				views.PagingOptionId,
+			)
+			selectedPageNum, err := strconv.Atoi(selectedPageValue)
+			errorTxt := ""
+			if err != nil {
+				errorTxt = err.Error()
+			}
+			modal := m.bookingView.Generate(data.UserId, selectedPageNum, errorTxt)
 			actions = append(
 				actions,
 				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
 			)
 		case views.SwitchToAllSpacesOverviewId:
 			errorTxt := ""
-			modal := m.bookingView.Generate(data.UserId, errorTxt)
+			modal := m.bookingView.Generate(data.UserId, views.DefaultPageNum, errorTxt)
 			actions = append(
 				actions,
 				common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt),
@@ -260,7 +276,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		data.UserId == releaseInfo.OwnerId {
 		modal = m.personalView.Generate(data.UserId, errTxt)
 	} else {
-		modal = m.bookingView.Generate(data.UserId, errTxt)
+		modal = m.bookingView.Generate(data.UserId, views.DefaultPageNum, errTxt)
 	}
 
 	updateAction := common.NewUpdateViewAction(data.TriggerId, rootViewId, modal, errTxt)
@@ -371,7 +387,7 @@ func (m *Manager) handleReserveParking(
 	if actionValues.ModalType == views.PersonalModal {
 		bookingModal = m.personalView.Generate(data.UserId, errStr)
 	} else {
-		bookingModal = m.bookingView.Generate(data.UserId, errStr)
+		bookingModal = m.bookingView.Generate(data.UserId, views.DefaultPageNum, errStr)
 	}
 
 	action := common.NewUpdateViewAction(
@@ -412,7 +428,7 @@ func (m *Manager) handleTempReleaseParking(
 	// is already trying to do the same thing -> show error in modal
 	if err != nil {
 		errTxt := err.Error()
-		bookingModal := m.bookingView.Generate(data.UserId, errTxt)
+		bookingModal := m.bookingView.Generate(data.UserId, views.DefaultPageNum, errTxt)
 		action := common.NewUpdateViewAction(
 			data.TriggerId,
 			data.ViewId,
@@ -544,7 +560,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 	if actionValues.ModalType == views.PersonalModal {
 		bookingModal = m.personalView.Generate(data.UserId, errorTxt)
 	} else {
-		bookingModal = m.bookingView.Generate(data.UserId, errorTxt)
+		bookingModal = m.bookingView.Generate(data.UserId, views.DefaultPageNum, errorTxt)
 	}
 
 	action := common.NewUpdateViewAction(
@@ -602,7 +618,7 @@ func (m *Manager) handleReleaseParking(
 	if actionValues.ModalType == views.PersonalModal {
 		modal = m.personalView.Generate(data.UserId, errorTxt)
 	} else {
-		modal = m.bookingView.Generate(data.UserId, errorTxt)
+		modal = m.bookingView.Generate(data.UserId, views.DefaultPageNum, errorTxt)
 	}
 
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errorTxt)

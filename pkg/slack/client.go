@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
@@ -80,11 +82,34 @@ func (c *Client) Listen() {
 }
 
 func (c *Client) ReportError(msg string) {
-	slog.Error("REPORT", "err", msg)
+	timestamp := time.Now()
+	filename := fmt.Sprintf(
+		"report_%s.txt",
+		timestamp.Format("2006_01_02_15_04_05"),
+	)
+	maxLength := len(msg)
+	if maxLength > 500 {
+		maxLength = 500
+	}
+	// Print truncated version of msg to log
+	slog.Error("REPORT", "filename", filename, "err", msg[:maxLength])
 	if c.reportPersonId == "" {
 		return
 	}
-	post := common.NewPostEphemeralAction(c.reportPersonId, c.reportPersonId, msg, false)
+
+	msg = fmt.Sprintf("Filename: %s\n%s", filename, msg)
+
+	// NOTE: sometimes messages can be too long and slack truncates them - make
+	// sure to save them to file so i can examine them later
+	_ = os.WriteFile(filename, []byte(msg), 0o644)
+
+	// Print truncated version of msg to slack
+	post := common.NewPostEphemeralAction(
+		c.reportPersonId,
+		c.reportPersonId,
+		msg[:maxLength],
+		false,
+	)
 	c.socket.PostEphemeral(post.ChannelId, post.UserId, post.MsgOption)
 }
 
@@ -107,13 +132,6 @@ func (c *Client) Consume(e event.Event) {
 				err     error
 				newView *slack.ViewResponse
 			)
-
-			/*
-				b, marshallErr := json.Marshal(view.ModalRequest)
-				if marshallErr == nil {
-					slog.Info("Serialized modal request", "req", string(b))
-				}
-			*/
 
 			switch viewAction {
 			case event.OpenView:
@@ -143,11 +161,7 @@ func (c *Client) Consume(e event.Event) {
 				details := newView.ResponseMetadata.Messages
 				slog.Error("", "action", actionName, "err", err, "details", details)
 
-				jsonRequest, marshallErr := json.MarshalIndent(
-					&view.ModalRequest,
-					"",
-					"\t",
-				)
+				jsonRequest, marshallErr := json.Marshal(&view.ModalRequest)
 				var jsonRequestStr string
 				if marshallErr == nil {
 					jsonRequestStr = string(jsonRequest)

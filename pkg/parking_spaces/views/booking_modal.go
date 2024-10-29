@@ -2,6 +2,8 @@ package views
 
 import (
 	"fmt"
+	"log"
+	"math"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -16,9 +18,16 @@ const (
 	ReserveParkingActionId     = "reserveParking"
 	ReleaseParkingActionId     = "releaseParking"
 	TempReleaseParkingActionId = "tempReleaseParking"
+	PagingActionId             = "pagingActionId"
+	PagingOptionId             = "pagingOptionId"
 	ShowActionId               = "showActionId"
 	ShowOptionId               = "showOptionId"
 	SwitchToPersonalViewId     = "switchToPersonalView"
+)
+
+const (
+	numSpacesPerPage = 5
+	DefaultPageNum   = 1
 )
 
 type Booking struct {
@@ -35,7 +44,11 @@ func NewBooking(identifier string, managerData *model.ParkingData) *Booking {
 	}
 }
 
-func (b *Booking) Generate(userId string, errorTxt string) slack.ModalViewRequest {
+func (b *Booking) Generate(
+	userId string,
+	selectedPage int,
+	errorTxt string,
+) slack.ModalViewRequest {
 	selectedFloor := b.data.DefaultFloor
 	selected, ok := b.data.SelectedFloor[userId]
 	if ok {
@@ -47,6 +60,7 @@ func (b *Booking) Generate(userId string, errorTxt string) slack.ModalViewReques
 		userId,
 		selectedFloor,
 		selectedShowTaken,
+		selectedPage,
 		errorTxt,
 	)
 	return common.GenerateInfoModalRequest(b.Title, spacesSectionBlocks)
@@ -225,7 +239,10 @@ func generateParkingPlanBlocks() []slack.Block {
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
 func (b *Booking) generateParkingInfoBlocks(
-	userId, selectedFloor string, selectedShowTaken bool, errorTxt string,
+	userId, selectedFloor string,
+	selectedShowTaken bool,
+	selectedPage int,
+	errorTxt string,
 ) []slack.Block {
 	allBlocks := []slack.Block{}
 
@@ -262,10 +279,18 @@ func (b *Booking) generateParkingInfoBlocks(
 	}
 	spaces := b.data.ParkingLot.GetSpacesByFloor(userId, selectedFloor, selectedSpaceType)
 
+	if selectedPage < 1 {
+		log.Fatalf("unexpected page %d, page range [1, X]", selectedPage)
+	}
+
 	parkingSpaceSections := b.generateParkingInfo(spaces)
 
-	for idx, space := range spaces {
-		sectionBlock := parkingSpaceSections[idx]
+	for i := (selectedPage - 1) * numSpacesPerPage; i < selectedPage*numSpacesPerPage; i++ {
+		if i >= len(spaces) {
+			break
+		}
+		space := spaces[i]
+		sectionBlock := parkingSpaceSections[i]
 		allBlocks = append(allBlocks, sectionBlock)
 
 		// Handle special case where user is browsing full spaces list and
@@ -293,6 +318,9 @@ func (b *Booking) generateParkingInfoBlocks(
 		}
 		allBlocks = append(allBlocks, div)
 	}
+
+	pagingBlocks := generatePagingButtons(len(spaces))
+	allBlocks = append(allBlocks, pagingBlocks...)
 
 	return allBlocks
 }
@@ -404,4 +432,45 @@ func generateSwitchPersonalButton(modalType ModalType) *slack.ActionBlock {
 	)
 	actionBlock := slack.NewActionBlock("", switchPersonalBtn)
 	return actionBlock
+}
+
+func generatePagingButtons(numSpaces int) []slack.Block {
+	var allBlocks []slack.Block
+
+	// Options
+	var optionBlocks []*slack.OptionBlockObject
+
+	for i := 1; i <= int(math.Ceil(float64(numSpaces)/float64(numSpacesPerPage))); i++ {
+		optionValue := fmt.Sprintf("%d", i)
+		optionTxt := "Page " + optionValue
+		optionBlock := slack.NewOptionBlockObject(
+			optionValue,
+			slack.NewTextBlockObject("plain_text", optionTxt, false, false),
+			slack.NewTextBlockObject("plain_text", " ", false, false),
+		)
+
+		optionBlocks = append(optionBlocks, optionBlock)
+	}
+
+	selectedOption := "Page 1"
+
+	// Text shown as title when option box is opened/expanded
+	optionLabel := slack.NewTextBlockObject("plain_text", "Choose page", false, false)
+	// Default option shown for option box
+	defaultOption := slack.NewTextBlockObject("plain_text", selectedOption, false, false)
+
+	optionGroupBlockObject := slack.NewOptionGroupBlockElement(
+		optionLabel,
+		optionBlocks...)
+	newOptionsGroupSelectBlockElement := slack.NewOptionsGroupSelectBlockElement(
+		"static_select",
+		defaultOption,
+		PagingOptionId,
+		optionGroupBlockObject,
+	)
+
+	actionBlock := slack.NewActionBlock(PagingActionId, newOptionsGroupSelectBlockElement)
+	allBlocks = append(allBlocks, actionBlock)
+
+	return allBlocks
 }
