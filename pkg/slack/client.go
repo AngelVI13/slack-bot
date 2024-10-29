@@ -187,33 +187,37 @@ func (c *Client) Consume(e event.Event) {
 				post.UserId,
 				post.MsgOption,
 			)
-			msgTxt := fmt.Sprintf(
-				"Slack post ephemeral error.\nUser: %s\nActions: %s\nTimestamp: %s\nError:%s\nTxt: %s\nChannelId: %s\n",
-				e.User(),
-				event.ResponseActionNames[post.Action()],
-				timestamp,
-				err,
-				post.Txt,
-				post.ChannelId,
-			)
-			c.ReportError(msgTxt)
+			if err != nil {
+				msgTxt := fmt.Sprintf(
+					"Slack post ephemeral error.\nUser: %s\nActions: %s\nTimestamp: %s\nError:%s\nTxt: %s\nChannelId: %s\n",
+					e.User(),
+					event.ResponseActionNames[post.Action()],
+					timestamp,
+					err,
+					post.Txt,
+					post.ChannelId,
+				)
+				c.ReportError(msgTxt)
+			}
 		case event.Post:
 			post := action.(*common.PostAction)
 			respChannel, respTimestamp, err := c.socket.PostMessage(
 				post.ChannelId,
 				post.MsgOption,
 			)
-			msgTxt := fmt.Sprintf(
-				"Slack post error.\nUser: %s\nAction: %s\nRespChannel: %s\nTimestamp: %s\nError:%s\nTxt: %s\nChannelId: %s\n",
-				e.User(),
-				event.ResponseActionNames[post.Action()],
-				respChannel,
-				respTimestamp,
-				err,
-				post.Txt,
-				post.ChannelId,
-			)
-			c.ReportError(msgTxt)
+			if err != nil {
+				msgTxt := fmt.Sprintf(
+					"Slack post error.\nUser: %s\nAction: %s\nRespChannel: %s\nTimestamp: %s\nError:%s\nTxt: %s\nChannelId: %s\n",
+					e.User(),
+					event.ResponseActionNames[post.Action()],
+					respChannel,
+					respTimestamp,
+					err,
+					post.Txt,
+					post.ChannelId,
+				)
+				c.ReportError(msgTxt)
+			}
 		default:
 			slog.Error("Unsupported action", "action", action.Action())
 			c.ReportError(
