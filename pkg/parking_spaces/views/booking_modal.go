@@ -451,6 +451,9 @@ func generatePagingButtons(numSpaces int) []slack.Block {
 
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
+	if len(optionBlocks) == 0 {
+		return allBlocks
+	}
 
 	selectedOption := "Page 1"
 
