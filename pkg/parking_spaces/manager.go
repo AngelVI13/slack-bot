@@ -420,8 +420,6 @@ func (m *Manager) handleTempReleaseParking(
 		data.ViewId,
 		data.UserName,
 		data.UserId,
-		chosenParkingSpace.ReservedBy,
-		chosenParkingSpace.ReservedById,
 		chosenParkingSpace,
 	)
 	// If we can't add a space for temporary release queue it likely means that someone

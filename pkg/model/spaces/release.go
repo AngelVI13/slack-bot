@@ -260,12 +260,34 @@ func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {
 func (q ReleaseMap) Add(
 	viewId,
 	releaserName,
-	releaserId,
-	ownerName,
-	ownerId string,
+	releaserId string,
 	space *Space,
 ) (*ReleaseInfo, error) {
 	spaceKey := space.Key()
+
+	pool, found := q[spaceKey]
+	if !found {
+		pool = NewReleasePool()
+		q[spaceKey] = pool
+	}
+
+	// NOTE: if there is an active release then take the owner from that.
+	// This is to prevent the following situation
+	// 1. Person A temporary releases their space X
+	// 2. While space X is temporary released Person B temporary reserves it
+	// 3. While space X is temporary reserved by Person B, Person A adds an
+	// additional temporary release
+	// The following logic ensures that the owner will be taken from the original
+	// release and not from the current temporary reserver of the space
+	ownerName := space.ReservedBy
+	ownerId := space.ReservedById
+
+	active := pool.Active()
+	if active != nil {
+		ownerName = active.OwnerName
+		ownerId = active.OwnerId
+	}
+
 	slog.Info("Adding to release map",
 		"space",
 		spaceKey,
@@ -281,11 +303,6 @@ func (q ReleaseMap) Add(
 		OwnerId:    ownerId,
 		Space:      space,
 		Submitted:  false,
-	}
-
-	_, found := q[spaceKey]
-	if !found {
-		q[spaceKey] = NewReleasePool()
 	}
 
 	q[spaceKey].Put(releaseInfo)
