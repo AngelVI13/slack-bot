@@ -18,7 +18,10 @@ const (
 
 var usersManagementTitle = Identifier + "Settings"
 
-func (m *Manager) generateUsersModalRequest(command event.Event, selectedUserId string) slack.ModalViewRequest {
+func (m *Manager) generateUsersModalRequest(
+	command event.Event,
+	selectedUserId string,
+) slack.ModalViewRequest {
 	sectionBlocks := m.generateUsersBlocks(selectedUserId)
 	return common.GenerateModalRequest(usersManagementTitle, sectionBlocks)
 }
@@ -35,7 +38,11 @@ func (m *Manager) generateUsersBlocks(selectedUserId string) []slack.Block {
 	allBlocks = append(allBlocks, div)
 
 	userText := slack.NewTextBlockObject(slack.PlainTextType, "User", false, false)
-	userOption := slack.NewOptionsSelectBlockElement(slack.OptTypeUser, userText, userActionId)
+	userOption := slack.NewOptionsSelectBlockElement(
+		slack.OptTypeUser,
+		userText,
+		userActionId,
+	)
 	if selectedUserId != defaultUserOption {
 		userOption.InitialUser = selectedUserId
 	}
@@ -60,25 +67,43 @@ func (m *Manager) generateUsersBlocks(selectedUserId string) []slack.Block {
 	adminOptionSectionBlock := slack.NewOptionBlockObject(
 		userRightsOption,
 		slack.NewTextBlockObject("mrkdwn", "Admin", false, false),
-		slack.NewTextBlockObject("mrkdwn", "Select to assign Admin rights.", false, false),
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			"Select to assign Admin rights.",
+			false,
+			false,
+		),
 	)
 	hasParkingOptionSectionBlock := slack.NewOptionBlockObject(
 		userPermanentSpaceOption,
 		slack.NewTextBlockObject("mrkdwn", "Permanent Space", false, false),
-		slack.NewTextBlockObject("mrkdwn", "Select to assign permanent space.", false, false),
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			"Select to assign permanent space.",
+			false,
+			false,
+		),
 	)
 
-	sectionBlocks = append(sectionBlocks, adminOptionSectionBlock, hasParkingOptionSectionBlock)
+	sectionBlocks = append(
+		sectionBlocks,
+		adminOptionSectionBlock,
+		hasParkingOptionSectionBlock,
+	)
 
-	deviceCheckboxGroup := slack.NewCheckboxGroupsBlockElement(userOptionId, sectionBlocks...)
+	deviceCheckboxGroup := slack.NewCheckboxGroupsBlockElement(
+		userOptionId,
+		sectionBlocks...)
 
-	if selectedUserId != defaultUserOption && m.userManager.IsAdminId(selectedUserId) {
+	if selectedUserId != defaultUserOption &&
+		m.data.UserManager.IsAdminId(selectedUserId) {
 		deviceCheckboxGroup.InitialOptions = append(
 			deviceCheckboxGroup.InitialOptions, adminOptionSectionBlock,
 		)
 	}
 
-	if selectedUserId != defaultUserOption && m.userManager.HasParkingById(selectedUserId) {
+	if selectedUserId != defaultUserOption &&
+		m.data.UserManager.HasParkingById(selectedUserId) {
 		deviceCheckboxGroup.InitialOptions = append(
 			deviceCheckboxGroup.InitialOptions, hasParkingOptionSectionBlock,
 		)

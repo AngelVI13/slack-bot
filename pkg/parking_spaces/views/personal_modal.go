@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
-	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
+	parkingModel "github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
 	"github.com/slack-go/slack"
 )
 
@@ -19,11 +19,11 @@ const (
 
 type Personal struct {
 	Title string
-	data  *model.Data
+	data  *parkingModel.ParkingData
 	Type  ModalType
 }
 
-func NewPersonal(identifier string, managerData *model.Data) *Personal {
+func NewPersonal(identifier string, managerData *parkingModel.ParkingData) *Personal {
 	return &Personal{
 		Title: identifier + "Personal",
 		data:  managerData,
@@ -229,8 +229,12 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 
 	for _, release := range releases {
 		releaseBlock := generateTemporaryReleaseBlock(release)
-		cancelBtn := generateCancelReleaseButton(space, release.UniqueId, p.Type)
-		allBlocks = append(allBlocks, releaseBlock, cancelBtn)
+		allBlocks = append(allBlocks, releaseBlock)
+
+		if !release.Cancelled {
+			cancelBtn := generateCancelReleaseButton(space, release.UniqueId, p.Type)
+			allBlocks = append(allBlocks, cancelBtn)
+		}
 	}
 
 	return allBlocks

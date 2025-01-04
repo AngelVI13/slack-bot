@@ -6,8 +6,8 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
 	"github.com/slack-go/slack"
 )
 
@@ -21,11 +21,9 @@ const (
 )
 
 var (
-	floors             = [...]string{"4th floor"}
-	defaultFloorOption = floors[0]
-	showOptions        = [2]string{"Free", "Taken"}
-	showFreeOption     = showOptions[0]
-	showTakenOption    = showOptions[1]
+	showOptions     = [2]string{"Free", "Taken"}
+	showFreeOption  = showOptions[0]
+	showTakenOption = showOptions[1]
 )
 
 var workspaceBookingTitle = Identifier + "Booking"
@@ -74,7 +72,7 @@ func (m *Manager) generateParkingButtons(
 ) []slack.BlockElement {
 	var buttons []slack.BlockElement
 
-	isAdminUser := m.userManager.IsAdminId(userId)
+	isAdminUser := m.data.UserManager.IsAdminId(userId)
 
 	if space.Reserved && (space.ReservedById == userId || isAdminUser) {
 		releaseButton := slack.NewButtonBlockElement(
@@ -85,7 +83,7 @@ func (m *Manager) generateParkingButtons(
 		releaseButton = releaseButton.WithStyle(slack.StyleDanger)
 		buttons = append(buttons, releaseButton)
 	} else if (!space.Reserved &&
-		!m.workspacesLot.HasSpace(userId) &&
+		!m.data.WorkspacesLot.HasSpace(userId) &&
 		!isAdminUser) || (!space.Reserved && isAdminUser) {
 		// Only allow user to reserve space if he hasn't already reserved one
 		actionButtonText := "Reserve!"
@@ -157,7 +155,12 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	div := slack.NewDividerBlock()
 	allBlocks = append(allBlocks, div)
 
-	spaces := m.workspacesLot.GetSpacesByFloor(userId, selectedFloor, selectedShowTaken)
+	selectedSpaceType := spaces.SpaceFree
+	if selectedShowTaken {
+		selectedSpaceType = spaces.SpaceTaken
+	}
+	spaces := m.data.WorkspacesLot.
+		GetSpacesByFloor(userId, selectedFloor, selectedSpaceType)
 	workspaceSections := m.generateSpacesInfo(spaces)
 
 	for idx, space := range spaces {
@@ -181,7 +184,12 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	for _, floor := range floors {
+	allFloors := m.data.WorkspacesLot.GetAllFloors()
+	if len(allFloors) == 0 {
+		return allBlocks
+	}
+
+	for _, floor := range allFloors {
 		optionBlock := slack.NewOptionBlockObject(
 			floor,
 			slack.NewTextBlockObject("plain_text", floor, false, false),
@@ -190,7 +198,7 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
 
-	selectedFloor := defaultFloorOption
+	selectedFloor := m.defaultFloorOption
 	selected, ok := m.selectedFloor[userId]
 	if ok {
 		selectedFloor = selected

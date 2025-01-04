@@ -1,5 +1,10 @@
 package event
 
+import (
+	"log"
+	"slices"
+)
+
 type Consumer interface {
 	Consume(Event)
 }
@@ -37,6 +42,13 @@ func (em *EventManager) Subscribe(consumer Consumer, eventTypes ...EventType) {
 }
 
 func (em *EventManager) subscribe(consumer ConsumerWithContext, eventTypes ...EventType) {
+	if slices.Contains(eventTypes, AnyEvent) && len(eventTypes) > 1 {
+		log.Fatalf(
+			"Can't mix specific events with AnyEvent type: %s :: %v",
+			consumer.Context(),
+			eventTypes,
+		)
+	}
 	for _, eventType := range eventTypes {
 		if _, ok := em.subscribers[eventType]; !ok {
 			em.subscribers[eventType] = []ConsumerWithContext{}
@@ -48,7 +60,10 @@ func (em *EventManager) subscribe(consumer ConsumerWithContext, eventTypes ...Ev
 
 // SubscribeWithContext Subscribe for events of the chosen type provided they also
 // contain the expected context (Context()).
-func (em *EventManager) SubscribeWithContext(consumer ConsumerWithContext, eventTypes ...EventType) {
+func (em *EventManager) SubscribeWithContext(
+	consumer ConsumerWithContext,
+	eventTypes ...EventType,
+) {
 	em.subscribe(consumer, eventTypes...)
 }
 

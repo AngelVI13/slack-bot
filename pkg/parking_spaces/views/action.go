@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
 )
 
 type ActionValues struct {

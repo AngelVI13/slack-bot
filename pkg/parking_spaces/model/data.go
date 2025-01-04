@@ -1,16 +1,13 @@
 package model
 
 import (
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
-	"github.com/AngelVI13/slack-bot/pkg/user"
+	"github.com/AngelVI13/slack-bot/pkg/model"
 )
 
 var (
-	Floors             = [3]string{"-2nd floor", "-1st floor", "1st floor"}
-	DefaultFloorOption = Floors[0]
-	ShowOptions        = [2]string{"Free", "Taken"}
-	ShowFreeOption     = ShowOptions[0]
-	ShowTakenOption    = ShowOptions[1]
+	ShowOptions     = [2]string{"Free", "Taken"}
+	ShowFreeOption  = ShowOptions[0]
+	ShowTakenOption = ShowOptions[1]
 )
 
 const (
@@ -18,25 +15,29 @@ const (
 	ResetMin  = 0
 )
 
-type Data struct {
-	ParkingLot        *spaces.SpacesLot
-	UserManager       *user.Manager
+type ParkingData struct {
+	*model.Data
 	SelectedFloor     map[string]string
 	SelectedShowTaken map[string]bool
+	DefaultFloor      string
 }
 
-func NewData(filename string, userManager *user.Manager) *Data {
-	parkingLot := spaces.GetSpacesLot(filename)
-	return &Data{
-		UserManager:       userManager,
-		ParkingLot:        &parkingLot,
+func NewParkingData(data *model.Data) *ParkingData {
+	allFloors := data.ParkingLot.GetAllFloors()
+	defaultFloor := ""
+	if len(allFloors) > 0 {
+		defaultFloor = allFloors[0]
+	}
+	return &ParkingData{
+		Data:              data,
 		SelectedFloor:     map[string]string{},
 		SelectedShowTaken: map[string]bool{},
+		DefaultFloor:      defaultFloor,
 	}
 }
 
-func (d *Data) SetDefaultFloorIfMissing(userId, floor string) {
+func (d *ParkingData) SetDefaultFloorIfMissing(userId string) {
 	if _, ok := d.SelectedFloor[userId]; !ok {
-		d.SelectedFloor[userId] = floor
+		d.SelectedFloor[userId] = d.DefaultFloor
 	}
 }

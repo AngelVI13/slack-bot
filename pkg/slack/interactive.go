@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"log"
 	"log/slog"
 	"strings"
 
@@ -22,47 +23,84 @@ func (i *Interaction) HasContext(c string) bool {
 	return strings.Contains(i.Title, c)
 }
 
-func (i *Interaction) IValue(blockId, actionId string) string {
-	values := i.Values[blockId][actionId]
+func (i *Interaction) IValueString(blockId, actionId string) string {
+	values := i.IValue(blockId, actionId)
+	return strings.Join(values, ",")
+}
+
+func (i *Interaction) IValueSingle(blockId, actionId string) string {
+	values := i.IValue(blockId, actionId)
+	if len(values) != 1 {
+		log.Fatalf(
+			"expected 1 value but got many: blockId=%s actionId=%s: values=%v",
+			blockId,
+			actionId,
+			values,
+		)
+	}
+
+	return values[0]
+}
+
+func (i *Interaction) IValue(blockId, actionId string) []string {
+	var values slack.BlockAction
+	if blockId == "" {
+		// incase element is provided as attachment object then it has a randomly
+		// provided blockId -> search through all of them and select the one which has
+		// the same expected actionId
+		var found bool
+		for _, v := range i.Values {
+			values, found = v[actionId]
+			if found {
+				break
+			}
+		}
+	} else {
+		values = i.Values[blockId][actionId]
+	}
 
 	if values.Value != "" {
-		return values.Value
+		return []string{values.Value}
 	} else if values.SelectedOption.Value != "" {
-		return values.SelectedOption.Value
+		return []string{values.SelectedOption.Value}
 	} else if len(values.SelectedOptions) > 0 {
 		var out []string
 		for _, v := range values.SelectedOptions {
 			out = append(out, v.Value)
 		}
-		return strings.Join(out, ",")
+		return out
 	} else if values.SelectedUser != "" {
-		return values.SelectedUser
+		return []string{values.SelectedUser}
 	} else if len(values.SelectedUsers) > 0 {
-		return strings.Join(values.SelectedUsers, ",")
+		return values.SelectedUsers
 	} else if values.SelectedChannel != "" {
-		return values.SelectedChannel
+		return []string{values.SelectedChannel}
 	} else if len(values.SelectedChannels) > 0 {
-		return strings.Join(values.SelectedChannels, ",")
+		return values.SelectedChannels
 	} else if values.SelectedConversation != "" {
-		return values.SelectedConversation
+		return []string{values.SelectedConversation}
 	} else if len(values.SelectedConversations) > 0 {
-		return strings.Join(values.SelectedConversations, ",")
+		return values.SelectedConversations
 	} else if values.SelectedDate != "" {
-		return values.SelectedDate
+		return []string{values.SelectedDate}
 	} else if values.SelectedTime != "" {
-		return values.SelectedTime
+		return []string{values.SelectedTime}
 	}
-	return ""
+	return nil
 }
 
 func (i *Interaction) ActionInfo() map[string]string {
+	// TODO: verify that this new way of getting values works the same as before
 	out := map[string]string{}
-	for _, action := range i.Actions {
-		value := i.IValue(action.BlockID, action.ActionID)
-		if value == "" {
-			value = action.Value
+	for blockId, valMap := range i.Values {
+		for actionId := range valMap {
+			value := i.IValueString(blockId, actionId)
+			if value == "" {
+				value = valMap[actionId].Value
+			}
+
+			out[actionId] = value
 		}
-		out[action.ActionID] = value
 	}
 
 	return out
@@ -79,6 +117,7 @@ func (v *ViewSubmission) Type() event.EventType {
 func (v *ViewSubmission) Info() map[string]any {
 	return map[string]any{
 		"title": v.Title,
+		"info":  v.ActionInfo(),
 	}
 }
 

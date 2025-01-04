@@ -5,10 +5,10 @@ import (
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/model"
+	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
-	"github.com/AngelVI13/slack-bot/pkg/spaces"
-	"github.com/AngelVI13/slack-bot/pkg/user"
 	"github.com/slack-go/slack"
 )
 
@@ -26,27 +26,30 @@ const (
 )
 
 type Manager struct {
-	eventManager  *event.EventManager
-	userManager   *user.Manager
-	workspacesLot *spaces.SpacesLot
-	slackClient   *slack.Client
+	eventManager *event.EventManager
+	data         *model.Data
+	slackClient  *slack.Client
 
-	selectedFloor     map[string]string
-	selectedShowTaken map[string]bool
+	selectedFloor      map[string]string
+	selectedShowTaken  map[string]bool
+	defaultFloorOption string
 }
 
 func NewManager(
 	eventManager *event.EventManager,
-	userManager *user.Manager,
-	filename string,
+	data *model.Data,
 ) *Manager {
-	worspacesLot := spaces.GetSpacesLot(filename)
+	allFloors := data.WorkspacesLot.GetAllFloors()
+	defaultFloorOption := ""
+	if len(allFloors) > 0 {
+		defaultFloorOption = allFloors[0]
+	}
 	return &Manager{
-		eventManager:      eventManager,
-		userManager:       userManager,
-		workspacesLot:     &worspacesLot,
-		selectedFloor:     map[string]string{},
-		selectedShowTaken: map[string]bool{},
+		eventManager:       eventManager,
+		data:               data,
+		selectedFloor:      map[string]string{},
+		selectedShowTaken:  map[string]bool{},
+		defaultFloorOption: defaultFloorOption,
 	}
 }
 
@@ -83,7 +86,7 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		slog.Info("ReleaseWorkspaces")
-		m.workspacesLot.ReleaseSpaces(data.Time)
+		m.data.WorkspacesLot.ReleaseSpaces(data.Time)
 	}
 }
 
@@ -93,7 +96,7 @@ func (m *Manager) Context() string {
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
-	selectedFloor := defaultFloorOption
+	selectedFloor := m.defaultFloorOption
 	selected, ok := m.selectedFloor[data.UserId]
 	if ok {
 		selectedFloor = selected
@@ -115,7 +118,7 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	var actions []event.ResponseAction
 
 	if _, ok := m.selectedFloor[data.UserId]; !ok {
-		m.selectedFloor[data.UserId] = defaultFloorOption
+		m.selectedFloor[data.UserId] = m.defaultFloorOption
 	}
 
 	for _, action := range data.Actions {
@@ -187,7 +190,7 @@ func (m *Manager) handleReserveWorkspace(
 ) []event.ResponseAction {
 	autoRelease := true // by default workspace reservation is always with auto release
 
-	errStr := m.workspacesLot.Reserve(
+	errStr := m.data.WorkspacesLot.Reserve(
 		workSpace,
 		data.UserName,
 		data.UserId,
@@ -219,7 +222,8 @@ func (m *Manager) handleReleaseWorkspace(
 	actions := []event.ResponseAction{}
 
 	// Handle general case: normal user releasing a space
-	victimId, errStr := m.workspacesLot.Release(workSpace, data.UserName, data.UserId)
+	victimId, errStr := m.data.WorkspacesLot.
+		Release(workSpace, data.UserName, data.UserId)
 	if victimId != "" {
 		slog.Info(errStr)
 		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
@@ -227,8 +231,8 @@ func (m *Manager) handleReleaseWorkspace(
 	}
 
 	// Only remove release info from a space if an Admin is permanently releasing the space
-	if m.userManager.IsAdminId(data.UserId) {
-		m.workspacesLot.ToBeReleased.RemoveAllReleases(workSpace)
+	if m.data.UserManager.IsAdminId(data.UserId) {
+		m.data.WorkspacesLot.ToBeReleased.RemoveAllReleases(workSpace)
 	}
 
 	errTxt := ""
