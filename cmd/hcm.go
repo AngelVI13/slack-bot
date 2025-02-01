@@ -10,21 +10,17 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var HCMUrl = "https://qdev.hcm.lt:6578"
-
-func listOfAllEmployees(token string) string {
-	endpoint := "/ext/api/v1/employees"
-	return makeRequest(endpoint, token)
+func listOfAllEmployees(url, token string) string {
+	fullUrl := url + "/ext/api/v1/employees"
+	return makeRequest(fullUrl, token)
 }
 
-func vacationsOfAllEmployees(token string) string {
-	endpoint := "/ext/api/v1/employees/periods"
-	return makeRequest(endpoint, token)
+func vacationsOfAllEmployees(url, token string) string {
+	fullUrl := url + "/ext/api/v1/employees/periods"
+	return makeRequest(fullUrl, token)
 }
 
-func makeRequest(endpoint string, token string) string {
-	fullUrl := HCMUrl + endpoint
-
+func makeRequest(fullUrl, token string) string {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {
@@ -55,7 +51,8 @@ func makeRequest(endpoint string, token string) string {
 
 func main() {
 	godotenv.Load(".env")
-	token := os.Getenv("HCM_API_KEY")
-	fmt.Println(listOfAllEmployees(token))
-	fmt.Println(vacationsOfAllEmployees(token))
+	token := os.Getenv("HCM_API_TOKEN")
+	hcmUrl := os.Getenv("HCM_URL")
+	fmt.Println(listOfAllEmployees(hcmUrl, token))
+	fmt.Println(vacationsOfAllEmployees(hcmUrl, token))
 }
