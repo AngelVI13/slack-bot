@@ -92,7 +92,7 @@ func main() {
 	rollManager := roll.NewManager(eventManager)
 	eventManager.Subscribe(rollManager, event.SlashCmdEvent)
 
-	hcmManager := hcm.NewManager(eventManager)
+	hcmManager := hcm.NewManager(eventManager, data, config)
 	eventManager.Subscribe(hcmManager, event.TimerEvent)
 
 	slackClient := slack.NewClient(config, eventManager)
