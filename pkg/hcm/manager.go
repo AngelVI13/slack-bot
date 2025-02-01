@@ -38,7 +38,7 @@ func (m *Manager) Context() string {
 	return HandleHcm
 }
 
-func (m *Manager) handleHcm(data time.Time) *common.Response {
+func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	var actions []event.ResponseAction
 
 	if len(actions) == 0 {
