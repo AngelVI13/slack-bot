@@ -15,8 +15,9 @@ import (
 const (
 	Identifier = "Workspaces: "
 	SlashCmd   = "/workspace"
-	// SlashCmd    = "/test-workspace"
-	ChannelName = "qdev_technologies"
+	// SlashCmd         = "/test-workspace"
+	ChannelNameQDev  = "qdev_technologies"
+	ChannelNameQDigi = "test-qd-bot"
 
 	defaultUserOption = ""
 
@@ -30,26 +31,21 @@ type Manager struct {
 	data         *model.Data
 	slackClient  *slack.Client
 
-	selectedFloor      map[string]string
-	selectedShowTaken  map[string]bool
-	defaultFloorOption string
+	selectedFloor     map[string]string
+	selectedChannel   map[string]string
+	selectedShowTaken map[string]bool
 }
 
 func NewManager(
 	eventManager *event.EventManager,
 	data *model.Data,
 ) *Manager {
-	allFloors := data.WorkspacesLot.GetAllFloors()
-	defaultFloorOption := ""
-	if len(allFloors) > 0 {
-		defaultFloorOption = allFloors[0]
-	}
 	return &Manager{
-		eventManager:       eventManager,
-		data:               data,
-		selectedFloor:      map[string]string{},
-		selectedShowTaken:  map[string]bool{},
-		defaultFloorOption: defaultFloorOption,
+		eventManager:      eventManager,
+		data:              data,
+		selectedFloor:     map[string]string{},
+		selectedChannel:   map[string]string{},
+		selectedShowTaken: map[string]bool{},
 	}
 }
 
@@ -61,7 +57,7 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
-		if data.ChannelName != ChannelName {
+		if !m.isValidChannel(data.ChannelName) {
 			// command is only allowed in a specific channel
 			return
 		}
@@ -96,15 +92,10 @@ func (m *Manager) Context() string {
 
 func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	errorTxt := ""
-	selectedFloor := m.defaultFloorOption
-	selected, ok := m.selectedFloor[data.UserId]
-	if ok {
-		selectedFloor = selected
-	}
+	m.selectedChannel[data.UserId] = data.ChannelName
 	modal := m.generateBookingModalRequest(
 		data,
 		data.UserId,
-		selectedFloor,
 		m.selectedShowTaken[data.UserId],
 		errorTxt,
 	)
@@ -118,7 +109,12 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 	var actions []event.ResponseAction
 
 	if _, ok := m.selectedFloor[data.UserId]; !ok {
-		m.selectedFloor[data.UserId] = m.defaultFloorOption
+		channelName, found := m.selectedChannel[data.UserId]
+		defaultFloorOption := ""
+		if found {
+			defaultFloorOption = m.defaultFloorOption(channelName)
+		}
+		m.selectedFloor[data.UserId] = defaultFloorOption
 	}
 
 	for _, action := range data.Actions {
@@ -130,7 +126,6 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			modal := m.generateBookingModalRequest(
 				data,
 				data.UserId,
-				selectedFloor,
 				m.selectedShowTaken[data.UserId],
 				errorTxt,
 			)
@@ -164,7 +159,6 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			modal := m.generateBookingModalRequest(
 				data,
 				data.UserId,
-				m.selectedFloor[data.UserId],
 				selectedShowOption,
 				errorTxt,
 			)
@@ -200,7 +194,6 @@ func (m *Manager) handleReserveWorkspace(
 	bookingModal := m.generateBookingModalRequest(
 		data,
 		data.UserId,
-		selectedFloor,
 		selectedShowTaken,
 		errStr,
 	)
@@ -239,7 +232,6 @@ func (m *Manager) handleReleaseWorkspace(
 	bookingModal := m.generateBookingModalRequest(
 		data,
 		data.UserId,
-		selectedFloor,
 		selectedShowTaken,
 		errTxt,
 	)
@@ -252,4 +244,32 @@ func (m *Manager) handleReleaseWorkspace(
 	actions = append(actions, action)
 
 	return actions
+}
+
+func (m *Manager) isValidChannel(channelName string) bool {
+	return channelName == ChannelNameQDev || channelName == ChannelNameQDigi
+}
+
+func (m *Manager) floorsForChannel(channelName string) []int {
+	var floors []int
+
+	switch channelName {
+	case ChannelNameQDev:
+		floors = []int{4, 6}
+	case ChannelNameQDigi:
+		floors = []int{5, 7}
+	}
+
+	return floors
+}
+
+func (m *Manager) defaultFloorOption(channelName string) string {
+	floors := m.data.WorkspacesLot.GetExistingFloors(m.floorsForChannel(channelName))
+
+	defaultFloorOption := ""
+	if len(floors) > 0 {
+		defaultFloorOption = floors[0]
+	}
+
+	return defaultFloorOption
 }

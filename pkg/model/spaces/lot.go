@@ -273,6 +273,34 @@ func (d *SpacesLot) GetAllFloors() []string {
 	return floors
 }
 
+// GetExistingFloors Find all existing floors that are present in the allowed
+// floors slice. For example if SpacesLot contains spaces on floors: 4, 5, 7
+// and the list of allowed floors is {4, 6} then this returns only 4th floor as
+// a formatted string.
+func (d *SpacesLot) GetExistingFloors(allowedFloors []int) []string {
+	floorMap := map[int]int{}
+	var floorsNum []int
+	var floors []string
+
+	for _, space := range d.UnitSpaces {
+		if !slices.Contains(allowedFloors, space.Floor) {
+			continue
+		}
+		floorMap[space.Floor] = 1
+	}
+
+	for floor := range floorMap {
+		floorsNum = append(floorsNum, floor)
+	}
+	slices.Sort(floorsNum)
+
+	for _, floor := range floorsNum {
+		floors = append(floors, MakeFloorStr(floor))
+	}
+
+	return floors
+}
+
 func (l *SpacesLot) Reserve(
 	unitSpace SpaceKey,
 	user, userId string,

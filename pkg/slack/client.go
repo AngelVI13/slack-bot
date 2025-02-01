@@ -156,6 +156,22 @@ func (c *Client) Consume(e event.Event) {
 				})
 			}
 
+			if c.socket.Debug() {
+				// TODO: this is duplicated below -> unify?
+				jsonRequest, marshallErr := json.Marshal(&view.ModalRequest)
+				var jsonRequestStr string
+				if marshallErr == nil {
+					jsonRequestStr = string(jsonRequest)
+				} else {
+					// in the case of error while marshalling request json
+					//-> show error in that field
+					jsonRequestStr = marshallErr.Error()
+				}
+				// this uses `fmt` instead of (s)log cause those escape the
+				// json & its hard to parse it
+				fmt.Println("ModalRequest", jsonRequestStr)
+			}
+
 			if err != nil {
 				actionName := event.ResponseActionNames[action.Action()]
 				details := newView.ResponseMetadata.Messages

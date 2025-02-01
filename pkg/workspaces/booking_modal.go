@@ -2,6 +2,7 @@ package workspaces
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -30,11 +31,10 @@ var workspaceBookingTitle = Identifier + "Booking"
 
 func (m *Manager) generateBookingModalRequest(
 	command event.Event,
-	userId, selectedFloor string, selectedFloorTaken bool, errorTxt string,
+	userId string, selectedFloorTaken bool, errorTxt string,
 ) slack.ModalViewRequest {
 	spacesSectionBlocks := m.generateWorkspaceInfoBlocks(
 		userId,
-		selectedFloor,
 		selectedFloorTaken,
 		errorTxt,
 	)
@@ -66,7 +66,7 @@ func (m *Manager) generateSpacesInfo(spaces spaces.SpacesInfo) []slack.Block {
 	return sections
 }
 
-func (m *Manager) generateParkingButtons(
+func (m *Manager) generateWorkspaceButtons(
 	space *spaces.Space,
 	userId string,
 ) []slack.BlockElement {
@@ -127,9 +127,31 @@ func generateWorkspaceTimeBlocks() []slack.Block {
 	}
 }
 
+func (m *Manager) generateNoWorkspacesBlocks(userId string) []slack.Block {
+	selectedChannel := m.selectedChannel[userId]
+	floors := m.floorsForChannel(selectedChannel)
+
+	noWorkspacesBlock := slack.NewSectionBlock(
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			fmt.Sprintf(
+				"_No existing workspaces for the following floors: %v_",
+				floors,
+			),
+			false,
+			false,
+		),
+		nil,
+		nil,
+	)
+	return []slack.Block{
+		noWorkspacesBlock,
+	}
+}
+
 // generateWorkspaceInfoBlocks Generates space block objects to be used as elements in modal
 func (m *Manager) generateWorkspaceInfoBlocks(
-	userId, selectedFloor string, selectedShowTaken bool, errorTxt string,
+	userId string, selectedShowTaken bool, errorTxt string,
 ) []slack.Block {
 	allBlocks := []slack.Block{}
 
@@ -137,6 +159,9 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	allBlocks = append(allBlocks, descriptionBlocks...)
 
 	floorOptionBlocks := m.generateFloorOptions(userId)
+	if len(floorOptionBlocks) == 0 {
+		return m.generateNoWorkspacesBlocks(userId)
+	}
 	allBlocks = append(allBlocks, floorOptionBlocks...)
 
 	showOptionBlocks := m.generateFreeTakenOptions(userId)
@@ -159,13 +184,14 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	if selectedShowTaken {
 		selectedSpaceType = spaces.SpaceTaken
 	}
+	selectedFloor := m.selectedFloorByChannel(userId)
 	spaces := m.data.WorkspacesLot.
 		GetSpacesByFloor(userId, selectedFloor, selectedSpaceType)
 	workspaceSections := m.generateSpacesInfo(spaces)
 
 	for idx, space := range spaces {
 		sectionBlock := workspaceSections[idx]
-		buttons := m.generateParkingButtons(space, userId)
+		buttons := m.generateWorkspaceButtons(space, userId)
 
 		allBlocks = append(allBlocks, sectionBlock)
 		if len(buttons) > 0 {
@@ -178,13 +204,32 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	return allBlocks
 }
 
+// TODO: this has a bad name. It is using userId to find out what channel the
+// person selected and based on that to return his selected floor
+func (m *Manager) selectedFloorByChannel(userId string) string {
+	selectedChannel := m.selectedChannel[userId]
+	allowedFloors := m.floorsForChannel(selectedChannel)
+	allFloors := m.data.WorkspacesLot.GetExistingFloors(allowedFloors)
+
+	selectedFloor := m.defaultFloorOption(selectedChannel)
+
+	selected, ok := m.selectedFloor[userId]
+	if ok && slices.Contains(allFloors, selected) {
+		selectedFloor = selected
+	}
+
+	return selectedFloor
+}
+
 func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 	var allBlocks []slack.Block
 
 	// Options
 	var optionBlocks []*slack.OptionBlockObject
 
-	allFloors := m.data.WorkspacesLot.GetAllFloors()
+	selectedChannel := m.selectedChannel[userId]
+	allowedFloors := m.floorsForChannel(selectedChannel)
+	allFloors := m.data.WorkspacesLot.GetExistingFloors(allowedFloors)
 	if len(allFloors) == 0 {
 		return allBlocks
 	}
@@ -198,9 +243,10 @@ func (m *Manager) generateFloorOptions(userId string) []slack.Block {
 		optionBlocks = append(optionBlocks, optionBlock)
 	}
 
-	selectedFloor := m.defaultFloorOption
+	selectedFloor := m.defaultFloorOption(selectedChannel)
+
 	selected, ok := m.selectedFloor[userId]
-	if ok {
+	if ok && slices.Contains(allFloors, selected) {
 		selectedFloor = selected
 	}
 
