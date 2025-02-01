@@ -10,6 +10,7 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/edit_parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/edit_workspaces"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/hcm"
 	"github.com/AngelVI13/slack-bot/pkg/model"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/parking_users"
@@ -47,6 +48,16 @@ func addTimerEvents(ev *event.EventManager) {
 		workspaces.ResetMin,
 		workspaces.ResetWorkspaces,
 	)
+	// TODO: should this only be checked once per day??
+	handleHcmBookingTimer := event.NewTimer(ev)
+	// NOTE: this is on purpose set to 1 hour earlier than the parking spaces
+	// reset. it makes sure that any new releases added by this manager are
+	// handled automatically when the parking reset is hit.
+	handleHcmBookingTimer.AddDaily(
+		parking_spaces.ResetHour-1,
+		parking_spaces.ResetMin,
+		hcm.HandleHcm,
+	)
 }
 
 func main() {
@@ -80,6 +91,9 @@ func main() {
 
 	rollManager := roll.NewManager(eventManager)
 	eventManager.Subscribe(rollManager, event.SlashCmdEvent)
+
+	hcmManager := hcm.NewManager(eventManager)
+	eventManager.Subscribe(hcmManager, event.TimerEvent)
 
 	slackClient := slack.NewClient(config, eventManager)
 	eventManager.Subscribe(slackClient, event.ResponseEvent)
