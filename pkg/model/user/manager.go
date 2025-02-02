@@ -22,6 +22,7 @@ type User struct {
 	Id                  string
 	Rights              AccessRight
 	HasPermanentParking bool `json:"has_parking"`
+	HcmId               int
 }
 
 type UsersMap map[string]*User
@@ -111,7 +112,7 @@ func (m *Manager) InsertUser(userId, userName string) error {
 		return fmt.Errorf("UserName (%s) already exists", userName)
 	}
 
-	m.users[userName] = &User{Id: userId}
+	m.users[userName] = &User{Id: userId, HcmId: -1}
 	return nil
 }
 
@@ -140,4 +141,35 @@ func (m *Manager) GetNameFromId(userId string) string {
 		}
 	}
 	return ""
+}
+
+func (m *Manager) AllUserNames() []string {
+	var users []string
+
+	for name := range m.users {
+		users = append(users, name)
+	}
+	return users
+}
+
+func (m *Manager) SetHcmId(userName string, hcmId int) error {
+	// m.users[userName].HcmId = hcmId
+	user, found := m.users[userName]
+	if !found {
+		return fmt.Errorf("failed to find user by username: %q", userName)
+	}
+
+	user.HcmId = hcmId
+	return nil
+}
+
+func (m *Manager) UsersWithoutHcmId() []string {
+	var users []string
+
+	for name, user := range m.users {
+		if user.HcmId == -1 {
+			users = append(users, name)
+		}
+	}
+	return users
 }

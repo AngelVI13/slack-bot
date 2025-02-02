@@ -62,6 +62,10 @@ func (m *Manager) Context() string {
 func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	var actions []event.ResponseAction
 
+	usersWithoutHcmId := m.data.UserManager.UsersWithoutHcmId()
+	if len(usersWithoutHcmId) > 0 {
+	}
+
 	if len(actions) == 0 {
 		return nil
 	}
@@ -69,11 +73,21 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	return common.NewResponseEvent("HCM", actions...)
 }
 
-func (m *Manager) makeHcmRequest(endpoint string, token string) ([]byte, error) {
-	fullUrl := m.hcmUrl + endpoint
+func (m *Manager) employeesInfo() error {
+	url := m.hcmUrl + ListEmployeesEndpoint
+	b, err := makeHcmRequest(url, m.hcmApiToken)
+	if err != nil {
+		return err
+	}
+	// TODO: continue here
+	_ = b
 
+	return nil
+}
+
+func makeHcmRequest(url string, token string) ([]byte, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
