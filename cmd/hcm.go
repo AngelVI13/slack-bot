@@ -33,7 +33,7 @@ func makeRequest(fullUrl, token string) string {
 	// For lithuanian alphabet special characters whereas json returns the literal characters
 	// Might be easiest if i replace the xml espace codes with `.` and perform a regex search to match
 	// a user in the parking bot users.json
-	req.Header.Set("Accept", "application/json")
+	// req.Header.Set("Accept", "application/json")
 
 	res, err := client.Do(req)
 	if err != nil {
