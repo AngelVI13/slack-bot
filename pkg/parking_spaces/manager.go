@@ -416,26 +416,12 @@ func (m *Manager) handleTempReleaseParking(
 	// this allows us to restore the space to the original user after the temporary release is over.
 	// NOTE: here the current view Id is used to help us later identify which space the release
 	// modal is referring to
-	info, err := m.data.ParkingLot.ToBeReleased.Add(
+	info := m.data.ParkingLot.ToBeReleased.Add(
 		data.ViewId,
 		data.UserName,
 		data.UserId,
 		chosenParkingSpace,
 	)
-	// If we can't add a space for temporary release queue it likely means that someone
-	// is already trying to do the same thing -> show error in modal
-	if err != nil {
-		errTxt := err.Error()
-		bookingModal := m.bookingView.Generate(data.UserId, views.DefaultPageNum, errTxt)
-		action := common.NewUpdateViewAction(
-			data.TriggerId,
-			data.ViewId,
-			bookingModal,
-			errTxt,
-		)
-		actions = append(actions, action)
-		return actions
-	}
 
 	releaseModal := m.releaseView.Generate(chosenParkingSpace, info.Check())
 	action := common.NewPushViewAction(data.TriggerId, releaseModal)

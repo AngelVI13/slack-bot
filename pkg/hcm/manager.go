@@ -80,6 +80,14 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 			errTxt := fmt.Sprintf("Error while trying to obtain employee Ids: %v", err)
 			actions = append(actions, m.reportErrorAction(errTxt))
 		}
+
+		usersWithoutHcmId = m.data.UserManager.UsersWithoutHcmId()
+		actions = append(
+			actions,
+			m.reportErrorAction(
+				fmt.Sprintf("There are users without HCM id's: %v", usersWithoutHcmId),
+			),
+		)
 	}
 
 	vacationInfo, err := m.vacationsInfo()
@@ -89,11 +97,83 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	}
 	fmt.Println(vacationInfo)
 
+	actions = append(actions, m.addVacationReleases(vacationInfo)...)
+
 	if len(actions) == 0 {
 		return nil
 	}
 
 	return common.NewResponseEvent("HCM", actions...)
+}
+
+func (m *Manager) addVacationReleases(
+	vacationInfo VacationData,
+) []event.ResponseAction {
+	var actions []event.ResponseAction
+
+	tomorrowDate := common.TodayDate().AddDate(0, 0, 1)
+
+	for hcmId, vacations := range vacationInfo {
+		userId := m.data.UserManager.GetUserIdFromHcmId(hcmId)
+		if userId == "" {
+			continue
+		}
+
+		space := m.data.ParkingLot.OwnsSpace(userId)
+		if space == nil {
+			continue
+		}
+
+		for _, vacation := range vacations {
+			release := m.data.ParkingLot.ToBeReleased.Add(
+				"hcmViewId",
+				"ParkingBot",
+				"ParkingBotId",
+				space,
+			)
+			release.StartDate = &vacation.StartDay
+			if release.StartDate.Before(tomorrowDate) {
+				// NOTE: we only create requests for the future. so
+				// if a vacation period started 5 days ago and it continues for
+				// 3 more days then here we create the release from tomorrow
+				// till the end of the vacation. This is because this relies
+				// on the automatic release/reserve functionality that happens
+				// in the ParkingLot object (every day at 17:00).
+				release.StartDate = &tomorrowDate
+			}
+			release.EndDate = &vacation.EndDay
+
+			overlaps := m.data.ParkingLot.ToBeReleased.CheckOverlap(release)
+			if len(overlaps) > 0 {
+				m.data.ParkingLot.ToBeReleased.Remove(release)
+				continue
+			}
+
+			release.MarkSubmitted("HCM")
+			slog.Info(
+				"HCM add temporary release",
+				"user", m.data.UserManager.GetNameFromId(userId),
+				"space", space.Key(),
+				"HCM request", vacation.Type,
+				"HCM date range (clamped)", release.DateRange(),
+			)
+			info := fmt.Sprintf(
+				"Parking bot added a temporary release for your space (%s): "+
+					"HCM %s request for %s."+
+					"If that's not correct please contact the system administrator.",
+				space.Key(),
+				vacation.Type,
+				release.DateRange(),
+			)
+			// TODO: send these messages to me during testing!!! change the userId here
+			postAction := common.NewPostEphemeralAction(userId, userId, info, false)
+			actions = append(actions, postAction)
+		}
+	}
+
+	m.data.ParkingLot.SynchronizeToFile()
+
+	return actions
 }
 
 func (m *Manager) reportErrorAction(errTxt string) *common.PostEphemeralAction {
@@ -117,6 +197,7 @@ func (m *Manager) employeesVacations() error {
 }
 
 type Vacation struct {
+	Type     string
 	StartDay time.Time
 	EndDay   time.Time
 }
@@ -172,6 +253,7 @@ func (m *Manager) vacationsInfo() (VacationData, error) {
 				)
 			}
 			currentVacations = append(currentVacations, Vacation{
+				Type:     period.Type,
 				StartDay: startDate,
 				EndDay:   endDate,
 			})
@@ -194,6 +276,7 @@ func (m *Manager) updateEmployeesInfo() error {
 		return fmt.Errorf("failed to unmarshal employees info: %v", err)
 	}
 
+	// TODO: remove these logs after testing
 	users := m.data.UserManager.AllUserNames()
 	slog.Info("users without HCM id", "users", users)
 	for _, employee := range info.Items {
@@ -227,10 +310,6 @@ func (m *Manager) updateEmployeesInfo() error {
 			slog.Info("failed to find user for employee", "employee", name)
 		}
 	}
-	/* TODO: users that are not matched correctly are stored in the names_to_be_corrected.txt
-		   rerun this code with the users_new.json (replace the users.json with it) and
-	       edit the users.json to match the different slack names.
-	*/
 	m.data.UserManager.SynchronizeToFile()
 
 	return nil

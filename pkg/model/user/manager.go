@@ -143,6 +143,15 @@ func (m *Manager) GetNameFromId(userId string) string {
 	return ""
 }
 
+func (m *Manager) GetUserIdFromHcmId(hcmId int) string {
+	for _, user := range m.users {
+		if user.HcmId == hcmId {
+			return user.Id
+		}
+	}
+	return ""
+}
+
 func (m *Manager) AllUserNames() []string {
 	var users []string
 

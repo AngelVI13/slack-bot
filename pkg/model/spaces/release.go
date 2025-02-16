@@ -262,7 +262,7 @@ func (q ReleaseMap) Add(
 	releaserName,
 	releaserId string,
 	space *Space,
-) (*ReleaseInfo, error) {
+) *ReleaseInfo {
 	spaceKey := space.Key()
 
 	pool, found := q[spaceKey]
@@ -306,5 +306,5 @@ func (q ReleaseMap) Add(
 	}
 
 	q[spaceKey].Put(releaseInfo)
-	return releaseInfo, nil
+	return releaseInfo
 }
