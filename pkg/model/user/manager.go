@@ -18,11 +18,20 @@ const (
 	ADMIN
 )
 
+type HcmCompany string
+
+const (
+	HcmQdev    HcmCompany = "Qdev"
+	HcmQuad    HcmCompany = "Quad"
+	HcmUnknown HcmCompany = ""
+)
+
 type User struct {
 	Id                  string
 	Rights              AccessRight
 	HasPermanentParking bool `json:"has_parking"`
 	HcmId               int
+	HcmCompany          HcmCompany
 }
 
 type UsersMap map[string]*User
@@ -112,7 +121,7 @@ func (m *Manager) InsertUser(userId, userName string) error {
 		return fmt.Errorf("UserName (%s) already exists", userName)
 	}
 
-	m.users[userName] = &User{Id: userId, HcmId: -1}
+	m.users[userName] = &User{Id: userId, HcmId: -1, HcmCompany: HcmUnknown}
 	return nil
 }
 
@@ -143,9 +152,9 @@ func (m *Manager) GetNameFromId(userId string) string {
 	return ""
 }
 
-func (m *Manager) GetUserIdFromHcmId(hcmId int) string {
+func (m *Manager) GetUserIdFromHcmId(hcmId int, hcmCompany HcmCompany) string {
 	for _, user := range m.users {
-		if user.HcmId == hcmId {
+		if user.HcmId == hcmId && user.HcmCompany == hcmCompany {
 			return user.Id
 		}
 	}
@@ -161,7 +170,7 @@ func (m *Manager) AllUserNames() []string {
 	return users
 }
 
-func (m *Manager) SetHcmId(userName string, hcmId int) error {
+func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany HcmCompany) error {
 	// m.users[userName].HcmId = hcmId
 	user, found := m.users[userName]
 	if !found {
@@ -169,6 +178,7 @@ func (m *Manager) SetHcmId(userName string, hcmId int) error {
 	}
 
 	user.HcmId = hcmId
+	user.HcmCompany = hcmCompany
 	return nil
 }
 

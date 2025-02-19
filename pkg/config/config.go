@@ -24,7 +24,8 @@ type Config struct {
 
 	ReportPersonId string
 
-	HcmUrl      string
+	HcmQdevUrl  string
+	HcmQuadUrl  string
 	HcmApiToken string
 }
 
@@ -54,7 +55,8 @@ func NewConfigFromEnv(envPath string) *Config {
 
 		ReportPersonId: os.Getenv("REPORT_PERSON_ID"),
 
-		HcmUrl:      os.Getenv("HCM_URL"),
+		HcmQdevUrl:  os.Getenv("HCM_QDEV_URL"),
+		HcmQuadUrl:  os.Getenv("HCM_QUAD_URL"),
 		HcmApiToken: os.Getenv("HCM_API_TOKEN"),
 	}
 }

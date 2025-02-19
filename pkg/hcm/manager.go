@@ -2,6 +2,7 @@ package hcm
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -17,6 +19,7 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
+	"github.com/AngelVI13/slack-bot/pkg/model/user"
 )
 
 const (
@@ -25,10 +28,40 @@ const (
 	VacationsOfAllEmployeesEndpoint = "/ext/api/v1/employees/periods"
 )
 
+type HcmEmployee struct {
+	Id      int
+	Company user.HcmCompany
+}
+
+func (e *HcmEmployee) ToKey() string {
+	return fmt.Sprintf("%d__%s", e.Id, e.Company)
+}
+
+func NewHcmEmployeeFromKey(key string) *HcmEmployee {
+	parts := strings.Split(key, "__")
+	if len(parts) != 2 {
+		log.Fatalf("failed to parse hcm employee key: number of parts %d", len(parts))
+	}
+
+	id, err := strconv.Atoi(parts[0])
+	if err != nil {
+		log.Fatalf(
+			"failed to parse hcm employee key: failed to convert hcm id to int %d",
+			err,
+		)
+	}
+
+	return &HcmEmployee{
+		Id:      id,
+		Company: user.HcmCompany(parts[1]),
+	}
+}
+
 type Manager struct {
 	eventManager   *event.EventManager
 	data           *model.Data
-	hcmUrl         string
+	hcmQdevUrl     string
+	hcmQuadUrl     string
 	hcmApiToken    string
 	debug          bool
 	reportPersonId string
@@ -42,7 +75,8 @@ func NewManager(
 	return &Manager{
 		eventManager:   eventManager,
 		data:           data,
-		hcmUrl:         conf.HcmUrl,
+		hcmQdevUrl:     conf.HcmQdevUrl,
+		hcmQuadUrl:     conf.HcmQuadUrl,
 		hcmApiToken:    conf.HcmApiToken,
 		debug:          conf.Debug,
 		reportPersonId: conf.ReportPersonId,
@@ -75,7 +109,7 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 
 	usersWithoutHcmId := m.data.UserManager.UsersWithoutHcmId()
 	if len(usersWithoutHcmId) > 0 {
-		err := m.updateEmployeesInfo()
+		err := m.updateAllEmployeesInfo()
 		if err != nil {
 			errTxt := fmt.Sprintf("Error while trying to obtain employee Ids: %v", err)
 			actions = append(actions, m.reportErrorAction(errTxt))
@@ -90,12 +124,29 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 		)
 	}
 
-	vacationInfo, err := m.vacationsInfo()
+	vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
 	if err != nil {
-		errTxt := fmt.Sprintf("Error while trying to obtain vacation periods: %v", err)
+		errTxt := fmt.Sprintf(
+			"Error while trying to obtain vacation periods for qdev: %v",
+			err,
+		)
 		actions = append(actions, m.reportErrorAction(errTxt))
+		return common.NewResponseEvent("HCM", actions...)
 	}
-	fmt.Println(vacationInfo)
+	quadVacationInfo, err := m.vacationsInfo(m.hcmQuadUrl, user.HcmQuad)
+	if err != nil {
+		errTxt := fmt.Sprintf(
+			"Error while trying to obtain vacation periods for quadigi: %v",
+			err,
+		)
+		actions = append(actions, m.reportErrorAction(errTxt))
+		return common.NewResponseEvent("HCM", actions...)
+	}
+
+	// merge both vacation maps into 1
+	for k, v := range quadVacationInfo {
+		vacationInfo[k] = v
+	}
 
 	actions = append(actions, m.addVacationReleases(vacationInfo)...)
 
@@ -113,8 +164,14 @@ func (m *Manager) addVacationReleases(
 
 	tomorrowDate := common.TodayDate().AddDate(0, 0, 1)
 
-	for hcmId, vacations := range vacationInfo {
-		userId := m.data.UserManager.GetUserIdFromHcmId(hcmId)
+	// TODO: do we need to do something with the company name here?
+	// TODO: finalize this and test it.
+	// TODO: add special handling for sergey who is in both companies but i
+	// think uses the quadigi email for vacations
+	// TODO: exclude school half-days and potentially other types of vacations
+	for hcmKey, vacations := range vacationInfo {
+		employee := NewHcmEmployeeFromKey(hcmKey)
+		userId := m.data.UserManager.GetUserIdFromHcmId(employee.Id, employee.Company)
 		if userId == "" {
 			continue
 		}
@@ -186,28 +243,29 @@ func (m *Manager) reportErrorAction(errTxt string) *common.PostEphemeralAction {
 	return postAction
 }
 
-func (m *Manager) employeesVacations() error {
-	url := m.hcmUrl + VacationsOfAllEmployeesEndpoint
-	b, err := makeHcmRequest(url, m.hcmApiToken, m.debug)
-	if err != nil {
-		return fmt.Errorf("failed to make hcm request: %v", err)
-	}
-	_ = b
-	return nil
-}
-
 type Vacation struct {
 	Type     string
 	StartDay time.Time
 	EndDay   time.Time
 }
 
-type VacationData map[int][]Vacation
+// func (v Vacation) String() string {
+// 	return fmt.Sprintf("%s request for %s-%s", v.Type,
+// 		v.StartDay.Format("2006-01-02"),
+// 		v.EndDay.Format("2006-01-02"))
+// }
+
+// TODO: What if employee IDs can be the same for both companies
+// i.e. id 33 means one person in QDev and another in Quadigi ???
+type VacationData map[string][]Vacation
 
 // vacationsInfo Fetches employee vacation information (only current and future
 // ones)
-func (m *Manager) vacationsInfo() (VacationData, error) {
-	url := m.hcmUrl + VacationsOfAllEmployeesEndpoint
+func (m *Manager) vacationsInfo(
+	hcmUrl string,
+	hcmCompany user.HcmCompany,
+) (VacationData, error) {
+	url := hcmUrl + VacationsOfAllEmployeesEndpoint
 	b, err := makeHcmRequest(url, m.hcmApiToken, m.debug)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make hcm request: url=%q err=%v", url, err)
@@ -222,7 +280,7 @@ func (m *Manager) vacationsInfo() (VacationData, error) {
 	// filter only current and future vacations
 	today := common.TodayDate()
 	location := today.Location()
-	vacationData := map[int][]Vacation{}
+	vacationData := VacationData{}
 	for _, employee := range info.Items {
 		var currentVacations []Vacation
 
@@ -257,28 +315,49 @@ func (m *Manager) vacationsInfo() (VacationData, error) {
 				StartDay: startDate,
 				EndDay:   endDate,
 			})
-			vacationData[employee.Id] = currentVacations
+			hcmEmployee := HcmEmployee{
+				Id:      employee.Id,
+				Company: hcmCompany,
+			}
+			vacationData[hcmEmployee.ToKey()] = currentVacations
 		}
 	}
 	return vacationData, nil
 }
 
-func (m *Manager) updateEmployeesInfo() error {
-	url := m.hcmUrl + ListEmployeesEndpoint
+func (m *Manager) updateAllEmployeesInfo() error {
+	var errs []error
+	err := m.updateEmployeesInfo(m.hcmQdevUrl, user.HcmQdev)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("error updating Qdev employees info: %w", err))
+	}
+
+	err = m.updateEmployeesInfo(m.hcmQuadUrl, user.HcmQuad)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("error updating Quadigi employees info: %w", err))
+	}
+
+	return errors.Join(errs...)
+}
+
+func (m *Manager) updateEmployeesInfo(hcmUrl string, hcmCompany user.HcmCompany) error {
+	var errs []error
+
+	url := hcmUrl + ListEmployeesEndpoint
 	b, err := makeHcmRequest(url, m.hcmApiToken, m.debug)
 	if err != nil {
-		return fmt.Errorf("failed to make hcm request: %v", err)
+		errs = append(errs, fmt.Errorf("failed to make hcm request: %v", err))
+		return errors.Join(errs...)
 	}
 
 	var info EmployeeInfo
 	err = xml.Unmarshal(b, &info)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal employees info: %v", err)
+		errs = append(errs, fmt.Errorf("failed to unmarshal employees info: %v", err))
+		return errors.Join(errs...)
 	}
 
-	// TODO: remove these logs after testing
 	users := m.data.UserManager.AllUserNames()
-	slog.Info("users without HCM id", "users", users)
 	for _, employee := range info.Items {
 		originalName := employee.Values[0].Name
 		parts := strings.Split(originalName, " ")
@@ -290,29 +369,25 @@ func (m *Manager) updateEmployeesInfo() error {
 
 		regx, err := MakeRegexFromName(name)
 		if err != nil {
-			slog.Info("failed to make regex from employee name", "name", name)
+			errs = append(
+				errs,
+				fmt.Errorf("failed to make regex from employee name: %q. %v", name, err),
+			)
+			continue
 		}
 
-		slog.Info("Employee as regex", "originalName", originalName, "reg", regx.String())
-
-		found := false
 		for _, user := range users {
 			if !regx.MatchString(user) {
 				continue
 			}
-			found = true
 			slog.Info("found user for employee", "employee", name, "user", user)
-			m.data.UserManager.SetHcmId(user, employee.Id)
+			m.data.UserManager.SetHcmId(user, employee.Id, hcmCompany)
 			break
-		}
-
-		if !found {
-			slog.Info("failed to find user for employee", "employee", name)
 		}
 	}
 	m.data.UserManager.SynchronizeToFile()
 
-	return nil
+	return errors.Join(errs...)
 }
 
 // MakeRegexFromName turn a name into regexp pattern. Any non ASCII char is
