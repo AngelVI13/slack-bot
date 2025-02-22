@@ -116,39 +116,55 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 		}
 
 		usersWithoutHcmId = m.data.UserManager.UsersWithoutHcmId()
-		actions = append(
-			actions,
-			m.reportErrorAction(
-				fmt.Sprintf("There are users without HCM id's: %v", usersWithoutHcmId),
-			),
-		)
+		if len(usersWithoutHcmId) > 0 {
+			actions = append(
+				actions,
+				m.reportErrorAction(
+					fmt.Sprintf(
+						"after updating users' hcm ids, there are still users without HCM id: %v",
+						usersWithoutHcmId,
+					),
+				),
+			)
+		}
 	}
 
-	vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
-	if err != nil {
-		errTxt := fmt.Sprintf(
-			"Error while trying to obtain vacation periods for qdev: %v",
-			err,
-		)
-		actions = append(actions, m.reportErrorAction(errTxt))
-		return common.NewResponseEvent("HCM", actions...)
-	}
-	quadVacationInfo, err := m.vacationsInfo(m.hcmQuadUrl, user.HcmQuad)
-	if err != nil {
-		errTxt := fmt.Sprintf(
-			"Error while trying to obtain vacation periods for quadigi: %v",
-			err,
-		)
-		actions = append(actions, m.reportErrorAction(errTxt))
-		return common.NewResponseEvent("HCM", actions...)
-	}
+	/* TODO: when we are adding user to the users.json we are taking the username from
+	        slack but that does not always correlate with HCM (like the examples below)
+	        * One solution is to correct the users.json later
+	        * Second is to get email from slack and take the names before @ from There
+	        * Third is to add the username field in the `/users` modal so that admins
+	        can change it later??
+		txt:There are users without HCM id's: [ernestas.luza572 viktorija.burlinskait]]"
+	*/
 
-	// merge both vacation maps into 1
-	for k, v := range quadVacationInfo {
-		vacationInfo[k] = v
-	}
+	/*
+		vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
+		if err != nil {
+			errTxt := fmt.Sprintf(
+				"Error while trying to obtain vacation periods for qdev: %v",
+				err,
+			)
+			actions = append(actions, m.reportErrorAction(errTxt))
+			return common.NewResponseEvent("HCM", actions...)
+		}
+		quadVacationInfo, err := m.vacationsInfo(m.hcmQuadUrl, user.HcmQuad)
+		if err != nil {
+			errTxt := fmt.Sprintf(
+				"Error while trying to obtain vacation periods for quadigi: %v",
+				err,
+			)
+			actions = append(actions, m.reportErrorAction(errTxt))
+			return common.NewResponseEvent("HCM", actions...)
+		}
 
-	actions = append(actions, m.addVacationReleases(vacationInfo)...)
+		// merge both vacation maps into 1
+		for k, v := range quadVacationInfo {
+			vacationInfo[k] = v
+		}
+
+		actions = append(actions, m.addVacationReleases(vacationInfo)...)
+	*/
 
 	if len(actions) == 0 {
 		return nil
@@ -249,14 +265,6 @@ type Vacation struct {
 	EndDay   time.Time
 }
 
-// func (v Vacation) String() string {
-// 	return fmt.Sprintf("%s request for %s-%s", v.Type,
-// 		v.StartDay.Format("2006-01-02"),
-// 		v.EndDay.Format("2006-01-02"))
-// }
-
-// TODO: What if employee IDs can be the same for both companies
-// i.e. id 33 means one person in QDev and another in Quadigi ???
 type VacationData map[string][]Vacation
 
 // vacationsInfo Fetches employee vacation information (only current and future
@@ -380,8 +388,21 @@ func (m *Manager) updateEmployeesInfo(hcmUrl string, hcmCompany user.HcmCompany)
 			if !regx.MatchString(user) {
 				continue
 			}
-			slog.Info("found user for employee", "employee", name, "user", user)
-			m.data.UserManager.SetHcmId(user, employee.Id, hcmCompany)
+			slog.Info(
+				"found user for employee",
+				"employee",
+				name,
+				"user",
+				user,
+				"hcmId",
+				employee.Id,
+				"company",
+				hcmCompany,
+			)
+			err := m.data.UserManager.SetHcmId(user, employee.Id, hcmCompany)
+			if err != nil {
+				errs = append(errs, err)
+			}
 			break
 		}
 	}
@@ -436,9 +457,19 @@ func makeHcmRequest(url, token string, debug bool) ([]byte, error) {
 	// TODO: remove this later
 	if debug {
 		if strings.HasSuffix(url, ListEmployeesEndpoint) {
-			return os.ReadFile("example_employee_list.xml")
+			if strings.Contains(url, "quadigi") {
+				slog.Info("Returning debug file", "file", "quad_users.xml")
+				return os.ReadFile("quad_users.xml")
+			}
+			slog.Info("Returning debug file", "file", "qdev_users.xml")
+			return os.ReadFile("qdev_users.xml")
 		} else if strings.HasSuffix(url, VacationsOfAllEmployeesEndpoint) {
-			return os.ReadFile("vacations.xml")
+			if strings.Contains(url, "quadigi") {
+				slog.Info("Returning debug file", "file", "quad_vacations.xml")
+				return os.ReadFile("quad_vacations.xml")
+			}
+			slog.Info("Returning debug file", "file", "qdev_vacations.xml")
+			return os.ReadFile("qdev_vacations.xml")
 		}
 	}
 	client := &http.Client{}
