@@ -24,9 +24,10 @@ type Config struct {
 
 	ReportPersonId string
 
-	HcmQdevUrl  string
-	HcmQuadUrl  string
-	HcmApiToken string
+	HcmQdevUrl      string
+	HcmQuadUrl      string
+	HcmApiToken     string
+	HcmHashFilename string
 }
 
 // ConfigFromEnv Creates config instance by reading corresponding ENV variables.
@@ -55,8 +56,9 @@ func NewConfigFromEnv(envPath string) *Config {
 
 		ReportPersonId: os.Getenv("REPORT_PERSON_ID"),
 
-		HcmQdevUrl:  os.Getenv("HCM_QDEV_URL"),
-		HcmQuadUrl:  os.Getenv("HCM_QUAD_URL"),
-		HcmApiToken: os.Getenv("HCM_API_TOKEN"),
+		HcmQdevUrl:      os.Getenv("HCM_QDEV_URL"),
+		HcmQuadUrl:      os.Getenv("HCM_QUAD_URL"),
+		HcmApiToken:     os.Getenv("HCM_API_TOKEN"),
+		HcmHashFilename: os.Getenv("HCM_HASH_FILE"),
 	}
 }

@@ -1,6 +1,7 @@
 package hcm
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -57,14 +58,41 @@ func NewHcmEmployeeFromKey(key string) *HcmEmployee {
 	}
 }
 
+type VacationsHash map[string]bool
+
+func LoadVacationsHash(filename string) VacationsHash {
+	data := VacationsHash{}
+
+	b, err := os.ReadFile(filename)
+	if err != nil {
+		slog.Info("Could not read vacations hash file.", "err", err)
+		return data
+	}
+
+	// Unmarshal the provided data into the solid map
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		slog.Info("Could not parse vacations hash file.", "err", err)
+		return data
+	}
+
+	return data
+}
+
+func MakeVacationHash(id int, company user.HcmCompany, startDate, endDate string) string {
+	return fmt.Sprintf("%d_%s_%s_%s", id, company, startDate, endDate)
+}
+
 type Manager struct {
-	eventManager   *event.EventManager
-	data           *model.Data
-	hcmQdevUrl     string
-	hcmQuadUrl     string
-	hcmApiToken    string
-	debug          bool
-	reportPersonId string
+	eventManager    *event.EventManager
+	data            *model.Data
+	hcmQdevUrl      string
+	hcmQuadUrl      string
+	hcmApiToken     string
+	debug           bool
+	reportPersonId  string
+	hcmHashFilename string
+	vacationsHash   VacationsHash
 }
 
 func NewManager(
@@ -73,13 +101,15 @@ func NewManager(
 	conf *config.Config,
 ) *Manager {
 	return &Manager{
-		eventManager:   eventManager,
-		data:           data,
-		hcmQdevUrl:     conf.HcmQdevUrl,
-		hcmQuadUrl:     conf.HcmQuadUrl,
-		hcmApiToken:    conf.HcmApiToken,
-		debug:          conf.Debug,
-		reportPersonId: conf.ReportPersonId,
+		eventManager:    eventManager,
+		data:            data,
+		hcmQdevUrl:      conf.HcmQdevUrl,
+		hcmQuadUrl:      conf.HcmQuadUrl,
+		hcmApiToken:     conf.HcmApiToken,
+		debug:           conf.Debug,
+		reportPersonId:  conf.ReportPersonId,
+		hcmHashFilename: conf.HcmHashFilename,
+		vacationsHash:   LoadVacationsHash(conf.HcmHashFilename),
 	}
 }
 
@@ -130,41 +160,43 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	}
 
 	/* TODO: when we are adding user to the users.json we are taking the username from
-	        slack but that does not always correlate with HCM (like the examples below)
-	        * One solution is to correct the users.json later
-	        * Second is to get email from slack and take the names before @ from There
-	        * Third is to add the username field in the `/users` modal so that admins
-	        can change it later??
-		txt:There are users without HCM id's: [ernestas.luza572 viktorija.burlinskait]]"
+	   slack but that does not always correlate with HCM (like the examples below)
+	   * One solution is to correct the users.json later
+	   * Second is to get email from slack and take the names before @ from There
+	   * Third is to add the username field in the `/users` modal so that admins
+	   can change it later??
+	*/
+	/* TODO: store hash of each vacation that was processed so that we don't process them again
+	   for example: Augustas books a whole month as remote work but he goes to office anyways
+	   every mon-wed-fri. He wants the possibility to cancel the automatic release by the bot and
+	   fill in his releases manually.
 	*/
 
-	/*
-		vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
-		if err != nil {
-			errTxt := fmt.Sprintf(
-				"Error while trying to obtain vacation periods for qdev: %v",
-				err,
-			)
-			actions = append(actions, m.reportErrorAction(errTxt))
-			return common.NewResponseEvent("HCM", actions...)
-		}
-		quadVacationInfo, err := m.vacationsInfo(m.hcmQuadUrl, user.HcmQuad)
-		if err != nil {
-			errTxt := fmt.Sprintf(
-				"Error while trying to obtain vacation periods for quadigi: %v",
-				err,
-			)
-			actions = append(actions, m.reportErrorAction(errTxt))
-			return common.NewResponseEvent("HCM", actions...)
-		}
+	vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
+	if err != nil {
+		errTxt := fmt.Sprintf(
+			"Error while trying to obtain vacation periods for qdev: %v",
+			err,
+		)
+		actions = append(actions, m.reportErrorAction(errTxt))
+		return common.NewResponseEvent("HCM", actions...)
+	}
+	quadVacationInfo, err := m.vacationsInfo(m.hcmQuadUrl, user.HcmQuad)
+	if err != nil {
+		errTxt := fmt.Sprintf(
+			"Error while trying to obtain vacation periods for quadigi: %v",
+			err,
+		)
+		actions = append(actions, m.reportErrorAction(errTxt))
+		return common.NewResponseEvent("HCM", actions...)
+	}
 
-		// merge both vacation maps into 1
-		for k, v := range quadVacationInfo {
-			vacationInfo[k] = v
-		}
+	// merge both vacation maps into 1
+	for k, v := range quadVacationInfo {
+		vacationInfo[k] = v
+	}
 
-		actions = append(actions, m.addVacationReleases(vacationInfo)...)
-	*/
+	actions = append(actions, m.addVacationReleases(vacationInfo)...)
 
 	if len(actions) == 0 {
 		return nil
@@ -180,11 +212,7 @@ func (m *Manager) addVacationReleases(
 
 	tomorrowDate := common.TodayDate().AddDate(0, 0, 1)
 
-	// TODO: do we need to do something with the company name here?
 	// TODO: finalize this and test it.
-	// TODO: add special handling for sergey who is in both companies but i
-	// think uses the quadigi email for vacations
-	// TODO: exclude school half-days and potentially other types of vacations
 	for hcmKey, vacations := range vacationInfo {
 		employee := NewHcmEmployeeFromKey(hcmKey)
 		userId := m.data.UserManager.GetUserIdFromHcmId(employee.Id, employee.Company)
@@ -213,14 +241,42 @@ func (m *Manager) addVacationReleases(
 				// on the automatic release/reserve functionality that happens
 				// in the ParkingLot object (every day at 17:00).
 				release.StartDate = &tomorrowDate
+				slog.Info(
+					"clipping start date to tomorrow",
+					"employee",
+					employee,
+					"period",
+					vacation,
+					"newStartDate",
+					tomorrowDate,
+				)
 			}
 			release.EndDate = &vacation.EndDay
 
 			overlaps := m.data.ParkingLot.ToBeReleased.CheckOverlap(release)
 			if len(overlaps) > 0 {
+				slog.Info(
+					"found overlap for vacation",
+					"employee",
+					employee,
+					"period",
+					vacation,
+					"release",
+					release,
+					"overlaps",
+					overlaps,
+				)
 				m.data.ParkingLot.ToBeReleased.Remove(release)
 				continue
 			}
+
+			key := MakeVacationHash(
+				employee.Id,
+				employee.Company,
+				vacation.StartDay.Format("2006-01-02"),
+				vacation.EndDay.Format("2006-01-02"),
+			)
+			m.vacationsHash[key] = true
 
 			release.MarkSubmitted("HCM")
 			slog.Info(
@@ -232,16 +288,30 @@ func (m *Manager) addVacationReleases(
 			)
 			info := fmt.Sprintf(
 				"Parking bot added a temporary release for your space (%s): "+
-					"HCM %s request for %s."+
+					"HCM %s request for %s. "+
 					"If that's not correct please contact the system administrator.",
 				space.Key(),
 				vacation.Type,
 				release.DateRange(),
 			)
 			// TODO: send these messages to me during testing!!! change the userId here
-			postAction := common.NewPostEphemeralAction(userId, userId, info, false)
+			postAction := common.NewPostEphemeralAction(
+				m.reportPersonId,
+				m.reportPersonId,
+				info,
+				false,
+			)
+			// postAction := common.NewPostEphemeralAction(userId, userId, info, false)
 			actions = append(actions, postAction)
+
+			// TODO: remove this after testing
+			m.data.ParkingLot.ToBeReleased.Remove(release)
 		}
+	}
+
+	syncErr := m.SynchronizeToFile()
+	if syncErr != nil {
+		actions = append(actions, m.reportErrorAction(syncErr.Error()))
 	}
 
 	m.data.ParkingLot.SynchronizeToFile()
@@ -285,6 +355,10 @@ func (m *Manager) vacationsInfo(
 		return nil, fmt.Errorf("failed to unmarshal vacations info: %v", err)
 	}
 
+	// TODO: Store: processed vacations in a json where each vacation is hashed.
+	// this allows us to filter out already processed vacations without having
+	// to compute anything here
+
 	// filter only current and future vacations
 	today := common.TodayDate()
 	location := today.Location()
@@ -293,29 +367,58 @@ func (m *Manager) vacationsInfo(
 		var currentVacations []Vacation
 
 		for _, period := range employee.Periods {
-			endDate, err := time.ParseInLocation("2006-01-02", period.LastDay, location)
-			if err != nil {
+			key := MakeVacationHash(
+				employee.Id,
+				hcmCompany,
+				period.FirstDay,
+				period.LastDay,
+			)
+			if _, found := m.vacationsHash[key]; found {
+				slog.Info(
+					"vacation was previously processed (present in hash file)",
+					"key",
+					key,
+				)
+				continue
+			}
+
+			endDate, parseErr := time.ParseInLocation(
+				"2006-01-02",
+				period.LastDay,
+				location,
+			)
+			if parseErr != nil {
 				return nil, fmt.Errorf(
 					"failure to parse lastDay format %s: %v",
 					period.LastDay,
-					err,
+					parseErr,
 				)
 			}
 
 			if endDate.Before(today) {
+				slog.Info(
+					"discarding vacation endDate is before today",
+					"employee",
+					employee.Id,
+					"company",
+					hcmCompany,
+					"period",
+					period,
+				)
+				m.vacationsHash[key] = true
 				continue
 			}
 
-			startDate, err := time.ParseInLocation(
+			startDate, pErr := time.ParseInLocation(
 				"2006-01-02",
 				period.FirstDay,
 				location,
 			)
-			if err != nil {
+			if pErr != nil {
 				return nil, fmt.Errorf(
 					"failure to parse firstDay format %s: %v",
 					period.FirstDay,
-					err,
+					pErr,
 				)
 			}
 			currentVacations = append(currentVacations, Vacation{
@@ -327,10 +430,23 @@ func (m *Manager) vacationsInfo(
 				Id:      employee.Id,
 				Company: hcmCompany,
 			}
+			slog.Info(
+				"adding vacation to vacations list",
+				"employee",
+				employee.Id,
+				"company",
+				hcmCompany,
+				"period",
+				period,
+				"key",
+				hcmEmployee.ToKey(),
+			)
 			vacationData[hcmEmployee.ToKey()] = currentVacations
 		}
 	}
-	return vacationData, nil
+
+	err = m.SynchronizeToFile()
+	return vacationData, err
 }
 
 func (m *Manager) updateAllEmployeesInfo() error {
@@ -475,7 +591,7 @@ func makeHcmRequest(url, token string, debug bool) ([]byte, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to create hcm request for url=%q: %v", url, err)
 	}
 
 	req.Header.Set("x-api-key", token)
@@ -488,9 +604,27 @@ func makeHcmRequest(url, token string, debug bool) ([]byte, error) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to perform hcm request for url=%q: %v", url, err)
 	}
 
 	defer res.Body.Close()
 	return io.ReadAll(res.Body)
+}
+
+func (m *Manager) SynchronizeToFile() error {
+	data, err := json.MarshalIndent(m.vacationsHash, "", "\t")
+	if err != nil {
+		return fmt.Errorf("failed to marshall vacations hash data: %v", err)
+	}
+
+	err = os.WriteFile(m.hcmHashFilename, data, 0o666)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to write vacations hash file(%s): %v",
+			m.hcmHashFilename,
+			err,
+		)
+	}
+	slog.Info("Wrote vacations hashes to file", "file", m.hcmHashFilename)
+	return nil
 }
