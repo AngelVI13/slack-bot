@@ -76,6 +76,7 @@ func LoadVacationsHash(filename string) VacationsHash {
 		return data
 	}
 
+	slog.Info("Loaded vacations hash file.", "filename", filename, "hashNum", len(data))
 	return data
 }
 
@@ -166,11 +167,6 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	   * Third is to add the username field in the `/users` modal so that admins
 	   can change it later??
 	*/
-	/* TODO: store hash of each vacation that was processed so that we don't process them again
-	   for example: Augustas books a whole month as remote work but he goes to office anyways
-	   every mon-wed-fri. He wants the possibility to cancel the automatic release by the bot and
-	   fill in his releases manually.
-	*/
 
 	vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
 	if err != nil {
@@ -212,7 +208,6 @@ func (m *Manager) addVacationReleases(
 
 	tomorrowDate := common.TodayDate().AddDate(0, 0, 1)
 
-	// TODO: finalize this and test it.
 	for hcmKey, vacations := range vacationInfo {
 		employee := NewHcmEmployeeFromKey(hcmKey)
 		userId := m.data.UserManager.GetUserIdFromHcmId(employee.Id, employee.Company)
@@ -241,31 +236,11 @@ func (m *Manager) addVacationReleases(
 				// on the automatic release/reserve functionality that happens
 				// in the ParkingLot object (every day at 17:00).
 				release.StartDate = &tomorrowDate
-				slog.Info(
-					"clipping start date to tomorrow",
-					"employee",
-					employee,
-					"period",
-					vacation,
-					"newStartDate",
-					tomorrowDate,
-				)
 			}
 			release.EndDate = &vacation.EndDay
 
 			overlaps := m.data.ParkingLot.ToBeReleased.CheckOverlap(release)
 			if len(overlaps) > 0 {
-				slog.Info(
-					"found overlap for vacation",
-					"employee",
-					employee,
-					"period",
-					vacation,
-					"release",
-					release,
-					"overlaps",
-					overlaps,
-				)
 				m.data.ParkingLot.ToBeReleased.Remove(release)
 				continue
 			}
@@ -294,18 +269,8 @@ func (m *Manager) addVacationReleases(
 				vacation.Type,
 				release.DateRange(),
 			)
-			// TODO: send these messages to me during testing!!! change the userId here
-			postAction := common.NewPostEphemeralAction(
-				m.reportPersonId,
-				m.reportPersonId,
-				info,
-				false,
-			)
-			// postAction := common.NewPostEphemeralAction(userId, userId, info, false)
+			postAction := common.NewPostEphemeralAction(userId, userId, info, false)
 			actions = append(actions, postAction)
-
-			// TODO: remove this after testing
-			m.data.ParkingLot.ToBeReleased.Remove(release)
 		}
 	}
 
@@ -344,7 +309,7 @@ func (m *Manager) vacationsInfo(
 	hcmCompany user.HcmCompany,
 ) (VacationData, error) {
 	url := hcmUrl + VacationsOfAllEmployeesEndpoint
-	b, err := makeHcmRequest(url, m.hcmApiToken, m.debug)
+	b, err := makeHcmRequest(url, m.hcmApiToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make hcm request: url=%q err=%v", url, err)
 	}
@@ -354,10 +319,6 @@ func (m *Manager) vacationsInfo(
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal vacations info: %v", err)
 	}
-
-	// TODO: Store: processed vacations in a json where each vacation is hashed.
-	// this allows us to filter out already processed vacations without having
-	// to compute anything here
 
 	// filter only current and future vacations
 	today := common.TodayDate()
@@ -374,11 +335,6 @@ func (m *Manager) vacationsInfo(
 				period.LastDay,
 			)
 			if _, found := m.vacationsHash[key]; found {
-				slog.Info(
-					"vacation was previously processed (present in hash file)",
-					"key",
-					key,
-				)
 				continue
 			}
 
@@ -396,15 +352,6 @@ func (m *Manager) vacationsInfo(
 			}
 
 			if endDate.Before(today) {
-				slog.Info(
-					"discarding vacation endDate is before today",
-					"employee",
-					employee.Id,
-					"company",
-					hcmCompany,
-					"period",
-					period,
-				)
 				m.vacationsHash[key] = true
 				continue
 			}
@@ -430,17 +377,6 @@ func (m *Manager) vacationsInfo(
 				Id:      employee.Id,
 				Company: hcmCompany,
 			}
-			slog.Info(
-				"adding vacation to vacations list",
-				"employee",
-				employee.Id,
-				"company",
-				hcmCompany,
-				"period",
-				period,
-				"key",
-				hcmEmployee.ToKey(),
-			)
 			vacationData[hcmEmployee.ToKey()] = currentVacations
 		}
 	}
@@ -468,7 +404,7 @@ func (m *Manager) updateEmployeesInfo(hcmUrl string, hcmCompany user.HcmCompany)
 	var errs []error
 
 	url := hcmUrl + ListEmployeesEndpoint
-	b, err := makeHcmRequest(url, m.hcmApiToken, m.debug)
+	b, err := makeHcmRequest(url, m.hcmApiToken)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("failed to make hcm request: %v", err))
 		return errors.Join(errs...)
@@ -504,17 +440,6 @@ func (m *Manager) updateEmployeesInfo(hcmUrl string, hcmCompany user.HcmCompany)
 			if !regx.MatchString(user) {
 				continue
 			}
-			slog.Info(
-				"found user for employee",
-				"employee",
-				name,
-				"user",
-				user,
-				"hcmId",
-				employee.Id,
-				"company",
-				hcmCompany,
-			)
 			err := m.data.UserManager.SetHcmId(user, employee.Id, hcmCompany)
 			if err != nil {
 				errs = append(errs, err)
@@ -569,25 +494,7 @@ type VacationInfo struct {
 	Items []VacationItem `xml:"item"`
 }
 
-func makeHcmRequest(url, token string, debug bool) ([]byte, error) {
-	// TODO: remove this later
-	if debug {
-		if strings.HasSuffix(url, ListEmployeesEndpoint) {
-			if strings.Contains(url, "quadigi") {
-				slog.Info("Returning debug file", "file", "quad_users.xml")
-				return os.ReadFile("quad_users.xml")
-			}
-			slog.Info("Returning debug file", "file", "qdev_users.xml")
-			return os.ReadFile("qdev_users.xml")
-		} else if strings.HasSuffix(url, VacationsOfAllEmployeesEndpoint) {
-			if strings.Contains(url, "quadigi") {
-				slog.Info("Returning debug file", "file", "quad_vacations.xml")
-				return os.ReadFile("quad_vacations.xml")
-			}
-			slog.Info("Returning debug file", "file", "qdev_vacations.xml")
-			return os.ReadFile("qdev_vacations.xml")
-		}
-	}
+func makeHcmRequest(url, token string) ([]byte, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

@@ -48,7 +48,6 @@ func addTimerEvents(ev *event.EventManager) {
 		workspaces.ResetMin,
 		workspaces.ResetWorkspaces,
 	)
-	// TODO: should this only be checked once per day??
 	handleHcmBookingTimer := event.NewTimer(ev)
 	// NOTE: this is on purpose set to 1 hour earlier than the parking spaces
 	// reset. it makes sure that any new releases added by this manager are
