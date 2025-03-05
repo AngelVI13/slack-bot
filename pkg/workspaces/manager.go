@@ -87,19 +87,20 @@ func (m *Manager) Consume(e event.Event) {
 
 		slog.Info("ReleaseWorkspaces")
 		err := m.data.WorkspacesLot.ReleaseSpaces(data.Time)
-		postAction := common.NewPostEphemeralAction(
-			m.reportPersonId,
-			m.reportPersonId,
-			err.Error(),
-			false,
-		)
+		if err != nil {
+			postAction := common.NewPostEphemeralAction(
+				m.reportPersonId,
+				m.reportPersonId,
+				err.Error(),
+				false,
+			)
 
-		response := common.NewResponseEvent(
-			"Workspaces ReleaseWorkspaces Timer",
-			postAction,
-		)
-		m.eventManager.Publish(response)
-
+			response := common.NewResponseEvent(
+				"Workspaces ReleaseWorkspaces Timer",
+				postAction,
+			)
+			m.eventManager.Publish(response)
+		}
 	}
 }
 

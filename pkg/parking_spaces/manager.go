@@ -79,16 +79,17 @@ func (m *Manager) Consume(e event.Event) {
 
 		slog.Info("ReleaseSpaces")
 		err := m.data.ParkingLot.ReleaseSpaces(data.Time)
-		postAction := common.NewPostEphemeralAction(
-			m.reportPersonId,
-			m.reportPersonId,
-			err.Error(),
-			false,
-		)
+		if err != nil {
+			postAction := common.NewPostEphemeralAction(
+				m.reportPersonId,
+				m.reportPersonId,
+				err.Error(),
+				false,
+			)
 
-		response := common.NewResponseEvent("Parking ReleaseSpaces Timer", postAction)
-		m.eventManager.Publish(response)
-
+			response := common.NewResponseEvent("Parking ReleaseSpaces Timer", postAction)
+			m.eventManager.Publish(response)
+		}
 	case event.ViewSubmissionEvent:
 		data := e.(*slackApi.ViewSubmission)
 

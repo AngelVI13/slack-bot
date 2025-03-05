@@ -413,9 +413,9 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
 				continue
 			}
 
-			if !release.DataPresent() {
+			if !release.DataPresent() || !release.Submitted {
 				err := fmt.Errorf(
-					"[SKIP] ReleaseSpaces release is not fully filled. spaceKey=%q; release=%v",
+					"[SKIP] ReleaseSpaces release is not fully filled or not submitted. spaceKey=%q; release=%v",
 					spaceKey,
 					release,
 				)
