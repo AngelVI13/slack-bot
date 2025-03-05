@@ -2,6 +2,7 @@ package spaces
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -383,8 +384,15 @@ func (l *SpacesLot) GetSpace(unitSpace SpaceKey) *Space {
 	return space
 }
 
-func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
+func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
+	var errs []error
+
 	for spaceKey, space := range l.UnitSpaces {
+		if space == nil {
+			err := fmt.Errorf("[SKIP] ReleaseSpaces space is nil. spaceKey=%q", spaceKey)
+			errs = append(errs, err)
+			continue
+		}
 		// Simple case
 		if space.Reserved && space.AutoRelease {
 			slog.Info("AutoRelease", "space", spaceKey)
@@ -396,11 +404,30 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 
 		// If a scheduled release was setup
 		for _, release := range l.ToBeReleased.GetAll(spaceKey) {
+			if release == nil {
+				err := fmt.Errorf(
+					"[SKIP] ReleaseSpaces release is nil. spaceKey=%q",
+					spaceKey,
+				)
+				errs = append(errs, err)
+				continue
+			}
+
+			if !release.DataPresent() {
+				err := fmt.Errorf(
+					"[SKIP] ReleaseSpaces release is not fully filled. spaceKey=%q; release=%v",
+					spaceKey,
+					release,
+				)
+				errs = append(errs, err)
+				continue
+			}
 			l.ReleaseTemp(space, cTime, release)
 		}
 	}
 
 	l.SynchronizeToFile()
+	return errors.Join(errs...)
 }
 
 func (l *SpacesLot) ReleaseTemp(

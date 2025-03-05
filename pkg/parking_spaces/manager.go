@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
 	parkingModel "github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
@@ -26,24 +27,27 @@ const (
 )
 
 type Manager struct {
-	eventManager *event.EventManager
-	data         *parkingModel.ParkingData
-	bookingView  *views.Booking
-	releaseView  *views.Release
-	personalView *views.Personal
+	eventManager   *event.EventManager
+	data           *parkingModel.ParkingData
+	bookingView    *views.Booking
+	releaseView    *views.Release
+	personalView   *views.Personal
+	reportPersonId string
 }
 
 func NewManager(
 	eventManager *event.EventManager,
 	data *model.Data,
+	conf *config.Config,
 ) *Manager {
 	parkingData := parkingModel.NewParkingData(data)
 	return &Manager{
-		eventManager: eventManager,
-		data:         parkingData,
-		bookingView:  views.NewBooking(Identifier, parkingData),
-		releaseView:  views.NewRelease(Identifier, parkingData),
-		personalView: views.NewPersonal(Identifier, parkingData),
+		eventManager:   eventManager,
+		data:           parkingData,
+		bookingView:    views.NewBooking(Identifier, parkingData),
+		releaseView:    views.NewRelease(Identifier, parkingData),
+		personalView:   views.NewPersonal(Identifier, parkingData),
+		reportPersonId: conf.ReportPersonId,
 	}
 }
 
@@ -74,7 +78,17 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		slog.Info("ReleaseSpaces")
-		m.data.ParkingLot.ReleaseSpaces(data.Time)
+		err := m.data.ParkingLot.ReleaseSpaces(data.Time)
+		postAction := common.NewPostEphemeralAction(
+			m.reportPersonId,
+			m.reportPersonId,
+			err.Error(),
+			false,
+		)
+
+		response := common.NewResponseEvent("Parking ReleaseSpaces Timer", postAction)
+		m.eventManager.Publish(response)
+
 	case event.ViewSubmissionEvent:
 		data := e.(*slackApi.ViewSubmission)
 

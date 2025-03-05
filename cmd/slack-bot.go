@@ -73,10 +73,10 @@ func main() {
 
 	addTimerEvents(eventManager)
 
-	parkingSpacesManager := parking_spaces.NewManager(eventManager, data)
+	parkingSpacesManager := parking_spaces.NewManager(eventManager, data, config)
 	eventManager.SubscribeWithContext(parkingSpacesManager, event.AnyEvent)
 
-	workspacesManager := workspaces.NewManager(eventManager, data)
+	workspacesManager := workspaces.NewManager(eventManager, data, config)
 	eventManager.SubscribeWithContext(workspacesManager, event.AnyEvent)
 
 	parkingUsersManager := parking_users.NewManager(eventManager, data)
