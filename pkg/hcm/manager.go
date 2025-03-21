@@ -167,7 +167,6 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	   * Third is to add the username field in the `/users` modal so that admins
 	   can change it later??
 	*/
-
 	vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
 	if err != nil {
 		errTxt := fmt.Sprintf(
@@ -206,7 +205,7 @@ func (m *Manager) addVacationReleases(
 ) []event.ResponseAction {
 	var actions []event.ResponseAction
 
-	tomorrowDate := common.TodayDate().AddDate(0, 0, 1)
+	todayDate := common.TodayDate()
 
 	for hcmKey, vacations := range vacationInfo {
 		employee := NewHcmEmployeeFromKey(hcmKey)
@@ -228,14 +227,12 @@ func (m *Manager) addVacationReleases(
 				space,
 			)
 			release.StartDate = &vacation.StartDay
-			if release.StartDate.Before(tomorrowDate) {
+			if release.StartDate.Before(todayDate) {
 				// NOTE: we only create requests for the future. so
 				// if a vacation period started 5 days ago and it continues for
-				// 3 more days then here we create the release from tomorrow
-				// till the end of the vacation. This is because this relies
-				// on the automatic release/reserve functionality that happens
-				// in the ParkingLot object (every day at 17:00).
-				release.StartDate = &tomorrowDate
+				// 3 more days then here we create the release from today
+				// till the end of the vacation.
+				release.StartDate = &todayDate
 			}
 			release.EndDate = &vacation.EndDay
 
@@ -252,8 +249,14 @@ func (m *Manager) addVacationReleases(
 				vacation.EndDay.Format("2006-01-02"),
 			)
 			m.vacationsHash[key] = true
-
 			release.MarkSubmitted("HCM")
+
+			if common.EqualDate(*release.StartDate, todayDate) {
+				// Directly release space if release start from today
+				space.Reserved = false
+				release.MarkActive()
+			}
+
 			slog.Info(
 				"HCM add temporary release",
 				"user", m.data.UserManager.GetNameFromId(userId),

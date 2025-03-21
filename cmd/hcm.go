@@ -20,6 +20,11 @@ func vacationsOfAllEmployees(url, token string) string {
 	return makeRequest(fullUrl, token)
 }
 
+func businessTripsOfAllEmployees(url, token string) string {
+	fullUrl := url + "/ext/api/v1/employees/businesstrips"
+	return makeRequest(fullUrl, token)
+}
+
 func makeRequest(fullUrl, token string) string {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)

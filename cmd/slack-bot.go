@@ -49,14 +49,24 @@ func addTimerEvents(ev *event.EventManager) {
 		workspaces.ResetWorkspaces,
 	)
 	handleHcmBookingTimer := event.NewTimer(ev)
-	// NOTE: this is on purpose set to 1 hour earlier than the parking spaces
-	// reset. it makes sure that any new releases added by this manager are
-	// handled automatically when the parking reset is hit.
-	handleHcmBookingTimer.AddDaily(
-		parking_spaces.ResetHour-1,
-		parking_spaces.ResetMin,
-		hcm.HandleHcm,
-	)
+	// NOTE: HCM checks are triggered multiple times per day to account for
+	// people booking sick leaves or remote work early in the morning or late
+	// in the evening
+	for _, t := range []struct {
+		Hour int
+		Min  int
+	}{
+		{Hour: 6, Min: 0},
+		{Hour: 8, Min: 0},
+		{Hour: 9, Min: 30},
+		{Hour: parking_spaces.ResetHour - 1, Min: 45},
+	} {
+		handleHcmBookingTimer.AddDaily(
+			t.Hour,
+			t.Min,
+			hcm.HandleHcm,
+		)
+	}
 }
 
 func main() {
