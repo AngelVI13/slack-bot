@@ -18,7 +18,7 @@ const (
 	SlashCmd   = "/workspace"
 	// SlashCmd         = "/test-workspace"
 	ChannelNameQDev  = "qdev_technologies"
-	ChannelNameQDigi = "test-qd-bot"
+	ChannelNameQDigi = "quadigi"
 
 	defaultUserOption = ""
 

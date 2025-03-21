@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	HandleHcm                       = "HandleHCM"
-	ListEmployeesEndpoint           = "/ext/api/v1/employees"
-	VacationsOfAllEmployeesEndpoint = "/ext/api/v1/employees/periods"
+	HandleHcm             = "HandleHCM"
+	ListEmployeesEndpoint = "/ext/api/v1/employees"
+	VacationsEndpoint     = "/ext/api/v1/employees/periods"
+	BusinessTripsEndpoint = "/ext/api/v1/employees/businesstrips"
 )
 
 type HcmEmployee struct {
@@ -170,7 +171,7 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
 	if err != nil {
 		errTxt := fmt.Sprintf(
-			"Error while trying to obtain vacation periods for qdev: %v",
+			"Error while trying to obtain vacation periods or businesss trips for qdev: %v",
 			err,
 		)
 		actions = append(actions, m.reportErrorAction(errTxt))
@@ -179,7 +180,7 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	quadVacationInfo, err := m.vacationsInfo(m.hcmQuadUrl, user.HcmQuad)
 	if err != nil {
 		errTxt := fmt.Sprintf(
-			"Error while trying to obtain vacation periods for quadigi: %v",
+			"Error while trying to obtain vacation periods or business trips for quadigi: %v",
 			err,
 		)
 		actions = append(actions, m.reportErrorAction(errTxt))
@@ -200,6 +201,8 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	return common.NewResponseEvent("HCM", actions...)
 }
 
+// addVacationReleases Add any HCM approved events (vacations/sick
+// leaves/remote work/business trips etc) to parking space releases.
 func (m *Manager) addVacationReleases(
 	vacationInfo VacationData,
 ) []event.ResponseAction {
@@ -305,13 +308,8 @@ type Vacation struct {
 
 type VacationData map[string][]Vacation
 
-// vacationsInfo Fetches employee vacation information (only current and future
-// ones)
-func (m *Manager) vacationsInfo(
-	hcmUrl string,
-	hcmCompany user.HcmCompany,
-) (VacationData, error) {
-	url := hcmUrl + VacationsOfAllEmployeesEndpoint
+func (m *Manager) fetchVacationsInfo(hcmUrl string) (*VacationInfo, error) {
+	url := hcmUrl + VacationsEndpoint
 	b, err := makeHcmRequest(url, m.hcmApiToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make hcm request: url=%q err=%v", url, err)
@@ -322,6 +320,42 @@ func (m *Manager) vacationsInfo(
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal vacations info: %v", err)
 	}
+	return &info, nil
+}
+
+func (m *Manager) fetchBusinessTrips(hcmUrl string) (*VacationInfo, error) {
+	url := hcmUrl + BusinessTripsEndpoint
+	b, err := makeHcmRequest(url, m.hcmApiToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make hcm request: url=%q err=%v", url, err)
+	}
+
+	var info BTripInfo
+	err = xml.Unmarshal(b, &info)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal vacations info: %v", err)
+	}
+	return NewVacationInfoFromBTripInfo(&info), nil
+}
+
+// vacationsInfo Fetches employee vacation information (only current and future
+// ones)
+func (m *Manager) vacationsInfo(
+	hcmUrl string,
+	hcmCompany user.HcmCompany,
+) (VacationData, error) {
+	info, err := m.fetchVacationsInfo(hcmUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	btripInfo, err := m.fetchBusinessTrips(hcmUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge business trips into all vacation items
+	info.Items = append(info.Items, btripInfo.Items...)
 
 	// filter only current and future vacations
 	today := common.TodayDate()
