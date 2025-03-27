@@ -3,3 +3,4 @@ parking_*.json
 users_*.json
 report_*.txt
 *.log
+*hash.json
