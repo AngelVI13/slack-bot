@@ -51,7 +51,9 @@ func addTimerEvents(ev *event.EventManager) {
 	handleHcmBookingTimer := event.NewTimer(ev)
 	// NOTE: HCM checks are triggered multiple times per day to account for
 	// people booking sick leaves or remote work early in the morning or late
-	// in the evening
+	// in the evening.
+	// Important! - the last check of the day has to be before the automatic
+	// release handling
 	for _, t := range []struct {
 		Hour int
 		Min  int

@@ -531,6 +531,44 @@ type VacationInfo struct {
 	Items []VacationItem `xml:"item"`
 }
 
+type BTripValue struct {
+	FirstDay string `xml:"firstDay"`
+	LastDay  string `xml:"lastDay"`
+}
+
+type BTripItem struct {
+	Id      int          `xml:"id"`
+	Periods []BTripValue `xml:"businessTrips>businessTrips"`
+}
+
+type BTripInfo struct {
+	Items []BTripItem `xml:"item"`
+}
+
+func NewVacationInfoFromBTripInfo(btripInfo *BTripInfo) *VacationInfo {
+	out := &VacationInfo{
+		Items: []VacationItem{},
+	}
+
+	for _, item := range btripInfo.Items {
+		var periods []PeriodValue
+		for _, btrip := range item.Periods {
+			periods = append(periods, PeriodValue{
+				Type:     "businessTrip",
+				FirstDay: btrip.FirstDay,
+				LastDay:  btrip.LastDay,
+			})
+		}
+
+		vacationItem := VacationItem{
+			Id:      item.Id,
+			Periods: periods,
+		}
+		out.Items = append(out.Items, vacationItem)
+	}
+	return out
+}
+
 func makeHcmRequest(url, token string) ([]byte, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
