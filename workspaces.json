@@ -3,22 +3,132 @@
 		"4th floor 1": {
 			"Number": 1,
 			"Floor": 4,
-			"Description": "Verification Room",
+			"Description": "4 floor 4.1",
 			"Reserved": false,
-			"AutoRelease": true,
-			"ReservedBy": "angel.iliev",
-			"ReservedById": "U03FBL3R6KU",
-			"ReservedTime": "2024-02-28T13:04:53.421072225+02:00"
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
 		},
 		"4th floor 2": {
 			"Number": 2,
 			"Floor": 4,
-			"Description": "Verification Room",
+			"Description": "4 floor 4.2",
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "ugnius.bertasius",
-			"ReservedById": "U03FQJZ8XC1",
-			"ReservedTime": "2024-02-28T12:16:26.663752087+02:00"
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
+		},
+		"4th floor 3": {
+			"Number": 3,
+			"Floor": 4,
+			"Description": "4 floor 4.3",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
+		},
+		"6th floor 1": {
+			"Number": 1,
+			"Floor": 6,
+			"Description": "6 floor 6.1",
+			"Reserved": false,
+			"AutoRelease": true,
+			"ReservedBy": "paulius.akulavicius",
+			"ReservedById": "U07864USBDW",
+			"ReservedTime": "2025-03-27T09:30:10.376289421+02:00"
+		},
+		"6th floor 10": {
+			"Number": 10,
+			"Floor": 6,
+			"Description": "6 floor 6.10",
+			"Reserved": false,
+			"AutoRelease": true,
+			"ReservedBy": "dovydas.menkevicius",
+			"ReservedById": "U06ABLG4ACX",
+			"ReservedTime": "2025-03-26T20:17:42.342253261+02:00"
+		},
+		"6th floor 2": {
+			"Number": 2,
+			"Floor": 6,
+			"Description": "6 floor 6.2",
+			"Reserved": true,
+			"AutoRelease": true,
+			"ReservedBy": "xavier.errard",
+			"ReservedById": "U06P235T90A",
+			"ReservedTime": "2025-03-27T08:54:39.623936769+02:00"
+		},
+		"6th floor 3": {
+			"Number": 3,
+			"Floor": 6,
+			"Description": "6 floor 6.3",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
+		},
+		"6th floor 4": {
+			"Number": 4,
+			"Floor": 6,
+			"Description": "6 floor 6.4",
+			"Reserved": true,
+			"AutoRelease": true,
+			"ReservedBy": "dovydas.menkevicius",
+			"ReservedById": "U06ABLG4ACX",
+			"ReservedTime": "2025-03-27T07:02:42.297748204+02:00"
+		},
+		"6th floor 5": {
+			"Number": 5,
+			"Floor": 6,
+			"Description": "6 floor 6.5",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
+		},
+		"6th floor 6": {
+			"Number": 6,
+			"Floor": 6,
+			"Description": "6 floor 6.6",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
+		},
+		"6th floor 7": {
+			"Number": 7,
+			"Floor": 6,
+			"Description": "6 floor 6.7",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
+		},
+		"6th floor 8": {
+			"Number": 8,
+			"Floor": 6,
+			"Description": "6 floor 6.8",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
+		},
+		"6th floor 9": {
+			"Number": 9,
+			"Floor": 6,
+			"Description": "6 floor 6.9",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
 		}
 	},
 	"Filename": "workspaces.json",
