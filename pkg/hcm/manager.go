@@ -275,7 +275,7 @@ func (m *Manager) addVacationReleases(
 				vacation.Type,
 				release.DateRange(),
 			)
-			postAction := common.NewPostEphemeralAction(userId, userId, info, false)
+			postAction := common.NewPostAction(userId, info, false)
 			actions = append(actions, postAction)
 		}
 	}
@@ -290,9 +290,8 @@ func (m *Manager) addVacationReleases(
 	return actions
 }
 
-func (m *Manager) reportErrorAction(errTxt string) *common.PostEphemeralAction {
-	postAction := common.NewPostEphemeralAction(
-		m.reportPersonId,
+func (m *Manager) reportErrorAction(errTxt string) *common.PostAction {
+	postAction := common.NewPostAction(
 		m.reportPersonId,
 		errTxt,
 		false,

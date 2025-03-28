@@ -106,13 +106,12 @@ func (c *Client) ReportError(msg string) {
 	_ = os.WriteFile(filename, []byte(msg), 0o644)
 
 	// Print truncated version of msg to slack
-	post := common.NewPostEphemeralAction(
-		c.reportPersonId,
+	post := common.NewPostAction(
 		c.reportPersonId,
 		msg[:maxLength],
 		false,
 	)
-	c.socket.PostEphemeral(post.ChannelId, post.UserId, post.MsgOption)
+	c.socket.PostMessage(post.ChannelId, post.MsgOption)
 }
 
 func (c *Client) Consume(e event.Event) {

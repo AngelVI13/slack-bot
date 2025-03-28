@@ -193,9 +193,7 @@ func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany HcmCompany) er
 	}
 
 	if exists {
-		return fmt.Errorf(
-			"setting hcmId to a user that already has this Id and Company registered",
-		)
+		return nil
 	}
 
 	user.HcmInfo = append(user.HcmInfo, HcmInfo{

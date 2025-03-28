@@ -88,8 +88,7 @@ func (m *Manager) Consume(e event.Event) {
 		slog.Info("ReleaseWorkspaces")
 		err := m.data.WorkspacesLot.ReleaseSpaces(data.Time)
 		if err != nil {
-			postAction := common.NewPostEphemeralAction(
-				m.reportPersonId,
+			postAction := common.NewPostAction(
 				m.reportPersonId,
 				err.Error(),
 				false,
@@ -237,7 +236,7 @@ func (m *Manager) handleReleaseWorkspace(
 		Release(workSpace, data.UserName, data.UserId)
 	if victimId != "" {
 		slog.Info(errStr)
-		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
+		action := common.NewPostAction(victimId, errStr, false)
 		actions = append(actions, action)
 	}
 

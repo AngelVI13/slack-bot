@@ -80,8 +80,7 @@ func (m *Manager) Consume(e event.Event) {
 		slog.Info("ReleaseSpaces")
 		err := m.data.ParkingLot.ReleaseSpaces(data.Time)
 		if err != nil {
-			postAction := common.NewPostEphemeralAction(
-				m.reportPersonId,
+			postAction := common.NewPostAction(
 				m.reportPersonId,
 				err.Error(),
 				false,
@@ -263,7 +262,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		m.data.ParkingLot.SynchronizeToFile()
 
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
+			common.NewPostAction(data.UserId, errTxt, false),
 		}
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
@@ -354,7 +353,7 @@ func (m *Manager) handleViewSubmissionError(
 	errTxt = fmt.Sprintf("Failed to temporary release space %s: %s", spaceKey, errTxt)
 
 	actions := []event.ResponseAction{
-		common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
+		common.NewPostAction(data.UserId, errTxt, false),
 	}
 	return common.NewResponseEvent(data.UserName, actions...)
 }
@@ -602,7 +601,7 @@ func (m *Manager) handleReleaseParking(
 		)
 		if victimId != "" {
 			slog.Warn(errStr)
-			action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
+			action := common.NewPostAction(victimId, errStr, false)
 			actions = append(actions, action)
 		}
 	}
