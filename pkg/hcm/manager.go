@@ -222,12 +222,19 @@ func (m *Manager) addVacationReleases(
 			continue
 		}
 
-		for _, vacation := range vacations {
+		for i, vacation := range vacations {
 			release := m.data.ParkingLot.ToBeReleased.Add(
-				"hcmViewId",
+				fmt.Sprintf("hcmViewId_%s_%d", hcmKey, i),
 				"ParkingBot",
 				"ParkingBotId",
 				space,
+			)
+			slog.Info(
+				"processing vacation",
+				"userId",
+				userId,
+				"vacation",
+				vacation,
 			)
 			release.StartDate = &vacation.StartDay
 			if release.StartDate.Before(todayDate) {
@@ -241,7 +248,11 @@ func (m *Manager) addVacationReleases(
 
 			overlaps := m.data.ParkingLot.ToBeReleased.CheckOverlap(release)
 			if len(overlaps) > 0 {
-				m.data.ParkingLot.ToBeReleased.Remove(release)
+				slog.Info("vacation overlaps", "overlaps", overlaps, "vacation", vacation)
+				err := m.data.ParkingLot.ToBeReleased.Remove(release)
+				if err != nil {
+					actions = append(actions, m.reportErrorAction(err.Error()))
+				}
 				continue
 			}
 
@@ -303,6 +314,12 @@ type Vacation struct {
 	Type     string
 	StartDay time.Time
 	EndDay   time.Time
+}
+
+func (v Vacation) String() string {
+	return fmt.Sprintf("type=%s, period=[%s-%s]",
+		v.Type, v.StartDay.Format("2006-01-02"), v.EndDay.Format("2006-01-02"),
+	)
 }
 
 type VacationData map[string][]Vacation

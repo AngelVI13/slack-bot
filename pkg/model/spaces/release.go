@@ -10,16 +10,19 @@ import (
 )
 
 type ReleaseInfo struct {
-	ReleaserId string
-	OwnerId    string
-	OwnerName  string
-	Space      *Space
-	StartDate  *time.Time
-	EndDate    *time.Time
-	Cancelled  bool
-	Submitted  bool
-	UniqueId   int
-	Active     bool
+	ReleaserId    string
+	OwnerId       string
+	OwnerName     string
+	Space         *Space
+	StartDate     *time.Time
+	EndDate       *time.Time
+	Cancelled     bool
+	Submitted     bool
+	SubmittedTime *time.Time
+	UniqueId      int
+	Active        bool
+	ActiveTime    *time.Time
+	CreatedTime   *time.Time
 
 	// These are only used while the user is choosing date range to refer
 	// between space selected and release range selected (i.e. between booking modal
@@ -28,9 +31,35 @@ type ReleaseInfo struct {
 	ViewId     string
 }
 
+func NewReleaseInfo(
+	rootViewId, releaserId, ownerId, ownerName string,
+	space *Space,
+) *ReleaseInfo {
+	now := time.Now()
+	return &ReleaseInfo{
+		ReleaserId:    releaserId,
+		OwnerId:       ownerId,
+		OwnerName:     ownerName,
+		Space:         space,
+		StartDate:     nil,
+		EndDate:       nil,
+		Cancelled:     false,
+		Submitted:     false,
+		SubmittedTime: nil,
+		UniqueId:      -1,
+		Active:        false,
+		ActiveTime:    nil,
+		CreatedTime:   &now,
+		RootViewId:    rootViewId,
+		ViewId:        "",
+	}
+}
+
 func (i *ReleaseInfo) MarkSubmitted(releaser string) {
 	slog.Info("ReleaseInfo Submitted", "releaser", releaser, "info", i)
+	now := time.Now()
 	i.Submitted = true
+	i.SubmittedTime = &now
 
 	// Need to reset view IDs as they are no longer needed.
 	// If we don't reset them and user tries to release another
@@ -42,7 +71,9 @@ func (i *ReleaseInfo) MarkSubmitted(releaser string) {
 
 func (i *ReleaseInfo) MarkActive() {
 	slog.Info("ReleaseInfo Active", "info", i)
+	now := time.Now()
 	i.Active = true
+	i.ActiveTime = &now
 }
 
 func (i *ReleaseInfo) MarkCancelled() {
@@ -82,11 +113,12 @@ func (i ReleaseInfo) String() string {
 	}
 
 	return fmt.Sprintf(
-		"ReleaseInfo(space=%s, userName=%s, start=%s, end=%s)",
+		"ReleaseInfo(space=%s, userName=%s, start=%s, end=%s, id=%d)",
 		i.Space.Key(),
 		i.OwnerName,
 		startDateStr,
 		endDateStr,
+		i.UniqueId,
 	)
 }
 
@@ -288,23 +320,14 @@ func (q ReleaseMap) Add(
 		ownerId = active.OwnerId
 	}
 
-	slog.Info("Adding to release map",
-		"space",
-		spaceKey,
-		"releaser",
-		releaserName,
-		"owner",
-		ownerName,
-	)
-	releaseInfo := &ReleaseInfo{
-		RootViewId: viewId,
-		ReleaserId: releaserId,
-		OwnerName:  ownerName,
-		OwnerId:    ownerId,
-		Space:      space,
-		Submitted:  false,
-	}
+	releaseInfo := NewReleaseInfo(viewId, releaserId, ownerId, ownerName, space)
 
 	q[spaceKey].Put(releaseInfo)
+	slog.Info("Adding to release map",
+		"releaser",
+		releaserName,
+		"release",
+		releaseInfo.String(),
+	)
 	return releaseInfo
 }
