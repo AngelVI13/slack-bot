@@ -26,7 +26,7 @@ import (
 const (
 	HandleHcm             = "HandleHCM"
 	ListEmployeesEndpoint = "/ext/api/v1/employees"
-	VacationsEndpoint     = "/ext/api/v1/employees/periods"
+	VacationsEndpoint     = "/ext/api/v1/employees/periods?includeRemoteWork=true"
 	BusinessTripsEndpoint = "/ext/api/v1/employees/businesstrips"
 )
 

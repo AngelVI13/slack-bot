@@ -228,6 +228,9 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	}
 
 	for _, release := range releases {
+		if !release.DataPresent() {
+			continue
+		}
 		releaseBlock := generateTemporaryReleaseBlock(release)
 		allBlocks = append(allBlocks, releaseBlock)
 
