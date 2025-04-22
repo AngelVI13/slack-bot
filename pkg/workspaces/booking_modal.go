@@ -156,6 +156,10 @@ func generateWorkspacePlanBlocks(selectedFloor string) []slack.Block {
 		floorPlanLink = "https://ibb.co/BHYTXW79"
 	} else if strings.HasPrefix(selectedFloor, "6th") {
 		floorPlanLink = "https://ibb.co/pBfBKfmK"
+	} else if strings.HasPrefix(selectedFloor, "5th") {
+		floorPlanLink = "https://ibb.co/wxjTP2w"
+	} else if strings.HasPrefix(selectedFloor, "7th") {
+		floorPlanLink = "https://ibb.co/vCq0y0cb"
 	}
 
 	if floorPlanLink == "" {
