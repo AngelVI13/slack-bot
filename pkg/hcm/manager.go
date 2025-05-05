@@ -253,6 +253,7 @@ func (m *Manager) addVacationReleases(
 				if err != nil {
 					actions = append(actions, m.reportErrorAction(err.Error()))
 				}
+				m.data.ParkingLot.SynchronizeToFile()
 				continue
 			}
 
@@ -288,6 +289,7 @@ func (m *Manager) addVacationReleases(
 			)
 			postAction := common.NewPostAction(userId, info, false)
 			actions = append(actions, postAction)
+			m.data.ParkingLot.SynchronizeToFile()
 		}
 	}
 
