@@ -634,7 +634,12 @@
 		"Id": "U03RS7HH1H8",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": []
+		"HcmInfo": [
+			{
+				"Id": 184,
+				"Company": "Qdev"
+			}
+		]
 	},
 	"ramunas.simonis": {
 		"Id": "U0609JND4CB",

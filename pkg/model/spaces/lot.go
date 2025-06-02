@@ -132,12 +132,12 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) (*Space, error) {
 		if release.Submitted && release.OwnerId == userId {
 			// NOTE: here release contains an outdated copy of a space
 			// therefore have to take an up to date version from UnitSpaces
-			s, found := d.UnitSpaces[release.Space.Key()]
+			s, found := d.UnitSpaces[release.SpaceKey]
 			if !found {
 				return nil, fmt.Errorf(
 					"failed to get original space from release: %v space: %q",
 					release,
-					release.Space.Key(),
+					release.SpaceKey,
 				)
 			}
 			return s, nil
@@ -151,7 +151,8 @@ func (d *SpacesLot) HasTempRelease(userId string) *Space {
 	for _, pool := range d.ToBeReleased {
 		release := pool.Active()
 		if release != nil && release.OwnerId == userId {
-			return release.Space
+			slog.Info("debug", "release", release)
+			return d.GetSpace(release.SpaceKey)
 		}
 	}
 
@@ -435,7 +436,7 @@ func (l *SpacesLot) ReleaseTemp(
 	cTime time.Time,
 	releaseInfo *ReleaseInfo,
 ) {
-	spaceKey := releaseInfo.Space.Key()
+	spaceKey := releaseInfo.SpaceKey
 	// On the day before the start of the release -> make the space
 	// available for selection
 	if releaseInfo.StartDate.Sub(cTime).Hours() < 24 &&

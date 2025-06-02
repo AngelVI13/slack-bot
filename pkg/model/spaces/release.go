@@ -13,7 +13,7 @@ type ReleaseInfo struct {
 	ReleaserId    string
 	OwnerId       string
 	OwnerName     string
-	Space         *Space
+	SpaceKey      SpaceKey
 	StartDate     *time.Time
 	EndDate       *time.Time
 	Cancelled     bool
@@ -33,14 +33,14 @@ type ReleaseInfo struct {
 
 func NewReleaseInfo(
 	rootViewId, releaserId, ownerId, ownerName string,
-	space *Space,
+	spaceKey SpaceKey,
 ) *ReleaseInfo {
 	now := time.Now()
 	return &ReleaseInfo{
 		ReleaserId:    releaserId,
 		OwnerId:       ownerId,
 		OwnerName:     ownerName,
-		Space:         space,
+		SpaceKey:      spaceKey,
 		StartDate:     nil,
 		EndDate:       nil,
 		Cancelled:     false,
@@ -85,7 +85,6 @@ func (i *ReleaseInfo) DataPresent() bool {
 	return (i.ReleaserId != "" &&
 		i.OwnerId != "" &&
 		i.OwnerName != "" &&
-		i.Space != nil &&
 		i.StartDate != nil &&
 		i.EndDate != nil)
 }
@@ -94,7 +93,7 @@ func (i *ReleaseInfo) Check() string {
 	if !i.DataPresent() {
 		return fmt.Sprintf(
 			"Missing date information for temporary release of space (%s)",
-			i.Space.Key(),
+			i.SpaceKey,
 		)
 	}
 
@@ -114,7 +113,7 @@ func (i ReleaseInfo) String() string {
 
 	return fmt.Sprintf(
 		"ReleaseInfo(space=%s, userName=%s, start=%s, end=%s, id=%d)",
-		i.Space.Key(),
+		i.SpaceKey,
 		i.OwnerName,
 		startDateStr,
 		endDateStr,
@@ -184,7 +183,7 @@ func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
 }
 
 func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) []string {
-	spaceKey := release.Space.Key()
+	spaceKey := release.SpaceKey
 	var overlaps []string
 
 	for _, r := range q.GetAll(spaceKey) {
@@ -246,7 +245,7 @@ func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) []string {
 }
 
 func (q ReleaseMap) Remove(release *ReleaseInfo) error {
-	return q.removeRelease(release.Space.Key(), release.UniqueId)
+	return q.removeRelease(release.SpaceKey, release.UniqueId)
 }
 
 func (q ReleaseMap) removeRelease(spaceKey SpaceKey, id int) error {
@@ -320,7 +319,7 @@ func (q ReleaseMap) Add(
 		ownerId = active.OwnerId
 	}
 
-	releaseInfo := NewReleaseInfo(viewId, releaserId, ownerId, ownerName, space)
+	releaseInfo := NewReleaseInfo(viewId, releaserId, ownerId, ownerName, space.Key())
 
 	q[spaceKey].Put(releaseInfo)
 	slog.Info("Adding to release map",

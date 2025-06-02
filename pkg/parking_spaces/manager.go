@@ -244,7 +244,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 
 	overlaps := m.data.ParkingLot.ToBeReleased.CheckOverlap(releaseInfo)
 	if len(overlaps) > 0 {
-		spaceKey := releaseInfo.Space.Key()
+		spaceKey := releaseInfo.SpaceKey
 
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %s: "+
@@ -275,7 +275,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		// Directly release space in two cases:
 		// * Release starts from today
 		// * Release starts from tomorrow & current time is after Reset time
-		m.data.ParkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
+		m.data.ParkingLot.Release(releaseInfo.SpaceKey, data.UserName, data.UserId)
 		releaseInfo.MarkActive()
 	}
 
@@ -655,7 +655,12 @@ func (m *Manager) handleReleaseRange(
 	}
 
 	errTxt := releaseInfo.Check()
-	modal := m.releaseView.Generate(releaseInfo.Space, errTxt)
+	space := m.data.ParkingLot.GetSpace(releaseInfo.SpaceKey)
+	if space == nil {
+		slog.Error("Failed to get space from key", "key", releaseInfo.SpaceKey)
+		return nil
+	}
+	modal := m.releaseView.Generate(space, errTxt)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errTxt)
 	return []event.ResponseAction{action}
 }
