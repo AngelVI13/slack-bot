@@ -72,7 +72,7 @@ func (p *Personal) generateParkingSpaceBlock(
 }
 
 func generateTemporaryReleaseBlock(
-	release *spaces.ReleaseInfo,
+	release spaces.ReleaseInfo,
 ) *slack.SectionBlock {
 	releaseId := release.UniqueId
 	clockN := (releaseId % 12) + 1

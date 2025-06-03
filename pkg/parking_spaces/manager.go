@@ -1,7 +1,9 @@
 package parking_spaces
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"strconv"
 	"time"
@@ -10,6 +12,7 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
+	"github.com/AngelVI13/slack-bot/pkg/model/my_err"
 	parkingModel "github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
@@ -234,7 +237,10 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return errResp
 	}
 
-	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	releaseInfo, err := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	if errors.Is(err, my_err.ErrNotFound) {
+		log.Fatalf("failed to find release by ViewId: %s", data.ViewId)
+	}
 
 	rootViewId := releaseInfo.RootViewId
 
@@ -279,6 +285,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		releaseInfo.MarkActive()
 	}
 
+	m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 	m.data.ParkingLot.SynchronizeToFile()
 
 	errTxt := ""
@@ -359,13 +366,14 @@ func (m *Manager) handleViewSubmissionError(
 }
 
 func (m *Manager) handleViewOpened(data *slackApi.ViewOpened) {
-	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByRootViewId(data.RootViewId)
-	if releaseInfo == nil {
+	releaseInfo, err := m.data.ParkingLot.ToBeReleased.GetByRootViewId(data.RootViewId)
+	if errors.Is(err, my_err.ErrNotFound) {
 		return
 	}
 
 	// Associates original view with the new pushed view
 	releaseInfo.ViewId = data.ViewId
+	m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 }
 
 func (m *Manager) handleViewClosed(data *slackApi.ViewClosed) {
@@ -459,9 +467,13 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 	errorTxt := ""
 
-	releaseInfo := m.data.ParkingLot.ToBeReleased.Get(parkingSpace, releaseId)
-	if releaseInfo == nil {
-		errorTxt = fmt.Sprintf("Couldn't find release info for space %s", parkingSpace)
+	releaseInfo, err := m.data.ParkingLot.ToBeReleased.Get(parkingSpace, releaseId)
+	if errors.Is(err, my_err.ErrNotFound) {
+		errorTxt = fmt.Sprintf(
+			"Couldn't find release info (id=%d) for space %s",
+			releaseId,
+			parkingSpace,
+		)
 	} else if !releaseInfo.Active {
 		slog.Info("Cancel scheduled (not active) temp. release", "space", parkingSpace, "releaseInfo", releaseInfo)
 		err := m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
@@ -495,6 +507,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 					"space", parkingSpace, "releaseInfo", releaseInfo)
 				releaseInfo.EndDate = &now
 				releaseInfo.MarkCancelled()
+				m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 				errorTxt = fmt.Sprintf(
 					"Temporary release cancelled. The space %s will be returned to you today at %d:%02d",
 					parkingSpace,
@@ -524,8 +537,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 					"Temporary release cancelled (after eod). Space is taken. Return to owner tomorrow after eod.",
 					"space", parkingSpace, "releaseInfo", releaseInfo)
 				errorTxt = fmt.Sprintf(
-					`Temporary release cancelled but someone already reserved the space 
-                    for tomorrow. The space %s will be returned to you tomorrow at %d:%02d.`,
+					`Temporary release cancelled but someone already reserved the space for tomorrow. The space %s will be returned to you tomorrow at %d:%02d.`,
 					parkingSpace,
 					ResetHour,
 					ResetMin,
@@ -534,6 +546,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 				tomorrow := now.Add(time.Duration(hoursTillMidnight) * time.Hour)
 				releaseInfo.EndDate = &tomorrow
 				releaseInfo.MarkCancelled()
+				m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 			} else {
 				// if parking space was not already reserved for the next day
 				// transfer it to owner
@@ -637,13 +650,13 @@ func (m *Manager) handleReleaseRange(
 		return nil
 	}
 
-	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	releaseInfo, err := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
 	// NOTE: releaseInfo is created when the user clicks "Release" button
-	if releaseInfo == nil {
+	if errors.Is(err, my_err.ErrNotFound) {
 		slog.Error(
-			"Expected release info to be not nil",
-			"ToBeReleased",
-			m.data.ParkingLot.ToBeReleased,
+			"failed to get release by viewId",
+			"viewId",
+			data.ViewId,
 		)
 		return nil
 	}
@@ -653,6 +666,7 @@ func (m *Manager) handleReleaseRange(
 	} else {
 		releaseInfo.EndDate = &date
 	}
+	m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 
 	errTxt := releaseInfo.Check()
 	space := m.data.ParkingLot.GetSpace(releaseInfo.SpaceKey)

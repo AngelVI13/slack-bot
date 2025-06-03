@@ -271,6 +271,7 @@ func (m *Manager) addVacationReleases(
 				space.Reserved = false
 				release.MarkActive()
 			}
+			m.data.ParkingLot.ToBeReleased.Update(release)
 
 			slog.Info(
 				"HCM add temporary release",

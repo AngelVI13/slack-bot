@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/AngelVI13/slack-bot/pkg/model/my_err"
 )
 
 type SpaceType int
@@ -149,9 +151,11 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) (*Space, error) {
 
 func (d *SpacesLot) HasTempRelease(userId string) *Space {
 	for _, pool := range d.ToBeReleased {
-		release := pool.Active()
-		if release != nil && release.OwnerId == userId {
-			slog.Info("debug", "release", release)
+		release, err := pool.Active()
+		if errors.Is(err, my_err.ErrNotFound) {
+			continue
+		}
+		if release.OwnerId == userId {
 			return d.GetSpace(release.SpaceKey)
 		}
 	}
@@ -405,15 +409,6 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
 
 		// If a scheduled release was setup
 		for _, release := range l.ToBeReleased.GetAll(spaceKey) {
-			if release == nil {
-				err := fmt.Errorf(
-					"[SKIP] ReleaseSpaces release is nil. spaceKey=%q",
-					spaceKey,
-				)
-				errs = append(errs, err)
-				continue
-			}
-
 			if !release.DataPresent() || !release.Submitted {
 				err := fmt.Errorf(
 					"[SKIP] ReleaseSpaces release is not fully filled or not submitted. spaceKey=%q; release=%v",
@@ -434,7 +429,7 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
 func (l *SpacesLot) ReleaseTemp(
 	space *Space,
 	cTime time.Time,
-	releaseInfo *ReleaseInfo,
+	releaseInfo ReleaseInfo,
 ) {
 	spaceKey := releaseInfo.SpaceKey
 	// On the day before the start of the release -> make the space
@@ -445,6 +440,7 @@ func (l *SpacesLot) ReleaseTemp(
 		space.Reserved = false
 		space.AutoRelease = false
 		releaseInfo.MarkActive()
+		l.ToBeReleased.Update(releaseInfo)
 	} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
 		// On the day of the end of release -> reserve back the space
 		// for the correct user

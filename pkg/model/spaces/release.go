@@ -1,15 +1,20 @@
 package spaces
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/model/my_err"
 )
 
+var EmptyRelease = NewEmptyRelease()
+
 type ReleaseInfo struct {
+	InUse         bool
 	ReleaserId    string
 	OwnerId       string
 	OwnerName     string
@@ -32,11 +37,13 @@ type ReleaseInfo struct {
 }
 
 func NewReleaseInfo(
+	uniqueId int,
 	rootViewId, releaserId, ownerId, ownerName string,
 	spaceKey SpaceKey,
-) *ReleaseInfo {
+) ReleaseInfo {
 	now := time.Now()
-	return &ReleaseInfo{
+	return ReleaseInfo{
+		InUse:         true,
 		ReleaserId:    releaserId,
 		OwnerId:       ownerId,
 		OwnerName:     ownerName,
@@ -46,11 +53,32 @@ func NewReleaseInfo(
 		Cancelled:     false,
 		Submitted:     false,
 		SubmittedTime: nil,
-		UniqueId:      -1,
+		UniqueId:      uniqueId,
 		Active:        false,
 		ActiveTime:    nil,
 		CreatedTime:   &now,
 		RootViewId:    rootViewId,
+		ViewId:        "",
+	}
+}
+
+func NewEmptyRelease() ReleaseInfo {
+	return ReleaseInfo{
+		InUse:         false,
+		ReleaserId:    "",
+		OwnerId:       "",
+		OwnerName:     "",
+		SpaceKey:      "",
+		StartDate:     nil,
+		EndDate:       nil,
+		Cancelled:     false,
+		Submitted:     false,
+		SubmittedTime: nil,
+		UniqueId:      -1,
+		Active:        false,
+		ActiveTime:    nil,
+		CreatedTime:   nil,
+		RootViewId:    "",
 		ViewId:        "",
 	}
 }
@@ -138,7 +166,7 @@ func (i ReleaseInfo) DateRange() string {
 // ... a lot of dangling pointers around..
 type ReleaseMap map[SpaceKey]*ReleasePool
 
-func (q ReleaseMap) GetAll(spaceKey SpaceKey) []*ReleaseInfo {
+func (q ReleaseMap) GetAll(spaceKey SpaceKey) []ReleaseInfo {
 	releasePool, ok := q[spaceKey]
 	if !ok {
 		return nil
@@ -146,43 +174,55 @@ func (q ReleaseMap) GetAll(spaceKey SpaceKey) []*ReleaseInfo {
 	return releasePool.All()
 }
 
-func (q ReleaseMap) Get(spaceKey SpaceKey, id int) *ReleaseInfo {
+func (q ReleaseMap) Get(spaceKey SpaceKey, id int) (ReleaseInfo, error) {
 	releasePool, ok := q[spaceKey]
 	if !ok {
-		return nil
+		return EmptyRelease, my_err.ErrNotFound
 	}
-	return releasePool.ByIdx(id)
+	return releasePool.ByIdx(id), nil
 }
 
-func (q ReleaseMap) GetActive(spaceKey SpaceKey) *ReleaseInfo {
+func (q ReleaseMap) GetActive(spaceKey SpaceKey) (ReleaseInfo, error) {
 	releasePool, ok := q[spaceKey]
 	if !ok {
-		return nil
+		return EmptyRelease, my_err.ErrNotFound
 	}
 	return releasePool.Active()
 }
 
-func (q ReleaseMap) GetByRootViewId(rootId string) *ReleaseInfo {
-	for _, pool := range q {
-		release := pool.ByRootViewId(rootId)
-		if release != nil {
-			return release
-		}
+func (q ReleaseMap) HasActiveRelease(spaceKey SpaceKey) bool {
+	releasePool, ok := q[spaceKey]
+	if !ok {
+		return false
 	}
-	return nil
+	_, err := releasePool.Active()
+	return !errors.Is(err, my_err.ErrNotFound)
 }
 
-func (q ReleaseMap) GetByViewId(viewId string) *ReleaseInfo {
+func (q ReleaseMap) GetByRootViewId(rootId string) (ReleaseInfo, error) {
 	for _, pool := range q {
-		release := pool.ByViewId(viewId)
-		if release != nil {
-			return release
+		release, err := pool.ByRootViewId(rootId)
+		if errors.Is(err, my_err.ErrNotFound) {
+			continue
 		}
+
+		return release, nil
 	}
-	return nil
+	return EmptyRelease, my_err.ErrNotFound
 }
 
-func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) []string {
+func (q ReleaseMap) GetByViewId(viewId string) (ReleaseInfo, error) {
+	for _, pool := range q {
+		release, err := pool.ByViewId(viewId)
+		if errors.Is(err, my_err.ErrNotFound) {
+			continue
+		}
+		return release, nil
+	}
+	return EmptyRelease, my_err.ErrNotFound
+}
+
+func (q ReleaseMap) CheckOverlap(release ReleaseInfo) []string {
 	spaceKey := release.SpaceKey
 	var overlaps []string
 
@@ -244,7 +284,37 @@ func (q ReleaseMap) CheckOverlap(release *ReleaseInfo) []string {
 	return overlaps
 }
 
-func (q ReleaseMap) Remove(release *ReleaseInfo) error {
+func (q ReleaseMap) Update(release ReleaseInfo) error {
+	spaceKey := release.SpaceKey
+	pool, ok := q[spaceKey]
+	if !ok {
+		return fmt.Errorf("spaceKey not in release map: %q", spaceKey)
+	}
+
+	// TODO: maybe remove or add more info here
+	slog.Info(
+		"Updating release from release map",
+		"space",
+		spaceKey,
+		"release",
+		release.UniqueId,
+	)
+	err := pool.Update(release)
+	if err != nil {
+		slog.Error(
+			"failed to update release from release map",
+			"err",
+			err,
+			"space",
+			spaceKey,
+			"release",
+			release.UniqueId,
+		)
+	}
+	return err
+}
+
+func (q ReleaseMap) Remove(release ReleaseInfo) error {
 	return q.removeRelease(release.SpaceKey, release.UniqueId)
 }
 
@@ -272,12 +342,12 @@ func (q ReleaseMap) RemoveAllReleases(spaceKey SpaceKey) {
 func (q ReleaseMap) RemoveByViewId(viewId string) (SpaceKey, bool) {
 	spaceKey := SpaceKey("")
 	for space, pool := range q {
-		releaseInfo := pool.ByViewId(viewId)
-		if releaseInfo == nil {
+		releaseInfo, err := pool.ByViewId(viewId)
+		if errors.Is(err, my_err.ErrNotFound) {
 			continue
 		}
 
-		err := pool.Remove(releaseInfo.UniqueId)
+		err = pool.Remove(releaseInfo.UniqueId)
 		if err != nil {
 			log.Fatalf("failed to remove release by view id: %v", err)
 		}
@@ -293,7 +363,7 @@ func (q ReleaseMap) Add(
 	releaserName,
 	releaserId string,
 	space *Space,
-) *ReleaseInfo {
+) ReleaseInfo {
 	spaceKey := space.Key()
 
 	pool, found := q[spaceKey]
@@ -313,15 +383,19 @@ func (q ReleaseMap) Add(
 	ownerName := space.ReservedBy
 	ownerId := space.ReservedById
 
-	active := pool.Active()
-	if active != nil {
+	active, err := pool.Active()
+	if err == nil {
 		ownerName = active.OwnerName
 		ownerId = active.OwnerId
 	}
 
-	releaseInfo := NewReleaseInfo(viewId, releaserId, ownerId, ownerName, space.Key())
-
-	q[spaceKey].Put(releaseInfo)
+	releaseInfo := q[spaceKey].Add(
+		viewId,
+		releaserId,
+		ownerId,
+		ownerName,
+		space.Key(),
+	)
 	slog.Info("Adding to release map",
 		"releaser",
 		releaserName,
