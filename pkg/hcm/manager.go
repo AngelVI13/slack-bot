@@ -253,17 +253,10 @@ func (m *Manager) addVacationReleases(
 				if err != nil {
 					actions = append(actions, m.reportErrorAction(err.Error()))
 				}
-				m.data.ParkingLot.SynchronizeToFile()
 				continue
 			}
 
-			key := MakeVacationHash(
-				employee.Id,
-				employee.Company,
-				vacation.StartDay.Format("2006-01-02"),
-				vacation.EndDay.Format("2006-01-02"),
-			)
-			m.vacationsHash[key] = true
+			m.vacationsHash[vacation.Key] = true
 			release.MarkSubmitted("HCM")
 
 			if common.EqualDate(*release.StartDate, todayDate) {
@@ -317,6 +310,7 @@ type Vacation struct {
 	Type     string
 	StartDay time.Time
 	EndDay   time.Time
+	Key      string
 }
 
 func (v Vacation) String() string {
@@ -428,6 +422,7 @@ func (m *Manager) vacationsInfo(
 				Type:     period.Type,
 				StartDay: startDate,
 				EndDay:   endDate,
+				Key:      key,
 			})
 			hcmEmployee := HcmEmployee{
 				Id:      employee.Id,

@@ -1,4 +1,7 @@
 #!/usr/bin/bash
+
+# NOTE: for this you first need to create a ssh key and put it on the remote machine
+# you also need to install `keychain`
 eval $(keychain --eval /home/angel/.ssh/id_ed25519)
 
 timestamp() {
