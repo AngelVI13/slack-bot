@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/model/my_err"
 )
 
@@ -407,8 +408,18 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
 			// released space has to be reserved
 		}
 
+		allReleases := l.ToBeReleased.GetAll(spaceKey)
+		slices.SortFunc(allReleases, func(a, b ReleaseInfo) int {
+			if a.StartDate.Before(*b.StartDate) {
+				return -1
+			} else if common.EqualDate(*a.StartDate, *b.StartDate) {
+				return 0
+			} else {
+				return 1
+			}
+		})
 		// If a scheduled release was setup
-		for _, release := range l.ToBeReleased.GetAll(spaceKey) {
+		for _, release := range allReleases {
 			if !release.DataPresent() || !release.Submitted {
 				err := fmt.Errorf(
 					"[SKIP] ReleaseSpaces release is not fully filled or not submitted. spaceKey=%q; release=%v",
