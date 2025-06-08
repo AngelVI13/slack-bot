@@ -23,4 +23,4 @@ scp tmt@172.20.2.200:$remote_dir/slack-bot "${backup_dir}/slack-bot"
 
 # Remove some noise from the log
 sed -i 's/tmt-pro.*level=//' "${backup_dir}/parking.log"
-
+echo "Backup successful: $backup_dir"
