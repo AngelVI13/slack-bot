@@ -223,6 +223,10 @@ func (m *Manager) addVacationReleases(
 		}
 
 		for i, vacation := range vacations {
+			// copy to local variable cause we are taking pointers to it and in
+			// older version of go the loop variable always has the same
+			// address
+			vacation := vacation
 			release := m.data.ParkingLot.ToBeReleased.Add(
 				fmt.Sprintf("hcmViewId_%s_%d", hcmKey, i),
 				"ParkingBot",
@@ -236,6 +240,7 @@ func (m *Manager) addVacationReleases(
 				"vacation",
 				vacation,
 			)
+
 			release.StartDate = &vacation.StartDay
 			if release.StartDate.Before(todayDate) {
 				// NOTE: we only create requests for the future. so
