@@ -109,7 +109,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 			"You don't have permission to execute '%s' command",
 			SlashCmd,
 		)
-		action := common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false)
+		action := common.NewPostAction(data.UserId, errTxt, false)
 		return common.NewResponseEvent(data.UserName, action)
 	}
 
@@ -145,10 +145,9 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 func (m *Manager) errorMessageAction(
 	data *slackApi.BaseEvent,
 	errTxt string,
-) *common.PostEphemeralAction {
+) *common.PostAction {
 	slog.Error(errTxt, "requestor", data.UserName)
-	action := common.NewPostEphemeralAction(
-		data.UserId,
+	action := common.NewPostAction(
 		data.UserId,
 		errTxt,
 		false,

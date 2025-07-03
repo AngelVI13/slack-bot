@@ -1,14 +1,18 @@
 package parking_spaces
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
+	"github.com/AngelVI13/slack-bot/pkg/model/my_err"
 	parkingModel "github.com/AngelVI13/slack-bot/pkg/parking_spaces/model"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces/views"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
@@ -26,24 +30,27 @@ const (
 )
 
 type Manager struct {
-	eventManager *event.EventManager
-	data         *parkingModel.ParkingData
-	bookingView  *views.Booking
-	releaseView  *views.Release
-	personalView *views.Personal
+	eventManager   *event.EventManager
+	data           *parkingModel.ParkingData
+	bookingView    *views.Booking
+	releaseView    *views.Release
+	personalView   *views.Personal
+	reportPersonId string
 }
 
 func NewManager(
 	eventManager *event.EventManager,
 	data *model.Data,
+	conf *config.Config,
 ) *Manager {
 	parkingData := parkingModel.NewParkingData(data)
 	return &Manager{
-		eventManager: eventManager,
-		data:         parkingData,
-		bookingView:  views.NewBooking(Identifier, parkingData),
-		releaseView:  views.NewRelease(Identifier, parkingData),
-		personalView: views.NewPersonal(Identifier, parkingData),
+		eventManager:   eventManager,
+		data:           parkingData,
+		bookingView:    views.NewBooking(Identifier, parkingData),
+		releaseView:    views.NewRelease(Identifier, parkingData),
+		personalView:   views.NewPersonal(Identifier, parkingData),
+		reportPersonId: conf.ReportPersonId,
 	}
 }
 
@@ -74,7 +81,17 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		slog.Info("ReleaseSpaces")
-		m.data.ParkingLot.ReleaseSpaces(data.Time)
+		err := m.data.ParkingLot.ReleaseSpaces(data.Time)
+		if err != nil {
+			postAction := common.NewPostAction(
+				m.reportPersonId,
+				err.Error(),
+				false,
+			)
+
+			response := common.NewResponseEvent("Parking ReleaseSpaces Timer", postAction)
+			m.eventManager.Publish(response)
+		}
 	case event.ViewSubmissionEvent:
 		data := e.(*slackApi.ViewSubmission)
 
@@ -220,7 +237,10 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		return errResp
 	}
 
-	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	releaseInfo, err := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	if errors.Is(err, my_err.ErrNotFound) {
+		log.Fatalf("failed to find release by ViewId: %s", data.ViewId)
+	}
 
 	rootViewId := releaseInfo.RootViewId
 
@@ -230,7 +250,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 
 	overlaps := m.data.ParkingLot.ToBeReleased.CheckOverlap(releaseInfo)
 	if len(overlaps) > 0 {
-		spaceKey := releaseInfo.Space.Key()
+		spaceKey := releaseInfo.SpaceKey
 
 		errTxt := fmt.Sprintf(
 			"Failed to temporary release space %s: "+
@@ -248,7 +268,7 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		m.data.ParkingLot.SynchronizeToFile()
 
 		actions = []event.ResponseAction{
-			common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
+			common.NewPostAction(data.UserId, errTxt, false),
 		}
 		return common.NewResponseEvent(data.UserName, actions...)
 	}
@@ -261,10 +281,11 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		// Directly release space in two cases:
 		// * Release starts from today
 		// * Release starts from tomorrow & current time is after Reset time
-		m.data.ParkingLot.Release(releaseInfo.Space.Key(), data.UserName, data.UserId)
+		m.data.ParkingLot.Release(releaseInfo.SpaceKey, data.UserName, data.UserId)
 		releaseInfo.MarkActive()
 	}
 
+	m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 	m.data.ParkingLot.SynchronizeToFile()
 
 	errTxt := ""
@@ -339,19 +360,20 @@ func (m *Manager) handleViewSubmissionError(
 	errTxt = fmt.Sprintf("Failed to temporary release space %s: %s", spaceKey, errTxt)
 
 	actions := []event.ResponseAction{
-		common.NewPostEphemeralAction(data.UserId, data.UserId, errTxt, false),
+		common.NewPostAction(data.UserId, errTxt, false),
 	}
 	return common.NewResponseEvent(data.UserName, actions...)
 }
 
 func (m *Manager) handleViewOpened(data *slackApi.ViewOpened) {
-	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByRootViewId(data.RootViewId)
-	if releaseInfo == nil {
+	releaseInfo, err := m.data.ParkingLot.ToBeReleased.GetByRootViewId(data.RootViewId)
+	if errors.Is(err, my_err.ErrNotFound) {
 		return
 	}
 
 	// Associates original view with the new pushed view
 	releaseInfo.ViewId = data.ViewId
+	m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 }
 
 func (m *Manager) handleViewClosed(data *slackApi.ViewClosed) {
@@ -416,26 +438,12 @@ func (m *Manager) handleTempReleaseParking(
 	// this allows us to restore the space to the original user after the temporary release is over.
 	// NOTE: here the current view Id is used to help us later identify which space the release
 	// modal is referring to
-	info, err := m.data.ParkingLot.ToBeReleased.Add(
+	info := m.data.ParkingLot.ToBeReleased.Add(
 		data.ViewId,
 		data.UserName,
 		data.UserId,
 		chosenParkingSpace,
 	)
-	// If we can't add a space for temporary release queue it likely means that someone
-	// is already trying to do the same thing -> show error in modal
-	if err != nil {
-		errTxt := err.Error()
-		bookingModal := m.bookingView.Generate(data.UserId, views.DefaultPageNum, errTxt)
-		action := common.NewUpdateViewAction(
-			data.TriggerId,
-			data.ViewId,
-			bookingModal,
-			errTxt,
-		)
-		actions = append(actions, action)
-		return actions
-	}
 
 	releaseModal := m.releaseView.Generate(chosenParkingSpace, info.Check())
 	action := common.NewPushViewAction(data.TriggerId, releaseModal)
@@ -459,9 +467,13 @@ func (m *Manager) handleCancelTempReleaseParking(
 
 	errorTxt := ""
 
-	releaseInfo := m.data.ParkingLot.ToBeReleased.Get(parkingSpace, releaseId)
-	if releaseInfo == nil {
-		errorTxt = fmt.Sprintf("Couldn't find release info for space %s", parkingSpace)
+	releaseInfo, err := m.data.ParkingLot.ToBeReleased.Get(parkingSpace, releaseId)
+	if errors.Is(err, my_err.ErrNotFound) {
+		errorTxt = fmt.Sprintf(
+			"Couldn't find release info (id=%d) for space %s",
+			releaseId,
+			parkingSpace,
+		)
 	} else if !releaseInfo.Active {
 		slog.Info("Cancel scheduled (not active) temp. release", "space", parkingSpace, "releaseInfo", releaseInfo)
 		err := m.data.ParkingLot.ToBeReleased.Remove(releaseInfo)
@@ -495,6 +507,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 					"space", parkingSpace, "releaseInfo", releaseInfo)
 				releaseInfo.EndDate = &now
 				releaseInfo.MarkCancelled()
+				m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 				errorTxt = fmt.Sprintf(
 					"Temporary release cancelled. The space %s will be returned to you today at %d:%02d",
 					parkingSpace,
@@ -524,8 +537,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 					"Temporary release cancelled (after eod). Space is taken. Return to owner tomorrow after eod.",
 					"space", parkingSpace, "releaseInfo", releaseInfo)
 				errorTxt = fmt.Sprintf(
-					`Temporary release cancelled but someone already reserved the space 
-                    for tomorrow. The space %s will be returned to you tomorrow at %d:%02d.`,
+					`Temporary release cancelled but someone already reserved the space for tomorrow. The space %s will be returned to you tomorrow at %d:%02d.`,
 					parkingSpace,
 					ResetHour,
 					ResetMin,
@@ -534,6 +546,7 @@ func (m *Manager) handleCancelTempReleaseParking(
 				tomorrow := now.Add(time.Duration(hoursTillMidnight) * time.Hour)
 				releaseInfo.EndDate = &tomorrow
 				releaseInfo.MarkCancelled()
+				m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 			} else {
 				// if parking space was not already reserved for the next day
 				// transfer it to owner
@@ -601,7 +614,7 @@ func (m *Manager) handleReleaseParking(
 		)
 		if victimId != "" {
 			slog.Warn(errStr)
-			action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
+			action := common.NewPostAction(victimId, errStr, false)
 			actions = append(actions, action)
 		}
 	}
@@ -637,13 +650,13 @@ func (m *Manager) handleReleaseRange(
 		return nil
 	}
 
-	releaseInfo := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
+	releaseInfo, err := m.data.ParkingLot.ToBeReleased.GetByViewId(data.ViewId)
 	// NOTE: releaseInfo is created when the user clicks "Release" button
-	if releaseInfo == nil {
+	if errors.Is(err, my_err.ErrNotFound) {
 		slog.Error(
-			"Expected release info to be not nil",
-			"ToBeReleased",
-			m.data.ParkingLot.ToBeReleased,
+			"failed to get release by viewId",
+			"viewId",
+			data.ViewId,
 		)
 		return nil
 	}
@@ -653,9 +666,15 @@ func (m *Manager) handleReleaseRange(
 	} else {
 		releaseInfo.EndDate = &date
 	}
+	m.data.ParkingLot.ToBeReleased.Update(releaseInfo)
 
 	errTxt := releaseInfo.Check()
-	modal := m.releaseView.Generate(releaseInfo.Space, errTxt)
+	space := m.data.ParkingLot.GetSpace(releaseInfo.SpaceKey)
+	if space == nil {
+		slog.Error("Failed to get space from key", "key", releaseInfo.SpaceKey)
+		return nil
+	}
+	modal := m.releaseView.Generate(space, errTxt)
 	action := common.NewUpdateViewAction(data.TriggerId, data.ViewId, modal, errTxt)
 	return []event.ResponseAction{action}
 }

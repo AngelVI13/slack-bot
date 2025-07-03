@@ -10,6 +10,7 @@ import (
 	"github.com/AngelVI13/slack-bot/pkg/edit_parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/edit_workspaces"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/hcm"
 	"github.com/AngelVI13/slack-bot/pkg/model"
 	"github.com/AngelVI13/slack-bot/pkg/parking_spaces"
 	"github.com/AngelVI13/slack-bot/pkg/parking_users"
@@ -47,6 +48,27 @@ func addTimerEvents(ev *event.EventManager) {
 		workspaces.ResetMin,
 		workspaces.ResetWorkspaces,
 	)
+	handleHcmBookingTimer := event.NewTimer(ev)
+	// NOTE: HCM checks are triggered multiple times per day to account for
+	// people booking sick leaves or remote work early in the morning or late
+	// in the evening.
+	// Important! - the last check of the day has to be before the automatic
+	// release handling
+	for _, t := range []struct {
+		Hour int
+		Min  int
+	}{
+		{Hour: 6, Min: 0},
+		{Hour: 8, Min: 0},
+		{Hour: 9, Min: 30},
+		{Hour: parking_spaces.ResetHour - 1, Min: 45},
+	} {
+		handleHcmBookingTimer.AddDaily(
+			t.Hour,
+			t.Min,
+			hcm.HandleHcm,
+		)
+	}
 }
 
 func main() {
@@ -63,10 +85,10 @@ func main() {
 
 	addTimerEvents(eventManager)
 
-	parkingSpacesManager := parking_spaces.NewManager(eventManager, data)
+	parkingSpacesManager := parking_spaces.NewManager(eventManager, data, config)
 	eventManager.SubscribeWithContext(parkingSpacesManager, event.AnyEvent)
 
-	workspacesManager := workspaces.NewManager(eventManager, data)
+	workspacesManager := workspaces.NewManager(eventManager, data, config)
 	eventManager.SubscribeWithContext(workspacesManager, event.AnyEvent)
 
 	parkingUsersManager := parking_users.NewManager(eventManager, data)
@@ -80,6 +102,9 @@ func main() {
 
 	rollManager := roll.NewManager(eventManager)
 	eventManager.Subscribe(rollManager, event.SlashCmdEvent)
+
+	hcmManager := hcm.NewManager(eventManager, data, config)
+	eventManager.Subscribe(hcmManager, event.TimerEvent)
 
 	slackClient := slack.NewClient(config, eventManager)
 	eventManager.Subscribe(slackClient, event.ResponseEvent)

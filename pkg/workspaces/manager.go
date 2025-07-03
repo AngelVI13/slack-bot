@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
 	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
@@ -17,7 +18,7 @@ const (
 	SlashCmd   = "/workspace"
 	// SlashCmd         = "/test-workspace"
 	ChannelNameQDev  = "qdev_technologies"
-	ChannelNameQDigi = "test-qd-bot"
+	ChannelNameQDigi = "quadigi"
 
 	defaultUserOption = ""
 
@@ -34,11 +35,13 @@ type Manager struct {
 	selectedFloor     map[string]string
 	selectedChannel   map[string]string
 	selectedShowTaken map[string]bool
+	reportPersonId    string
 }
 
 func NewManager(
 	eventManager *event.EventManager,
 	data *model.Data,
+	conf *config.Config,
 ) *Manager {
 	return &Manager{
 		eventManager:      eventManager,
@@ -46,6 +49,7 @@ func NewManager(
 		selectedFloor:     map[string]string{},
 		selectedChannel:   map[string]string{},
 		selectedShowTaken: map[string]bool{},
+		reportPersonId:    conf.ReportPersonId,
 	}
 }
 
@@ -82,7 +86,20 @@ func (m *Manager) Consume(e event.Event) {
 		}
 
 		slog.Info("ReleaseWorkspaces")
-		m.data.WorkspacesLot.ReleaseSpaces(data.Time)
+		err := m.data.WorkspacesLot.ReleaseSpaces(data.Time)
+		if err != nil {
+			postAction := common.NewPostAction(
+				m.reportPersonId,
+				err.Error(),
+				false,
+			)
+
+			response := common.NewResponseEvent(
+				"Workspaces ReleaseWorkspaces Timer",
+				postAction,
+			)
+			m.eventManager.Publish(response)
+		}
 	}
 }
 
@@ -219,7 +236,7 @@ func (m *Manager) handleReleaseWorkspace(
 		Release(workSpace, data.UserName, data.UserId)
 	if victimId != "" {
 		slog.Info(errStr)
-		action := common.NewPostEphemeralAction(victimId, victimId, errStr, false)
+		action := common.NewPostAction(victimId, errStr, false)
 		actions = append(actions, action)
 	}
 

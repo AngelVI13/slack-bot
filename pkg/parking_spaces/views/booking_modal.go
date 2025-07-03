@@ -74,8 +74,8 @@ func (b *Booking) generateParkingInfo(spaces spaces.SpacesInfo) []slack.Block {
 		emoji := space.GetStatusEmoji()
 
 		releaseScheduled := ""
-		releaseInfo := b.data.ParkingLot.ToBeReleased.GetActive(space.Key())
-		if releaseInfo != nil {
+		releaseInfo, err := b.data.ParkingLot.ToBeReleased.GetActive(space.Key())
+		if err == nil {
 			releaseScheduled = fmt.Sprintf(
 				"\n\t\tScheduled release from %s to %s",
 				releaseInfo.StartDate.Format("2006-01-02"),
@@ -306,7 +306,7 @@ func (b *Booking) generateParkingInfoBlocks(
 		// -> only let him reserve spaces that are not already owned by someone else
 		// i.e. don't already have temp release active for them
 		if userSpace == nil && b.data.UserManager.HasParkingById(userId) &&
-			b.data.ParkingLot.ToBeReleased.GetActive(space.Key()) != nil {
+			b.data.ParkingLot.ToBeReleased.HasActiveRelease(space.Key()) {
 			allBlocks = append(allBlocks, div)
 			continue
 		}

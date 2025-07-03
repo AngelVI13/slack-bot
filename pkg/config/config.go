@@ -14,7 +14,6 @@ type Config struct {
 
 	DevicesFilename    string
 	UsersFilename      string
-	ReviewersFilename  string
 	ParkingFilename    string
 	WorkspacesFilename string
 
@@ -24,6 +23,11 @@ type Config struct {
 	ProxyEndpoint   string
 
 	ReportPersonId string
+
+	HcmQdevUrl      string
+	HcmQuadUrl      string
+	HcmApiToken     string
+	HcmHashFilename string
 }
 
 // ConfigFromEnv Creates config instance by reading corresponding ENV variables.
@@ -42,12 +46,6 @@ func NewConfigFromEnv(envPath string) *Config {
 		DevicesFilename: os.Getenv("SL_DEVICES_FILE"),
 		UsersFilename:   os.Getenv("SL_USERS_FILE"),
 
-		// NOTE: this file is used to store current list of reviewers
-		// i.e. reviewers are selected one by one until everyone has taken his turn
-		// after which the list is reset to full reviewers list.
-		// I don't see a reason why you might want to have that filename configurable
-		// so hardcoded it will stay.
-		ReviewersFilename:  ".reviewers.txt",
 		ParkingFilename:    os.Getenv("SL_PARKING_FILE"),
 		WorkspacesFilename: os.Getenv("SL_WORKSPACES_FILE"),
 
@@ -57,5 +55,10 @@ func NewConfigFromEnv(envPath string) *Config {
 		ProxyEndpoint:   fmt.Sprintf("%s/proxy", taEndpoint),
 
 		ReportPersonId: os.Getenv("REPORT_PERSON_ID"),
+
+		HcmQdevUrl:      os.Getenv("HCM_QDEV_URL"),
+		HcmQuadUrl:      os.Getenv("HCM_QUAD_URL"),
+		HcmApiToken:     os.Getenv("HCM_API_TOKEN"),
+		HcmHashFilename: os.Getenv("HCM_HASH_FILE"),
 	}
 }

@@ -1,6 +1,8 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/AngelVI13/slack-bot/pkg/event"
 )
 
@@ -34,8 +36,8 @@ func (r *Response) User() string {
 func (r *Response) Info() map[string]any {
 	out := map[string]any{}
 
-	for _, action := range r.Actions() {
-		actionStr := event.ResponseActionNames[action.Action()]
+	for i, action := range r.Actions() {
+		actionStr := fmt.Sprintf("%s.%d", event.ResponseActionNames[action.Action()], i)
 		out[actionStr] = action.Info()
 	}
 	return out

@@ -18,10 +18,24 @@ const (
 	ADMIN
 )
 
+type HcmCompany string
+
+const (
+	HcmQdev    HcmCompany = "Qdev"
+	HcmQuad    HcmCompany = "Quad"
+	HcmUnknown HcmCompany = ""
+)
+
+type HcmInfo struct {
+	Id      int
+	Company HcmCompany
+}
+
 type User struct {
 	Id                  string
 	Rights              AccessRight
 	HasPermanentParking bool `json:"has_parking"`
+	HcmInfo             []HcmInfo
 }
 
 type UsersMap map[string]*User
@@ -111,7 +125,7 @@ func (m *Manager) InsertUser(userId, userName string) error {
 		return fmt.Errorf("UserName (%s) already exists", userName)
 	}
 
-	m.users[userName] = &User{Id: userId}
+	m.users[userName] = &User{Id: userId, HcmInfo: []HcmInfo{}}
 	return nil
 }
 
@@ -140,4 +154,62 @@ func (m *Manager) GetNameFromId(userId string) string {
 		}
 	}
 	return ""
+}
+
+func (m *Manager) GetUserIdFromHcmId(hcmId int, hcmCompany HcmCompany) string {
+	for _, user := range m.users {
+		for _, hcm := range user.HcmInfo {
+			if hcm.Id == hcmId && hcm.Company == hcmCompany {
+				return user.Id
+			}
+		}
+	}
+	return ""
+}
+
+func (m *Manager) AllUserNames() []string {
+	var users []string
+
+	for name := range m.users {
+		users = append(users, name)
+	}
+	return users
+}
+
+func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany HcmCompany) error {
+	user, found := m.users[userName]
+	if !found {
+		return fmt.Errorf("failed to find user by username: %q", userName)
+	}
+
+	exists := false
+	for _, user := range m.users {
+		for _, hcm := range user.HcmInfo {
+			if hcm.Id == hcmId && hcm.Company == hcmCompany {
+				exists = true
+				break
+			}
+		}
+	}
+
+	if exists {
+		return nil
+	}
+
+	user.HcmInfo = append(user.HcmInfo, HcmInfo{
+		Id:      hcmId,
+		Company: hcmCompany,
+	})
+	return nil
+}
+
+func (m *Manager) UsersWithoutHcmId() []string {
+	var users []string
+
+	for name, user := range m.users {
+		if len(user.HcmInfo) == 0 {
+			users = append(users, name)
+		}
+	}
+	return users
 }

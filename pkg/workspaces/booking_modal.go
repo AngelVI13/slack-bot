@@ -3,6 +3,7 @@ package workspaces
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -149,11 +150,44 @@ func (m *Manager) generateNoWorkspacesBlocks(userId string) []slack.Block {
 	}
 }
 
+func generateWorkspacePlanBlocks(selectedFloor string) []slack.Block {
+	floorPlanLink := ""
+	if strings.HasPrefix(selectedFloor, "4th") {
+		floorPlanLink = "https://ibb.co/BHYTXW79"
+	} else if strings.HasPrefix(selectedFloor, "6th") {
+		floorPlanLink = "https://ibb.co/pBfBKfmK"
+	} else if strings.HasPrefix(selectedFloor, "5th") {
+		floorPlanLink = "https://ibb.co/N2HzLkQc"
+	} else if strings.HasPrefix(selectedFloor, "7th") {
+		floorPlanLink = "https://ibb.co/whkDjSH4"
+	}
+
+	if floorPlanLink == "" {
+		return nil
+	}
+
+	floorPlan := slack.NewSectionBlock(
+		slack.NewTextBlockObject(
+			"mrkdwn",
+			fmt.Sprintf("<%s|Workspace Plan for %s>", floorPlanLink, selectedFloor),
+			false,
+			false,
+		),
+		nil,
+		nil,
+	)
+	return []slack.Block{floorPlan}
+}
+
 // generateWorkspaceInfoBlocks Generates space block objects to be used as elements in modal
 func (m *Manager) generateWorkspaceInfoBlocks(
 	userId string, selectedShowTaken bool, errorTxt string,
 ) []slack.Block {
 	allBlocks := []slack.Block{}
+	selectedFloor := m.selectedFloorByChannel(userId)
+
+	workspacePlanBlocks := generateWorkspacePlanBlocks(selectedFloor)
+	allBlocks = append(allBlocks, workspacePlanBlocks...)
 
 	descriptionBlocks := generateWorkspaceTimeBlocks()
 	allBlocks = append(allBlocks, descriptionBlocks...)
@@ -184,7 +218,6 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	if selectedShowTaken {
 		selectedSpaceType = spaces.SpaceTaken
 	}
-	selectedFloor := m.selectedFloorByChannel(userId)
 	spaces := m.data.WorkspacesLot.
 		GetSpacesByFloor(userId, selectedFloor, selectedSpaceType)
 	workspaceSections := m.generateSpacesInfo(spaces)

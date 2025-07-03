@@ -2,6 +2,7 @@ package spaces
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -10,6 +11,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/model/my_err"
 )
 
 type SpaceType int
@@ -131,12 +135,12 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) (*Space, error) {
 		if release.Submitted && release.OwnerId == userId {
 			// NOTE: here release contains an outdated copy of a space
 			// therefore have to take an up to date version from UnitSpaces
-			s, found := d.UnitSpaces[release.Space.Key()]
+			s, found := d.UnitSpaces[release.SpaceKey]
 			if !found {
 				return nil, fmt.Errorf(
 					"failed to get original space from release: %v space: %q",
 					release,
-					release.Space.Key(),
+					release.SpaceKey,
 				)
 			}
 			return s, nil
@@ -148,9 +152,12 @@ func (d *SpacesLot) GetOwnedSpaceByUserId(userId string) (*Space, error) {
 
 func (d *SpacesLot) HasTempRelease(userId string) *Space {
 	for _, pool := range d.ToBeReleased {
-		release := pool.Active()
-		if release != nil && release.OwnerId == userId {
-			return release.Space
+		release, err := pool.Active()
+		if errors.Is(err, my_err.ErrNotFound) {
+			continue
+		}
+		if release.OwnerId == userId {
+			return d.GetSpace(release.SpaceKey)
 		}
 	}
 
@@ -383,8 +390,15 @@ func (l *SpacesLot) GetSpace(unitSpace SpaceKey) *Space {
 	return space
 }
 
-func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
+func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
+	var errs []error
+
 	for spaceKey, space := range l.UnitSpaces {
+		if space == nil {
+			err := fmt.Errorf("[SKIP] ReleaseSpaces space is nil. spaceKey=%q", spaceKey)
+			errs = append(errs, err)
+			continue
+		}
 		// Simple case
 		if space.Reserved && space.AutoRelease {
 			slog.Info("AutoRelease", "space", spaceKey)
@@ -394,21 +408,46 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) {
 			// released space has to be reserved
 		}
 
+		allReleases := l.ToBeReleased.GetAll(spaceKey)
+		var allValidReleases []ReleaseInfo
+		for _, release := range allReleases {
+			if !release.DataPresent() || !release.Submitted {
+				err := fmt.Errorf(
+					"[SKIP] ReleaseSpaces release is not fully filled or not submitted. spaceKey=%q; release=%v",
+					spaceKey,
+					release,
+				)
+				errs = append(errs, err)
+				continue
+			}
+			allValidReleases = append(allValidReleases, release)
+		}
+
+		slices.SortFunc(allValidReleases, func(a, b ReleaseInfo) int {
+			if a.StartDate.Before(*b.StartDate) {
+				return -1
+			} else if common.EqualDate(*a.StartDate, *b.StartDate) {
+				return 0
+			} else {
+				return 1
+			}
+		})
 		// If a scheduled release was setup
-		for _, release := range l.ToBeReleased.GetAll(spaceKey) {
+		for _, release := range allValidReleases {
 			l.ReleaseTemp(space, cTime, release)
 		}
 	}
 
 	l.SynchronizeToFile()
+	return errors.Join(errs...)
 }
 
 func (l *SpacesLot) ReleaseTemp(
 	space *Space,
 	cTime time.Time,
-	releaseInfo *ReleaseInfo,
+	releaseInfo ReleaseInfo,
 ) {
-	spaceKey := releaseInfo.Space.Key()
+	spaceKey := releaseInfo.SpaceKey
 	// On the day before the start of the release -> make the space
 	// available for selection
 	if releaseInfo.StartDate.Sub(cTime).Hours() < 24 &&
@@ -417,6 +456,7 @@ func (l *SpacesLot) ReleaseTemp(
 		space.Reserved = false
 		space.AutoRelease = false
 		releaseInfo.MarkActive()
+		l.ToBeReleased.Update(releaseInfo)
 	} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
 		// On the day of the end of release -> reserve back the space
 		// for the correct user

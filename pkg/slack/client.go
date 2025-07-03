@@ -26,7 +26,8 @@ type Client struct {
 func NewClient(config *config.Config, eventManager *event.EventManager) *Client {
 	client := slack.New(
 		config.SlackAuthToken,
-		slack.OptionDebug(config.Debug),
+		// TODO: this spams the output too much, do i need it ?
+		// slack.OptionDebug(config.Debug),
 		slack.OptionLog(
 			log.New(log.Writer(), "client: ", log.Lshortfile|log.LstdFlags),
 		),
@@ -36,7 +37,8 @@ func NewClient(config *config.Config, eventManager *event.EventManager) *Client 
 	// Convert simple slack client to socket mode client
 	socketClient := socketmode.New(
 		client,
-		socketmode.OptionDebug(config.Debug),
+		// TODO: this spams the output too much, do i need it ?
+		// socketmode.OptionDebug(config.Debug),
 		socketmode.OptionLog(
 			log.New(log.Writer(), "socketmode: ", log.Lshortfile|log.LstdFlags),
 		),
@@ -104,13 +106,12 @@ func (c *Client) ReportError(msg string) {
 	_ = os.WriteFile(filename, []byte(msg), 0o644)
 
 	// Print truncated version of msg to slack
-	post := common.NewPostEphemeralAction(
-		c.reportPersonId,
+	post := common.NewPostAction(
 		c.reportPersonId,
 		msg[:maxLength],
 		false,
 	)
-	c.socket.PostEphemeral(post.ChannelId, post.UserId, post.MsgOption)
+	c.socket.PostMessage(post.ChannelId, post.MsgOption)
 }
 
 func (c *Client) Consume(e event.Event) {

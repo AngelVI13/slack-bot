@@ -1,23 +1,17 @@
 package spaces
 
 import (
-	"errors"
 	"fmt"
 	"log"
+
+	"github.com/AngelVI13/slack-bot/pkg/model/my_err"
 )
 
 const defaultRingBufCapacity = 10
 
-var (
-	ErrEmpty           = errors.New("empty")
-	ErrNotFound        = errors.New("notFound")
-	ErrOutOfRange      = errors.New("id out of range")
-	ErrReleaseMismatch = errors.New("release mismatch")
-)
-
 type ReleasePool struct {
 	Capacity int
-	Data     []*ReleaseInfo
+	Data     []ReleaseInfo
 }
 
 func NewReleasePoolWithCapacity(cap int) (*ReleasePool, error) {
@@ -26,7 +20,7 @@ func NewReleasePoolWithCapacity(cap int) (*ReleasePool, error) {
 	}
 	return &ReleasePool{
 		Capacity: cap,
-		Data:     make([]*ReleaseInfo, cap),
+		Data:     make([]ReleaseInfo, cap),
 	}, nil
 }
 
@@ -38,7 +32,7 @@ func NewReleasePool() *ReleasePool {
 // freeIdx find first free index in the pool
 func (p *ReleasePool) freeIdx() int {
 	for i, v := range p.Data {
-		if v == nil {
+		if !v.InUse {
 			return i
 		}
 	}
@@ -48,7 +42,7 @@ func (p *ReleasePool) freeIdx() int {
 
 func (p *ReleasePool) grow(new_size int) {
 	// Reallocate the whole array with 2x cap
-	new_data := make([]*ReleaseInfo, new_size)
+	new_data := make([]ReleaseInfo, new_size)
 
 	// Realign start to the beginning of the array
 	n_copied := copy(new_data, p.Data)
@@ -60,15 +54,46 @@ func (p *ReleasePool) grow(new_size int) {
 	p.Capacity = new_size
 }
 
-func (p *ReleasePool) Put(v *ReleaseInfo) {
+func (p *ReleasePool) Add(
+	viewId,
+	releaserId,
+	ownerId,
+	ownerName string,
+	spaceKey SpaceKey,
+) ReleaseInfo {
 	idx := p.freeIdx()
 	if idx == -1 {
 		p.grow(2 * p.Capacity)
 		idx = p.freeIdx()
 	}
+	releaseInfo := NewReleaseInfo(idx, viewId, releaserId, ownerId, ownerName, spaceKey)
 
-	v.UniqueId = idx
-	p.Data[idx] = v
+	p.Data[idx] = releaseInfo
+	return releaseInfo
+}
+
+func (p *ReleasePool) Update(release ReleaseInfo) error {
+	// TODO: store hash of last Update for a release and then check if when
+	// updating a release it was not already updated by someone else
+	if !release.InUse {
+		return fmt.Errorf(
+			"%w: can't update release which is not in use: %v",
+			my_err.ErrNotInUse,
+			release,
+		)
+	}
+	id := release.UniqueId
+	if id < 0 && id > p.Capacity {
+		return fmt.Errorf(
+			"%w: can't update release with id=%d from pool with size %d",
+			my_err.ErrOutOfRange,
+			id,
+			p.Capacity,
+		)
+	}
+
+	p.Data[id] = release
+	return nil
 }
 
 // Remove replace the first element of pool that matches the provided
@@ -77,51 +102,51 @@ func (p *ReleasePool) Remove(id int) error {
 	if id < 0 && id > p.Capacity {
 		return fmt.Errorf(
 			"%w: can't remove release with id=%d from pool with size %d",
-			ErrOutOfRange,
+			my_err.ErrOutOfRange,
 			id,
 			p.Capacity,
 		)
 	}
 
-	if p.Data[id] == nil {
+	if !p.Data[id].InUse {
 		return fmt.Errorf(
 			"%w: can't remove release with id=%d from pool - no value at that idx",
-			ErrEmpty,
+			my_err.ErrEmpty,
 			id,
 		)
 	}
 
-	p.Data[id] = nil
+	p.Data[id].InUse = false
 	return nil
 }
 
-func (p *ReleasePool) ByIdx(id int) *ReleaseInfo {
+func (p *ReleasePool) ByIdx(id int) ReleaseInfo {
 	return p.Data[id]
 }
 
-func (p *ReleasePool) ByRootViewId(id string) *ReleaseInfo {
+func (p *ReleasePool) ByRootViewId(id string) (ReleaseInfo, error) {
 	for _, v := range p.Data {
-		if v != nil && v.RootViewId == id {
-			return v
+		if v.InUse && v.RootViewId == id {
+			return v, nil
 		}
 	}
-	return nil
+	return EmptyRelease, my_err.ErrNotFound
 }
 
-func (p *ReleasePool) ByViewId(id string) *ReleaseInfo {
+func (p *ReleasePool) ByViewId(id string) (ReleaseInfo, error) {
 	for _, v := range p.Data {
-		if v != nil && v.ViewId == id {
-			return v
+		if v.InUse && v.ViewId == id {
+			return v, nil
 		}
 	}
-	return nil
+	return EmptyRelease, my_err.ErrNotFound
 }
 
-func (p *ReleasePool) All() []*ReleaseInfo {
-	var releases []*ReleaseInfo
+func (p *ReleasePool) All() []ReleaseInfo {
+	var releases []ReleaseInfo
 
 	for _, release := range p.Data {
-		if release == nil {
+		if !release.InUse {
 			continue
 		}
 
@@ -131,11 +156,11 @@ func (p *ReleasePool) All() []*ReleaseInfo {
 	return releases
 }
 
-func (p *ReleasePool) Active() *ReleaseInfo {
+func (p *ReleasePool) Active() (ReleaseInfo, error) {
 	for _, v := range p.Data {
-		if v != nil && v.Active {
-			return v
+		if v.InUse && v.Active {
+			return v, nil
 		}
 	}
-	return nil
+	return EmptyRelease, my_err.ErrNotFound
 }

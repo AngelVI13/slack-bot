@@ -10,21 +10,22 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var HCMUrl = "https://qdev.hcm.lt:6578"
-
-func listOfAllEmployees(token string) string {
-	endpoint := "/ext/api/v1/employees"
-	return makeRequest(endpoint, token)
+func listOfAllEmployees(url, token string) string {
+	fullUrl := url + "/ext/api/v1/employees"
+	return makeRequest(fullUrl, token)
 }
 
-func vacationsOfAllEmployees(token string) string {
-	endpoint := "/ext/api/v1/employees/periods"
-	return makeRequest(endpoint, token)
+func vacationsOfAllEmployees(url, token string) string {
+	fullUrl := url + "/ext/api/v1/employees/periods"
+	return makeRequest(fullUrl, token)
 }
 
-func makeRequest(endpoint string, token string) string {
-	fullUrl := HCMUrl + endpoint
+func businessTripsOfAllEmployees(url, token string) string {
+	fullUrl := url + "/ext/api/v1/employees/businesstrips"
+	return makeRequest(fullUrl, token)
+}
 
+func makeRequest(fullUrl, token string) string {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {
@@ -37,7 +38,7 @@ func makeRequest(endpoint string, token string) string {
 	// For lithuanian alphabet special characters whereas json returns the literal characters
 	// Might be easiest if i replace the xml espace codes with `.` and perform a regex search to match
 	// a user in the parking bot users.json
-	req.Header.Set("Accept", "application/json")
+	// req.Header.Set("Accept", "application/json")
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -55,7 +56,8 @@ func makeRequest(endpoint string, token string) string {
 
 func main() {
 	godotenv.Load(".env")
-	token := os.Getenv("HCM_API_KEY")
-	fmt.Println(listOfAllEmployees(token))
-	fmt.Println(vacationsOfAllEmployees(token))
+	token := os.Getenv("HCM_API_TOKEN")
+	hcmUrl := os.Getenv("HCM_URL")
+	fmt.Println(listOfAllEmployees(hcmUrl, token))
+	fmt.Println(vacationsOfAllEmployees(hcmUrl, token))
 }

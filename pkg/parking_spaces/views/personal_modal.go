@@ -72,7 +72,7 @@ func (p *Personal) generateParkingSpaceBlock(
 }
 
 func generateTemporaryReleaseBlock(
-	release *spaces.ReleaseInfo,
+	release spaces.ReleaseInfo,
 ) *slack.SectionBlock {
 	releaseId := release.UniqueId
 	clockN := (releaseId % 12) + 1
@@ -228,6 +228,9 @@ func (p *Personal) generatePersonalInfoBlocks(userId, errorTxt string) []slack.B
 	}
 
 	for _, release := range releases {
+		if !release.DataPresent() || !release.Submitted {
+			continue
+		}
 		releaseBlock := generateTemporaryReleaseBlock(release)
 		allBlocks = append(allBlocks, releaseBlock)
 

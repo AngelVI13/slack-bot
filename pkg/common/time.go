@@ -33,6 +33,22 @@ func CheckDateRange(start, end time.Time) string {
 	return ""
 }
 
+func TodayDate() time.Time {
+	today := time.Now()
+	todayDate := time.Date(
+		today.Year(),
+		today.Month(),
+		today.Day(),
+		0,
+		0,
+		0,
+		0,
+		today.Location(),
+	)
+
+	return todayDate
+}
+
 func EqualDate(date1, date2 time.Time) bool {
 	return date1.Year() == date2.Year() && date1.Month() == date2.Month() &&
 		date1.Day() == date2.Day()
