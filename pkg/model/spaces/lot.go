@@ -409,16 +409,7 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
 		}
 
 		allReleases := l.ToBeReleased.GetAll(spaceKey)
-		slices.SortFunc(allReleases, func(a, b ReleaseInfo) int {
-			if a.StartDate.Before(*b.StartDate) {
-				return -1
-			} else if common.EqualDate(*a.StartDate, *b.StartDate) {
-				return 0
-			} else {
-				return 1
-			}
-		})
-		// If a scheduled release was setup
+		var allValidReleases []ReleaseInfo
 		for _, release := range allReleases {
 			if !release.DataPresent() || !release.Submitted {
 				err := fmt.Errorf(
@@ -429,6 +420,20 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
 				errs = append(errs, err)
 				continue
 			}
+			allValidReleases = append(allValidReleases, release)
+		}
+
+		slices.SortFunc(allValidReleases, func(a, b ReleaseInfo) int {
+			if a.StartDate.Before(*b.StartDate) {
+				return -1
+			} else if common.EqualDate(*a.StartDate, *b.StartDate) {
+				return 0
+			} else {
+				return 1
+			}
+		})
+		// If a scheduled release was setup
+		for _, release := range allValidReleases {
 			l.ReleaseTemp(space, cTime, release)
 		}
 	}
