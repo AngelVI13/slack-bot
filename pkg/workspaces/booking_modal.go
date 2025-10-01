@@ -153,9 +153,9 @@ func (m *Manager) generateNoWorkspacesBlocks(userId string) []slack.Block {
 func generateWorkspacePlanBlocks(selectedFloor string) []slack.Block {
 	floorPlanLink := ""
 	if strings.HasPrefix(selectedFloor, "4th") {
-		floorPlanLink = "https://ibb.co/BHYTXW79"
+		floorPlanLink = "https://ibb.co/1YnCHK87"
 	} else if strings.HasPrefix(selectedFloor, "6th") {
-		floorPlanLink = "https://ibb.co/pBfBKfmK"
+		floorPlanLink = "https://ibb.co/kP6vrJs"
 	} else if strings.HasPrefix(selectedFloor, "5th") {
 		floorPlanLink = "https://ibb.co/N2HzLkQc"
 	} else if strings.HasPrefix(selectedFloor, "7th") {
