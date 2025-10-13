@@ -596,6 +596,7 @@ func makeHcmRequest(url, token string) ([]byte, error) {
 	}
 
 	req.Header.Set("x-api-key", token)
+	req.Header.Set("Accept", "application/xml")
 	// NOTE: if this is missing the the reply is in XML format
 	// Might be more useful to use the XML format because it contains escape codes
 	// For lithuanian alphabet special characters whereas json returns the literal characters

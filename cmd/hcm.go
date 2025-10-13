@@ -33,6 +33,7 @@ func makeRequest(fullUrl, token string) string {
 	}
 
 	req.Header.Set("x-api-key", token)
+	req.Header.Set("Accept", "application/xml")
 	// NOTE: if this is missing the the reply is in XML format
 	// Might be more useful to use the XML format because it contains escape codes
 	// For lithuanian alphabet special characters whereas json returns the literal characters
@@ -57,7 +58,7 @@ func makeRequest(fullUrl, token string) string {
 func main() {
 	godotenv.Load(".env")
 	token := os.Getenv("HCM_API_TOKEN")
-	hcmUrl := os.Getenv("HCM_URL")
+	hcmUrl := os.Getenv("HCM_QDEV_URL")
 	fmt.Println(listOfAllEmployees(hcmUrl, token))
 	fmt.Println(vacationsOfAllEmployees(hcmUrl, token))
 }
