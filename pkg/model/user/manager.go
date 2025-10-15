@@ -6,8 +6,6 @@ import (
 	"log"
 	"log/slog"
 	"os"
-
-	"github.com/AngelVI13/slack-bot/pkg/config"
 )
 
 type AccessRight int
@@ -65,12 +63,12 @@ type Manager struct {
 	usersFilename string
 }
 
-func NewManager(config *config.Config) *Manager {
-	usersMap := getUsers(config.UsersFilename)
+func NewManager(usersFilename string) *Manager {
+	usersMap := getUsers(usersFilename)
 
 	return &Manager{
 		users:         usersMap,
-		usersFilename: config.UsersFilename,
+		usersFilename: usersFilename,
 	}
 }
 

@@ -13,7 +13,7 @@ type Data struct {
 }
 
 func NewData(config *config.Config) *Data {
-	userManager := user.NewManager(config)
+	userManager := user.NewManager(config.UsersFilename)
 	parkingLot := spaces.GetSpacesLot(config.ParkingFilename)
 	worspacesLot := spaces.GetSpacesLot(config.WorkspacesFilename)
 	return &Data{
