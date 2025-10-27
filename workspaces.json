@@ -1,19 +1,29 @@
 {
 	"UnitSpaces": {
-		"4th floor 1": {
-			"Number": 1,
-			"Floor": 4,
-			"Description": "4 floor 4.1",
+		"2nd floor 11": {
+			"Number": 11,
+			"Floor": 2,
+			"Description": "5.10",
 			"Reserved": false,
 			"AutoRelease": false,
 			"ReservedBy": "",
 			"ReservedById": "",
 			"ReservedTime": "0001-01-01T00:00:00Z"
 		},
+		"4th floor 1": {
+			"Number": 1,
+			"Floor": 4,
+			"Description": "Shared 4.1",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "giedrius.junda",
+			"ReservedById": "U078D6V5XKM",
+			"ReservedTime": "2025-09-25T08:58:54.314015542+03:00"
+		},
 		"4th floor 2": {
 			"Number": 2,
 			"Floor": 4,
-			"Description": "4 floor 4.2",
+			"Description": "4th floor 4.2",
 			"Reserved": false,
 			"AutoRelease": false,
 			"ReservedBy": "",
@@ -23,62 +33,122 @@
 		"4th floor 3": {
 			"Number": 3,
 			"Floor": 4,
-			"Description": "4 floor 4.3",
+			"Description": "Shared 4.3",
 			"Reserved": false,
 			"AutoRelease": false,
 			"ReservedBy": "",
 			"ReservedById": "",
 			"ReservedTime": "0001-01-01T00:00:00Z"
 		},
-		"6th floor 1": {
-			"Number": 1,
-			"Floor": 6,
-			"Description": "6 floor 6.1",
+		"4th floor 4": {
+			"Number": 4,
+			"Floor": 4,
+			"Description": "Shared 4.4",
 			"Reserved": false,
-			"AutoRelease": true,
-			"ReservedBy": "paulius.akulavicius",
-			"ReservedById": "U07864USBDW",
-			"ReservedTime": "2025-03-27T09:30:10.376289421+02:00"
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
 		},
-		"6th floor 10": {
+		"5th floor 10": {
 			"Number": 10,
-			"Floor": 6,
-			"Description": "6 floor 6.10",
+			"Floor": 5,
+			"Description": "5.5.1",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "ieva.sukyte",
+			"ReservedById": "U03PNFFGMGE",
+			"ReservedTime": "2025-10-23T08:34:47.414111663+03:00"
+		},
+		"5th floor 11": {
+			"Number": 11,
+			"Floor": 5,
+			"Description": "5.10",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "konstancija.radzev164",
+			"ReservedById": "U09B4FN3MNU",
+			"ReservedTime": "2025-10-20T08:35:53.825194228+03:00"
+		},
+		"5th floor 3": {
+			"Number": 3,
+			"Floor": 5,
+			"Description": "5.3",
 			"Reserved": false,
 			"AutoRelease": true,
-			"ReservedBy": "dovydas.menkevicius",
-			"ReservedById": "U06ABLG4ACX",
-			"ReservedTime": "2025-03-26T20:17:42.342253261+02:00"
+			"ReservedBy": "mantas.klupsas",
+			"ReservedById": "U0534P7BFRT",
+			"ReservedTime": "2025-10-22T07:34:25.595235886+03:00"
+		},
+		"5th floor 4": {
+			"Number": 4,
+			"Floor": 5,
+			"Description": "5.4",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "vasily.karpushchenko",
+			"ReservedById": "U03GAKHRJ2E",
+			"ReservedTime": "2025-10-21T17:01:33.574415155+03:00"
+		},
+		"5th floor 5": {
+			"Number": 5,
+			"Floor": 5,
+			"Description": "5.5",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "paulius.karpavicius",
+			"ReservedById": "U06SQCJ7HT3",
+			"ReservedTime": "2025-10-22T08:53:56.819426168+03:00"
+		},
+		"5th floor 6": {
+			"Number": 6,
+			"Floor": 5,
+			"Description": "5.6",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "dainius.petkevicius",
+			"ReservedById": "U052PLMCE20",
+			"ReservedTime": "2025-10-21T17:02:50.970687069+03:00"
+		},
+		"5th floor 7": {
+			"Number": 7,
+			"Floor": 5,
+			"Description": "5.7",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "rafal.michalkevic",
+			"ReservedById": "U03GKSX9BQC",
+			"ReservedTime": "2025-10-21T17:42:29.182148183+03:00"
+		},
+		"5th floor 9": {
+			"Number": 9,
+			"Floor": 5,
+			"Description": "5.9",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "audrius.vasiliauskas",
+			"ReservedById": "U090PSVJR5M",
+			"ReservedTime": "2025-10-24T02:40:13.650843632+03:00"
+		},
+		"6th floor 11": {
+			"Number": 11,
+			"Floor": 6,
+			"Description": "Shared 6.11",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "",
+			"ReservedById": "",
+			"ReservedTime": "0001-01-01T00:00:00Z"
 		},
 		"6th floor 2": {
 			"Number": 2,
 			"Floor": 6,
-			"Description": "6 floor 6.2",
-			"Reserved": true,
-			"AutoRelease": true,
-			"ReservedBy": "xavier.errard",
-			"ReservedById": "U06P235T90A",
-			"ReservedTime": "2025-03-27T08:54:39.623936769+02:00"
-		},
-		"6th floor 3": {
-			"Number": 3,
-			"Floor": 6,
-			"Description": "6 floor 6.3",
+			"Description": "6th floor 6.2",
 			"Reserved": false,
 			"AutoRelease": false,
 			"ReservedBy": "",
 			"ReservedById": "",
 			"ReservedTime": "0001-01-01T00:00:00Z"
-		},
-		"6th floor 4": {
-			"Number": 4,
-			"Floor": 6,
-			"Description": "6 floor 6.4",
-			"Reserved": true,
-			"AutoRelease": true,
-			"ReservedBy": "dovydas.menkevicius",
-			"ReservedById": "U06ABLG4ACX",
-			"ReservedTime": "2025-03-27T07:02:42.297748204+02:00"
 		},
 		"6th floor 5": {
 			"Number": 5,
@@ -86,9 +156,9 @@
 			"Description": "6 floor 6.5",
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "0001-01-01T00:00:00Z"
+			"ReservedBy": "rimvydas.varanis",
+			"ReservedById": "U04TKUY406P",
+			"ReservedTime": "2025-10-09T21:20:50.136981532+03:00"
 		},
 		"6th floor 6": {
 			"Number": 6,
@@ -96,19 +166,19 @@
 			"Description": "6 floor 6.6",
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "0001-01-01T00:00:00Z"
+			"ReservedBy": "dmitrij.zylkov",
+			"ReservedById": "U03FEAQ3N3W",
+			"ReservedTime": "2025-10-01T18:30:55.296994106+03:00"
 		},
 		"6th floor 7": {
 			"Number": 7,
 			"Floor": 6,
 			"Description": "6 floor 6.7",
 			"Reserved": false,
-			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "0001-01-01T00:00:00Z"
+			"AutoRelease": true,
+			"ReservedBy": "daniel.klioc",
+			"ReservedById": "U03F8U4B4LV",
+			"ReservedTime": "2025-09-29T11:02:42.469239713+03:00"
 		},
 		"6th floor 8": {
 			"Number": 8,
@@ -116,9 +186,9 @@
 			"Description": "6 floor 6.8",
 			"Reserved": false,
 			"AutoRelease": false,
-			"ReservedBy": "",
-			"ReservedById": "",
-			"ReservedTime": "0001-01-01T00:00:00Z"
+			"ReservedBy": "daniel.klioc",
+			"ReservedById": "U03F8U4B4LV",
+			"ReservedTime": "2025-10-01T09:37:21.852277353+03:00"
 		},
 		"6th floor 9": {
 			"Number": 9,
@@ -126,9 +196,79 @@
 			"Description": "6 floor 6.9",
 			"Reserved": false,
 			"AutoRelease": false,
+			"ReservedBy": "ilya.kustov",
+			"ReservedById": "U042GHQA51V",
+			"ReservedTime": "2025-06-26T22:48:04.95030799+03:00"
+		},
+		"7th floor 1": {
+			"Number": 1,
+			"Floor": 7,
+			"Description": "7.1",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "bernadeta.nikrevice",
+			"ReservedById": "U07DGJ8HJF6",
+			"ReservedTime": "2025-08-13T09:59:53.120356816+03:00"
+		},
+		"7th floor 10": {
+			"Number": 10,
+			"Floor": 7,
+			"Description": "7.10",
+			"Reserved": false,
+			"AutoRelease": false,
 			"ReservedBy": "",
 			"ReservedById": "",
 			"ReservedTime": "0001-01-01T00:00:00Z"
+		},
+		"7th floor 2": {
+			"Number": 2,
+			"Floor": 7,
+			"Description": "7.2",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "aivaras.kalnaitis",
+			"ReservedById": "U07HL1NP0B1",
+			"ReservedTime": "2025-10-14T09:27:01.69996828+03:00"
+		},
+		"7th floor 3": {
+			"Number": 3,
+			"Floor": 7,
+			"Description": "7.3",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "egle.savickiene",
+			"ReservedById": "U07SR2RPYCS",
+			"ReservedTime": "2025-08-13T11:08:38.852877773+03:00"
+		},
+		"7th floor 4": {
+			"Number": 4,
+			"Floor": 7,
+			"Description": "7.4",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "gediminas.zukaitis",
+			"ReservedById": "U03FQU7L69X",
+			"ReservedTime": "2025-09-26T08:49:32.457040956+03:00"
+		},
+		"7th floor 5": {
+			"Number": 5,
+			"Floor": 7,
+			"Description": "7.5",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "agne.moleikaityte",
+			"ReservedById": "U08PFAKFPED",
+			"ReservedTime": "2025-10-02T10:17:41.630988782+03:00"
+		},
+		"7th floor 9": {
+			"Number": 9,
+			"Floor": 7,
+			"Description": "7.9",
+			"Reserved": false,
+			"AutoRelease": false,
+			"ReservedBy": "gediminas.zukaitis",
+			"ReservedById": "U03FQU7L69X",
+			"ReservedTime": "2025-10-24T09:13:30.855142648+03:00"
 		}
 	},
 	"Filename": "workspaces.json",

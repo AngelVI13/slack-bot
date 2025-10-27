@@ -16,24 +16,29 @@ const (
 	ADMIN
 )
 
-type HcmCompany string
+type Company string
 
 const (
-	HcmQdev    HcmCompany = "Qdev"
-	HcmQuad    HcmCompany = "Quad"
-	HcmUnknown HcmCompany = ""
+	Qdev           Company = "Qdev"
+	Quad           Company = "Quad"
+	UnknownCompany Company = ""
 )
 
-type HcmInfo struct {
-	Id      int
-	Company HcmCompany
+type CompanyId interface {
+	int | string
+}
+
+type CompanyInfo[T CompanyId] struct {
+	Id      T
+	Company Company
 }
 
 type User struct {
 	Id                  string
 	Rights              AccessRight
 	HasPermanentParking bool `json:"has_parking"`
-	HcmInfo             []HcmInfo
+	HcmInfo             []CompanyInfo[int]
+	BssInfo             []CompanyInfo[string]
 }
 
 type UsersMap map[string]*User
@@ -123,7 +128,11 @@ func (m *Manager) InsertUser(userId, userName string) error {
 		return fmt.Errorf("UserName (%s) already exists", userName)
 	}
 
-	m.users[userName] = &User{Id: userId, HcmInfo: []HcmInfo{}}
+	m.users[userName] = &User{
+		Id:      userId,
+		HcmInfo: []CompanyInfo[int]{},
+		BssInfo: []CompanyInfo[string]{},
+	}
 	return nil
 }
 
@@ -154,7 +163,7 @@ func (m *Manager) GetNameFromId(userId string) string {
 	return ""
 }
 
-func (m *Manager) GetUserIdFromHcmId(hcmId int, hcmCompany HcmCompany) string {
+func (m *Manager) GetUserIdFromHcmId(hcmId int, hcmCompany Company) string {
 	for _, user := range m.users {
 		for _, hcm := range user.HcmInfo {
 			if hcm.Id == hcmId && hcm.Company == hcmCompany {
@@ -174,7 +183,7 @@ func (m *Manager) AllUserNames() []string {
 	return users
 }
 
-func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany HcmCompany) error {
+func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany Company) error {
 	user, found := m.users[userName]
 	if !found {
 		return fmt.Errorf("failed to find user by username: %q", userName)
@@ -194,7 +203,7 @@ func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany HcmCompany) er
 		return nil
 	}
 
-	user.HcmInfo = append(user.HcmInfo, HcmInfo{
+	user.HcmInfo = append(user.HcmInfo, CompanyInfo[int]{
 		Id:      hcmId,
 		Company: hcmCompany,
 	})

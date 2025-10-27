@@ -2,13 +2,14 @@
 	"aleksandras.sevcik": {
 		"Id": "U03NW7LJBCG",
 		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1013,
-				"Company": "Quad"
-			}
-		]
+		"has_parking": false,
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1013",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"alina.norvaise": {
 		"Id": "U03JJ153GCR",
@@ -19,18 +20,20 @@
 				"Id": 41,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"anastasia.kovalchuk": {
 		"Id": "U045VFB5E9J",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1031,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1031",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"andrius.vaitkunas": {
 		"Id": "U03EXKV281M",
@@ -40,12 +43,14 @@
 			{
 				"Id": 50,
 				"Company": "Qdev"
-			},
-			{
-				"Id": 1025,
-				"Company": "Quad"
 			}
-		]
+		],
+		"BssInfo": [
+            {
+                "Id": "1025P",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"angel.iliev": {
 		"Id": "U03FBL3R6KU",
@@ -56,18 +61,20 @@
 				"Id": 34,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"anton.tiunin": {
 		"Id": "U03MEJJ33QS",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1003,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1003",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"anupras.laureckis": {
 		"Id": "U03LPJ6HB9P",
@@ -78,7 +85,8 @@
 				"Id": 182,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"augustas.sereika": {
 		"Id": "U03FL491Y4S",
@@ -89,7 +97,8 @@
 				"Id": 117,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"auguste.navickaite": {
 		"Id": "U041R29BGKS",
@@ -100,7 +109,8 @@
 				"Id": 187,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"aurimas.razmis": {
 		"Id": "U03FEANSULC",
@@ -111,18 +121,20 @@
 				"Id": 47,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"daniel.klioc": {
 		"Id": "U03F8U4B4LV",
 		"Rights": 0,
-		"has_parking": true,
+		"has_parking": false,
 		"HcmInfo": [
 			{
 				"Id": 52,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"darius.taraila": {
 		"Id": "U087RQX7DUZ",
@@ -133,7 +145,8 @@
 				"Id": 254,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"dmitrij.vlasov": {
 		"Id": "U03F8NLPR1T",
@@ -144,7 +157,8 @@
 				"Id": 33,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"dmitrij.zylkov": {
 		"Id": "U03FEAQ3N3W",
@@ -155,7 +169,8 @@
 				"Id": 61,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"dovile.ramanauskaite": {
 		"Id": "U07160L90D7",
@@ -166,205 +181,188 @@
 				"Id": 190,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"egle.savickiene": {
 		"Id": "U07SR2RPYCS",
 		"Rights": 1,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 1160,
-				"Company": "Quad"
-			}
-		]
+		"has_parking": true,
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1160",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"einaras.daujotas": {
 		"Id": "U03FPUQNF0R",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 13,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "39",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"ernestas.luza": {
 		"Id": "U04LFCA0V70",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1049,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1049",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"evelina.bernataviciute": {
 		"Id": "U03ENHGR7U4",
 		"Rights": 1,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 123,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "123P",
+                "Company": "Quad"
+            }
+        ]
+	},
+	"gabriel.vergari": {
+		"Id": "U08EG8FV9NJ",
+		"Rights": 0,
+		"has_parking": true,
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1173",
+                "Company": "Quad"
+            }
+        ]
+	},
+	"gabriele.taparauskaite": {
+		"Id": "U0754LM3XE1",
+		"Rights": 0,
+		"has_parking": true,
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1108",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"gediminas.kasputis": {
 		"Id": "U03FHMWFJQP",
 		"Rights": 0,
 		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 148,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "148",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"giedre.kinciute": {
 		"Id": "U088BQMREJW",
 		"Rights": 1,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 1165,
-				"Company": "Quad"
-			}
-		]
-	},
-	"giedre.slaiciunaite": {
-		"Id": "U07BE3J9T6E",
-		"Rights": 1,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1116,
-				"Company": "Quad"
-			}
-		]
-	},
-	"giedrius.junda": {
-		"Id": "U078D6V5XKM",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 231,
-				"Company": "Qdev"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1165",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"gintaras.vaira": {
 		"Id": "U03FBUSCHK8",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 4,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "4PP",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"gytis.gaubys": {
 		"Id": "U05SE88RXT2",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1078,
-				"Company": "Quad"
-			}
-		]
-	},
-	"henreta.mikalaviciene": {
-		"Id": "U06SBPV73UJ",
-		"Rights": 1,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 1100,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1078",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"ieva.raude": {
 		"Id": "U07S251CJE7",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1159,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1159",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"ieva.sukyte": {
 		"Id": "U03PNFFGMGE",
 		"Rights": 1,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1014,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1014",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"ignas.ragaisis": {
 		"Id": "U03FUQEADB2",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 9,
-				"Company": "Quad"
-			}
-		]
-	},
-	"ilya.kustov": {
-		"Id": "U042GHQA51V",
-		"Rights": 0,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 189,
-				"Company": "Qdev"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "9",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"ingrida.braknyte": {
 		"Id": "U05U3HLH3H7",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1080,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1080",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"ingrida.navickiene": {
 		"Id": "U03F5HR66H4",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 188,
-				"Company": "Quad"
-			}
-		]
-	},
-	"jevgenijus.popovas": {
-		"Id": "U03F19CF4BH",
-		"Rights": 0,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 22,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "188",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"jolanta.voitenkiene": {
 		"Id": "U06Q274JUKW",
@@ -375,62 +373,44 @@
 				"Id": 216,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"jonas.zilionis": {
 		"Id": "U04MS1M7CQG",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1043,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1043",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"julius.tumas": {
 		"Id": "U049RC3PY1Y",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1036,
-				"Company": "Quad"
-			}
-		]
-	},
-	"jurga.katulyte": {
-		"Id": "U08EF8G474Y",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1168,
-				"Company": "Quad"
-			}
-		]
-	},
-	"jurgita.novosiolova": {
-		"Id": "U06MF50UFFD",
-		"Rights": 1,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 1098,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1036P",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"justina.adamkaviciene": {
 		"Id": "U03FB4N49NE",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 134,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "134P",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"justinas.puzas": {
 		"Id": "U062ACLLRJP",
@@ -441,18 +421,8 @@
 				"Id": 215,
 				"Company": "Qdev"
 			}
-		]
-	},
-	"kamile.melynyte": {
-		"Id": "U07MC43AG86",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1148,
-				"Company": "Quad"
-			}
-		]
+		],
+		"BssInfo": null
 	},
 	"karen.kazarian": {
 		"Id": "U0585D2RQV8",
@@ -463,29 +433,8 @@
 				"Id": 199,
 				"Company": "Qdev"
 			}
-		]
-	},
-	"kiryl.shmarlouski": {
-		"Id": "U03KP2U6J4V",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 140,
-				"Company": "Qdev"
-			}
-		]
-	},
-	"laima.strigo": {
-		"Id": "U03F55117EJ",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 142,
-				"Company": "Qdev"
-			}
-		]
+		],
+		"BssInfo": null
 	},
 	"lina.vasiliauskiene": {
 		"Id": "U03F5998DDL",
@@ -496,51 +445,44 @@
 				"Id": 32,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"linas.ramanauskas": {
 		"Id": "U03F8EGKV0D",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 5,
-				"Company": "Quad"
-			}
-		]
-	},
-	"lukas.elenbergas": {
-		"Id": "U044FFNS10U",
-		"Rights": 0,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 1028,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "5",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"mantas.kuncevicius": {
 		"Id": "U03F87PP1QD",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 99,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "99",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"mantas.milieska": {
 		"Id": "U03FC4KLLUA",
 		"Rights": 0,
-		"has_parking": false,
+		"has_parking": true,
 		"HcmInfo": [
 			{
 				"Id": 160,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"mantas.paulinas": {
 		"Id": "U087D5F2KGS",
@@ -551,84 +493,87 @@
 				"Id": 250,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"mantvydas.ganciauskas": {
 		"Id": "U04QQT135MF",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1054,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1054",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"mantvydas.kalibatas": {
 		"Id": "U0759MQJD8C",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1109,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1109",
+                "Company": "Quad"
+            }
+        ]
 	},
-	"milda.jankauskaite": {
-		"Id": "U08GAGW8MHA",
-		"Rights": 1,
+	"marius.sukarevicius": {
+		"Id": "U06DP48MLUW",
+		"Rights": 0,
 		"has_parking": true,
 		"HcmInfo": [
 			{
-				"Id": 1177,
-				"Company": "Quad"
+				"Id": 209,
+				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
+	},
+	"marius.sutkus": {
+		"Id": "U03F5C5RWQ6",
+		"Rights": 0,
+		"has_parking": true,
+		"HcmInfo": [
+			{
+				"Id": 181,
+				"Company": "Qdev"
+			}
+		],
+		"BssInfo": null
 	},
 	"mirga.abramavice": {
 		"Id": "U03EDHQ4RQW",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 18,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "21",
+                "Company": "Quad"
+            }
+        ]
 	},
-	"oleg.krukovskij": {
-		"Id": "U03FC0V579Q",
+	"mykolas.simutis": {
+		"Id": "U07MJ6G6CKD",
 		"Rights": 0,
 		"has_parking": true,
 		"HcmInfo": [
 			{
-				"Id": 14,
+				"Id": 232,
 				"Company": "Qdev"
 			}
-		]
-	},
-	"paulius.akulavicius": {
-		"Id": "U07864USBDW",
-		"Rights": 0,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 228,
-				"Company": "Qdev"
-			}
-		]
+		],
+		"BssInfo": null
 	},
 	"paulius.astrauskas": {
 		"Id": "U03ESN3TEF5",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 145,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": null
 	},
 	"paulius.dauparas": {
 		"Id": "U03RS7HH1H8",
@@ -639,29 +584,20 @@
 				"Id": 184,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"ramunas.simonis": {
 		"Id": "U0609JND4CB",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1083,
-				"Company": "Quad"
-			}
-		]
-	},
-	"rasa.danileviciute": {
-		"Id": "U06TLAL2Y6M",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1101,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1083",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"rokas.naujalis": {
 		"Id": "U03FBHQPWV9",
@@ -672,18 +608,8 @@
 				"Id": 115,
 				"Company": "Qdev"
 			}
-		]
-	},
-	"sandra.aleksieje": {
-		"Id": "U03E6NZQVTR",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1012,
-				"Company": "Quad"
-			}
-		]
+		],
+		"BssInfo": null
 	},
 	"sarunas.milasevicius": {
 		"Id": "U0661HNPM0X",
@@ -694,29 +620,32 @@
 				"Id": 204,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"sarunas.vilkas": {
 		"Id": "U06H67Y75TL",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1096,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1096",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"saulius.lukosius": {
 		"Id": "U05TNQE8T0R",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1081,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1081",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"sergei.berezko": {
 		"Id": "U03FCDYFN03",
@@ -726,34 +655,26 @@
 			{
 				"Id": 17,
 				"Company": "Qdev"
-			},
-			{
-				"Id": 17,
-				"Company": "Quad"
 			}
-		]
+		],
+		"BssInfo": [
+            {
+                "Id": "17",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"tadas.vaitkevicius": {
 		"Id": "U0734G6V17D",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1113,
-				"Company": "Quad"
-			}
-		]
-	},
-	"titas.kvederys": {
-		"Id": "U03GMTURPRD",
-		"Rights": 0,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 151,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1113",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"ugnius.bertasius": {
 		"Id": "U03FQJZ8XC1",
@@ -764,7 +685,8 @@
 				"Id": 44,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"vakaris.vaitulevicius": {
 		"Id": "U04NL5VG7TL",
@@ -775,7 +697,8 @@
 				"Id": 193,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"vidas.mikulskis": {
 		"Id": "U045QKVTY2K",
@@ -786,18 +709,20 @@
 				"Id": 20,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"viktorija.burlinskaite": {
 		"Id": "U07BSP4E725",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 1122,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "1122",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"viktorija.solonynka": {
 		"Id": "U05UVFBF80N",
@@ -808,72 +733,31 @@
 				"Id": 201,
 				"Company": "Qdev"
 			}
-		]
+		],
+		"BssInfo": null
 	},
 	"vygintas.simonavicius": {
 		"Id": "U03EJD1FLR3",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 93,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "93",
+                "Company": "Quad"
+            }
+        ]
 	},
 	"vytautas.aukstikalnis": {
 		"Id": "U03FBB7ATAP",
 		"Rights": 0,
 		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 46,
-				"Company": "Quad"
-			}
-		]
-	},
-	"vytautas.butkevicius": {
-		"Id": "U03FDFJHENQ",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 25,
-				"Company": "Quad"
-			}
-		]
-	},
-	"vytautas.gliaudelis": {
-		"Id": "U046V3F78DN",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 24,
-				"Company": "Qdev"
-			}
-		]
-	},
-	"xavier.errard": {
-		"Id": "U06P235T90A",
-		"Rights": 0,
-		"has_parking": true,
-		"HcmInfo": [
-			{
-				"Id": 214,
-				"Company": "Qdev"
-			}
-		]
-	},
-	"zanas.kovaliovas": {
-		"Id": "U047RT091PD",
-		"Rights": 0,
-		"has_parking": false,
-		"HcmInfo": [
-			{
-				"Id": 1030,
-				"Company": "Quad"
-			}
-		]
+		"HcmInfo": null,
+		"BssInfo": [
+            {
+                "Id": "11P",
+                "Company": "Quad"
+            }
+        ]
 	}
 }

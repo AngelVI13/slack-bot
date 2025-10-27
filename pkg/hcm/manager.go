@@ -32,7 +32,7 @@ const (
 
 type HcmEmployee struct {
 	Id      int
-	Company user.HcmCompany
+	Company user.Company
 }
 
 func (e *HcmEmployee) ToKey() string {
@@ -55,7 +55,7 @@ func NewHcmEmployeeFromKey(key string) *HcmEmployee {
 
 	return &HcmEmployee{
 		Id:      id,
-		Company: user.HcmCompany(parts[1]),
+		Company: user.Company(parts[1]),
 	}
 }
 
@@ -81,7 +81,7 @@ func LoadVacationsHash(filename string) VacationsHash {
 	return data
 }
 
-func MakeVacationHash(id int, company user.HcmCompany, startDate, endDate string) string {
+func MakeVacationHash(id int, company user.Company, startDate, endDate string) string {
 	return fmt.Sprintf("%d_%s_%s_%s", id, company, startDate, endDate)
 }
 
@@ -168,7 +168,7 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 	   * Third is to add the username field in the `/users` modal so that admins
 	   can change it later??
 	*/
-	vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.HcmQdev)
+	vacationInfo, err := m.vacationsInfo(m.hcmQdevUrl, user.Qdev)
 	if err != nil {
 		errTxt := fmt.Sprintf(
 			"Error while trying to obtain vacation periods or businesss trips for qdev: %v",
@@ -177,7 +177,7 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 		actions = append(actions, m.reportErrorAction(errTxt))
 		return common.NewResponseEvent("HCM", actions...)
 	}
-	quadVacationInfo, err := m.vacationsInfo(m.hcmQuadUrl, user.HcmQuad)
+	quadVacationInfo, err := m.vacationsInfo(m.hcmQuadUrl, user.Quad)
 	if err != nil {
 		errTxt := fmt.Sprintf(
 			"Error while trying to obtain vacation periods or business trips for quadigi: %v",
@@ -360,7 +360,7 @@ func (m *Manager) fetchBusinessTrips(hcmUrl string) (*VacationInfo, error) {
 // ones)
 func (m *Manager) vacationsInfo(
 	hcmUrl string,
-	hcmCompany user.HcmCompany,
+	hcmCompany user.Company,
 ) (VacationData, error) {
 	info, err := m.fetchVacationsInfo(hcmUrl)
 	if err != nil {
@@ -443,12 +443,12 @@ func (m *Manager) vacationsInfo(
 
 func (m *Manager) updateAllEmployeesInfo() error {
 	var errs []error
-	err := m.updateEmployeesInfo(m.hcmQdevUrl, user.HcmQdev)
+	err := m.updateEmployeesInfo(m.hcmQdevUrl, user.Qdev)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("error updating Qdev employees info: %w", err))
 	}
 
-	err = m.updateEmployeesInfo(m.hcmQuadUrl, user.HcmQuad)
+	err = m.updateEmployeesInfo(m.hcmQuadUrl, user.Quad)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("error updating Quadigi employees info: %w", err))
 	}
@@ -456,7 +456,7 @@ func (m *Manager) updateAllEmployeesInfo() error {
 	return errors.Join(errs...)
 }
 
-func (m *Manager) updateEmployeesInfo(hcmUrl string, hcmCompany user.HcmCompany) error {
+func (m *Manager) updateEmployeesInfo(hcmUrl string, hcmCompany user.Company) error {
 	var errs []error
 
 	url := hcmUrl + ListEmployeesEndpoint
