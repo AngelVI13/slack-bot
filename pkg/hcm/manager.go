@@ -59,32 +59,6 @@ func NewHcmEmployeeFromKey(key string) *HcmEmployee {
 	}
 }
 
-type VacationsHash map[string]bool
-
-func LoadVacationsHash(filename string) VacationsHash {
-	data := VacationsHash{}
-
-	b, err := os.ReadFile(filename)
-	if err != nil {
-		slog.Info("Could not read vacations hash file.", "err", err)
-		return data
-	}
-
-	// Unmarshal the provided data into the solid map
-	err = json.Unmarshal(b, &data)
-	if err != nil {
-		slog.Info("Could not parse vacations hash file.", "err", err)
-		return data
-	}
-
-	slog.Info("Loaded vacations hash file.", "filename", filename, "hashNum", len(data))
-	return data
-}
-
-func MakeVacationHash(id int, company user.Company, startDate, endDate string) string {
-	return fmt.Sprintf("%d_%s_%s_%s", id, company, startDate, endDate)
-}
-
 type Manager struct {
 	eventManager    *event.EventManager
 	data            *model.Data
@@ -94,7 +68,7 @@ type Manager struct {
 	debug           bool
 	reportPersonId  string
 	hcmHashFilename string
-	vacationsHash   VacationsHash
+	vacationsHash   common.VacationsHash
 }
 
 func NewManager(
@@ -110,8 +84,8 @@ func NewManager(
 		hcmApiToken:     conf.HcmApiToken,
 		debug:           conf.Debug,
 		reportPersonId:  conf.ReportPersonId,
-		hcmHashFilename: conf.HcmHashFilename,
-		vacationsHash:   LoadVacationsHash(conf.HcmHashFilename),
+		hcmHashFilename: conf.VacationsHashFilename,
+		vacationsHash:   common.LoadVacationsHash(conf.VacationsHashFilename),
 	}
 }
 
@@ -383,7 +357,7 @@ func (m *Manager) vacationsInfo(
 		var currentVacations []Vacation
 
 		for _, period := range employee.Periods {
-			key := MakeVacationHash(
+			key := common.MakeVacationHash(
 				employee.Id,
 				hcmCompany,
 				period.FirstDay,
