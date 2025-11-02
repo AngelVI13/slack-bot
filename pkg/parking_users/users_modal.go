@@ -112,5 +112,21 @@ func (m *Manager) generateUsersBlocks(selectedUserId string) []slack.Block {
 	actionBlock := slack.NewActionBlock(userCheckboxActionId, deviceCheckboxGroup)
 	allBlocks = append(allBlocks, actionBlock)
 
+	bssId := slack.NewInputBlock(
+		"bssIdBlockId",
+		slack.NewTextBlockObject(slack.PlainTextType, "BSS Timeboard Nr", false, false),
+		slack.NewTextBlockObject(
+			slack.PlainTextType,
+			"Leave this blank if you don't want to change it!",
+			false,
+			false,
+		),
+		slack.NewPlainTextInputBlockElement(
+			slack.NewTextBlockObject(slack.PlainTextType, "13P", false, false),
+			"bssIdActionId",
+		),
+	)
+	allBlocks = append(allBlocks, bssId)
+
 	return allBlocks
 }
