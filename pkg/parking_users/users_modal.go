@@ -1,8 +1,11 @@
 package parking_users
 
 import (
+	"fmt"
+
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
+	"github.com/AngelVI13/slack-bot/pkg/model/user"
 	"github.com/slack-go/slack"
 )
 
@@ -112,9 +115,32 @@ func (m *Manager) generateUsersBlocks(selectedUserId string) []slack.Block {
 	actionBlock := slack.NewActionBlock(userCheckboxActionId, deviceCheckboxGroup)
 	allBlocks = append(allBlocks, actionBlock)
 
-	bssId := slack.NewInputBlock(
-		"bssIdBlockId",
-		slack.NewTextBlockObject(slack.PlainTextType, "BSS Timeboard Nr", false, false),
+	bssInfo := m.data.UserManager.GetBssInfoFromUserId(selectedUserId)
+
+	for _, bss := range bssInfo {
+		bssId := m.generateBssNrInput(bss)
+		allBlocks = append(allBlocks, bssId)
+	}
+
+	return allBlocks
+}
+
+func (m *Manager) generateBssNrInput(
+	bss user.CompanyInfo[string],
+) *slack.InputBlock {
+	var placeholder *slack.TextBlockObject
+	if bss.Id != "" {
+		placeholder = slack.NewTextBlockObject(slack.PlainTextType, bss.Id, false, false)
+	}
+
+	return slack.NewInputBlock(
+		fmt.Sprintf("%sBssIdBlockId", bss.Company),
+		slack.NewTextBlockObject(
+			slack.PlainTextType,
+			fmt.Sprintf("%s BSS Nr", user.CompanyNameMap[bss.Company]),
+			false,
+			false,
+		),
 		slack.NewTextBlockObject(
 			slack.PlainTextType,
 			"Leave this blank if you don't want to change it!",
@@ -122,11 +148,8 @@ func (m *Manager) generateUsersBlocks(selectedUserId string) []slack.Block {
 			false,
 		),
 		slack.NewPlainTextInputBlockElement(
-			slack.NewTextBlockObject(slack.PlainTextType, "13P", false, false),
-			"bssIdActionId",
+			placeholder,
+			fmt.Sprintf("%sBssIdActionId", bss.Company),
 		),
 	)
-	allBlocks = append(allBlocks, bssId)
-
-	return allBlocks
 }

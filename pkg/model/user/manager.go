@@ -6,6 +6,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"slices"
 )
 
 type AccessRight int
@@ -23,6 +24,11 @@ const (
 	Quad           Company = "Quad"
 	UnknownCompany Company = ""
 )
+
+var CompanyNameMap = map[Company]string{
+	Qdev: "Qdev Technologies",
+	Quad: "QuaDigi",
+}
 
 type CompanyId interface {
 	int | string
@@ -161,6 +167,34 @@ func (m *Manager) GetNameFromId(userId string) string {
 		}
 	}
 	return ""
+}
+
+func (m *Manager) GetBssInfoFromUserId(userId string) []CompanyInfo[string] {
+	var allBssInfo []CompanyInfo[string]
+
+	for _, user := range m.users {
+		if user.Id == userId {
+			allBssInfo = append(allBssInfo, user.BssInfo...)
+
+			for companyId := range CompanyNameMap {
+				bssPresent := slices.ContainsFunc(
+					allBssInfo,
+					func(bss CompanyInfo[string]) bool {
+						return bss.Company == companyId
+					},
+				)
+
+				if !bssPresent {
+					allBssInfo = append(allBssInfo, CompanyInfo[string]{
+						Id:      "",
+						Company: companyId,
+					})
+				}
+			}
+			return allBssInfo
+		}
+	}
+	return nil
 }
 
 func (m *Manager) GetUserIdFromHcmId(hcmId int, hcmCompany Company) string {
