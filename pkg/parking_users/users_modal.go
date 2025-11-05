@@ -17,6 +17,14 @@ const (
 	userCheckboxActionId     = userPreffix + "CheckboxActionId"
 	userRightsOption         = userPreffix + "RightsOption"
 	userPermanentSpaceOption = userPreffix + "PermanentSpaceOption"
+
+	bssBlockIdSuffix string = "BssBlockId"
+	qdevBssBlockId   string = string(user.Qdev) + bssBlockIdSuffix
+	quadBssBlockId   string = string(user.Quad) + bssBlockIdSuffix
+
+	bssActionIdSuffix string = "BssActionId"
+	qdevBssActionId   string = string(user.Qdev) + bssActionIdSuffix
+	quadBssActionId   string = string(user.Quad) + bssActionIdSuffix
 )
 
 var usersManagementTitle = Identifier + "Settings"
@@ -133,8 +141,15 @@ func (m *Manager) generateBssNrInput(
 		placeholder = slack.NewTextBlockObject(slack.PlainTextType, bss.Id, false, false)
 	}
 
+	blockId := quadBssBlockId
+	actionId := quadBssActionId
+	if bss.Company == user.Qdev {
+		blockId = qdevBssBlockId
+		actionId = qdevBssActionId
+	}
+
 	return slack.NewInputBlock(
-		fmt.Sprintf("%sBssIdBlockId", bss.Company),
+		blockId,
 		slack.NewTextBlockObject(
 			slack.PlainTextType,
 			fmt.Sprintf("%s BSS Nr", user.CompanyNameMap[bss.Company]),
@@ -147,9 +162,6 @@ func (m *Manager) generateBssNrInput(
 			false,
 			false,
 		),
-		slack.NewPlainTextInputBlockElement(
-			placeholder,
-			fmt.Sprintf("%sBssIdActionId", bss.Company),
-		),
+		slack.NewPlainTextInputBlockElement(placeholder, string(actionId)),
 	)
 }

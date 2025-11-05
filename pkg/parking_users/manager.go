@@ -2,6 +2,7 @@ package parking_users
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -70,11 +71,12 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
-		// Reset selected user
-		m.selectedUser[data.UserId] = nil
+		response := m.handleViewSubmission(data)
+		if response == nil {
+			return
+		}
 
-		// Changes take place as soon as user clicks checkbox
-		// There is nothing to do on view submission
+		m.eventManager.Publish(response)
 	}
 }
 
@@ -166,6 +168,28 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			))
 		}
 	}
+
+	if len(actions) == 0 {
+		return nil
+	}
+
+	return common.NewResponseEvent(data.UserName, actions...)
+}
+
+func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
+	var actions []event.ResponseAction
+
+	// Reset selected user
+	m.selectedUser[data.UserId] = nil
+
+	// NOTE: For parking rights changes take place as soon as user clicks checkbox
+	// so we don't need to handle those on view submission
+
+	qdevBss := data.IValueSingle(qdevBssBlockId, qdevBssActionId)
+	quadBss := data.IValueSingle(quadBssBlockId, quadBssActionId)
+	// TODO: continue from here
+	// TODO: those fields are added as required but shouldnt be...
+	slog.Info("USERS ViewSubmission", "qdev", qdevBss, "quad", quadBss)
 
 	if len(actions) == 0 {
 		return nil
