@@ -3,6 +3,7 @@ package parking_users
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -185,11 +186,35 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	// NOTE: For parking rights changes take place as soon as user clicks checkbox
 	// so we don't need to handle those on view submission
 
-	qdevBss := data.IValueSingle(qdevBssBlockId, qdevBssActionId)
-	quadBss := data.IValueSingle(quadBssBlockId, quadBssActionId)
-	// TODO: continue from here
-	// TODO: those fields are added as required but shouldnt be...
-	slog.Info("USERS ViewSubmission", "qdev", qdevBss, "quad", quadBss)
+	qdevBss := strings.TrimSpace(data.IValueString(qdevBssBlockId, qdevBssActionId))
+	quadBss := strings.TrimSpace(data.IValueString(quadBssBlockId, quadBssActionId))
+
+	// TODO: currently we don't have possibility to remove the BSS ID, do we need this?
+	if qdevBss != "" || quadBss != "" {
+		if !m.data.UserManager.Exists(data.UserId) {
+			m.data.UserManager.
+				InsertUser(data.UserId, data.UserName)
+		}
+
+		if qdevBss != "" {
+			m.data.UserManager.SetBssId(data.UserName, qdevBss, user.Qdev)
+		}
+
+		if quadBss != "" {
+			m.data.UserManager.SetBssId(data.UserName, quadBss, user.Quad)
+		}
+
+		m.data.UserManager.SynchronizeToFile()
+	}
+	slog.Info(
+		"USERS ViewSubmission",
+		"name",
+		data.UserName,
+		"qdev",
+		qdevBss,
+		"quad",
+		quadBss,
+	)
 
 	if len(actions) == 0 {
 		return nil

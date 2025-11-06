@@ -244,6 +244,36 @@ func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany Company) error
 	return nil
 }
 
+func (m *Manager) SetBssId(userName, bssId string, bssCompany Company) error {
+	user, found := m.users[userName]
+	if !found {
+		return fmt.Errorf("failed to find user by username: %q", userName)
+	}
+
+	for i, bss := range user.BssInfo {
+		if bss.Company == bssCompany {
+			user.BssInfo[i].Id = bssId
+			slog.Info(
+				"Updating BSS ID",
+				"user",
+				userName,
+				"company",
+				bssCompany,
+				"id",
+				bssId,
+			)
+			return nil
+		}
+	}
+
+	slog.Info("Setting BSS ID", "user", userName, "company", bssCompany, "id", bssId)
+	user.BssInfo = append(user.BssInfo, CompanyInfo[string]{
+		Id:      bssId,
+		Company: bssCompany,
+	})
+	return nil
+}
+
 func (m *Manager) UsersWithoutHcmId() []string {
 	var users []string
 
