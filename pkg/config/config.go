@@ -9,6 +9,55 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type BssCompanyConfig struct {
+	Username      string
+	Password      string
+	EnvironmentId int
+	CompanyId     int
+}
+
+func NewBssCompanyConfig(
+	username, password, envIdStr, companyIdStr string,
+) BssCompanyConfig {
+	envId, err := strconv.Atoi(envIdStr)
+	if err != nil {
+		log.Fatalf(
+			"Failed to convert BSS ENVIRONMENT_ID to int: %q; %v",
+			envIdStr,
+			err,
+		)
+	}
+
+	companyId, err := strconv.Atoi(companyIdStr)
+	if err != nil {
+		log.Fatalf(
+			"Failed to convert BSS COMPANY_ID to int: %q; %v",
+			companyIdStr,
+			err,
+		)
+	}
+	return BssCompanyConfig{
+		Username:      username,
+		Password:      password,
+		EnvironmentId: envId,
+		CompanyId:     companyId,
+	}
+}
+
+type BssConfig struct {
+	Url  string
+	Qdev BssCompanyConfig
+	Quad BssCompanyConfig
+}
+
+func NewBssConfig(url string, qdev, quad BssCompanyConfig) BssConfig {
+	return BssConfig{
+		Url:  url,
+		Qdev: qdev,
+		Quad: quad,
+	}
+}
+
 type Config struct {
 	SlackAuthToken   string
 	SlackTaChannelId string
@@ -31,11 +80,7 @@ type Config struct {
 	HcmApiToken           string
 	VacationsHashFilename string
 
-	BssUrl               string
-	BssQuadUsername      string
-	BssQuadPassword      string
-	BssQuadEnvironmentId int
-	BssQuadCompanyId     int
+	Bss BssConfig
 }
 
 // NewConfigFromEnv Creates config instance by reading corresponding ENV variables.
@@ -46,25 +91,25 @@ func NewConfigFromEnv(envPath string) *Config {
 
 	taEndpoint := os.Getenv("SL_TA_ENDPOINT")
 
-	bssQuadEnvIDstr := os.Getenv("BSS_QUAD_ENVIRONMENT_ID")
-	bssQuadEnvID, err := strconv.Atoi(bssQuadEnvIDstr)
-	if err != nil {
-		log.Fatalf(
-			"Failed to convert BSS_QUAD_ENVIRONMENT_ID to int: %q; %v",
-			bssQuadEnvIDstr,
-			err,
-		)
-	}
+	bssQuad := NewBssCompanyConfig(
+		os.Getenv("BSS_QUAD_USERNAME"),
+		os.Getenv("BSS_QUAD_PASSWORD"),
+		os.Getenv("BSS_QUAD_ENVIRONMENT_ID"),
+		os.Getenv("BSS_QUAD_COMPANY_ID"),
+	)
 
-	bssQuadCompanyIDstr := os.Getenv("BSS_QUAD_COMPANY_ID")
-	bssQuadCompanyID, err := strconv.Atoi(bssQuadCompanyIDstr)
-	if err != nil {
-		log.Fatalf(
-			"Failed to convert BSS_QUAD_COMPANY_ID to int: %q; %v",
-			bssQuadCompanyIDstr,
-			err,
-		)
-	}
+	bssQdev := NewBssCompanyConfig(
+		os.Getenv("BSS_QDEV_USERNAME"),
+		os.Getenv("BSS_QDEV_PASSWORD"),
+		os.Getenv("BSS_QDEV_ENVIRONMENT_ID"),
+		os.Getenv("BSS_QDEV_COMPANY_ID"),
+	)
+
+	bssConfig := NewBssConfig(
+		os.Getenv("BSS_URL"),
+		bssQdev,
+		bssQuad,
+	)
 
 	return &Config{
 		SlackAuthToken:   os.Getenv("SLACK_AUTH_TOKEN"),
@@ -89,10 +134,6 @@ func NewConfigFromEnv(envPath string) *Config {
 		HcmApiToken:           os.Getenv("HCM_API_TOKEN"),
 		VacationsHashFilename: os.Getenv("HCM_HASH_FILE"),
 
-		BssUrl:               os.Getenv("BSS_URL"),
-		BssQuadUsername:      os.Getenv("BSS_QUAD_USERNAME"),
-		BssQuadPassword:      os.Getenv("BSS_QUAD_PASSWORD"),
-		BssQuadEnvironmentId: bssQuadEnvID,
-		BssQuadCompanyId:     bssQuadCompanyID,
+		Bss: bssConfig,
 	}
 }

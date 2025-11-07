@@ -80,7 +80,7 @@ func addTimerEvents(ev *event.EventManager) {
 		// {Hour: 8, Min: 5},
 		// {Hour: 9, Min: 35},
 		// {Hour: parking_spaces.ResetHour - 1, Min: 50},
-		{Hour: 21, Min: 25},
+		{Hour: 22, Min: 1},
 	} {
 		handleBssBookingTimer.AddDaily(
 			t.Hour,

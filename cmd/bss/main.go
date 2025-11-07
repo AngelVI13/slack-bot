@@ -22,32 +22,45 @@ type BssTokens struct {
 
 func searchOperations(bssConfig BssConfig, tokens BssTokens) {
 	fullURL := bssConfig.url + "/staff/operations/:search"
+	// fullURL := bssConfig.url + "/staff/contracts/:search"
 
 	data := map[string]any{
-		"filters": map[string]string{
-			"status":     "approved",
-			"otherField": "value",
-			"dateFrom":   "2025-01-01",
-			"dateTo":     "2025-10-31",
+		"Filtering": map[string]any{
+			"Filters": []map[string]any{
+				{
+					"Field":    "statusCfgNr",
+					"Value":    2,
+					"operator": "equal",
+				},
+				{
+					"Field":    "ValidFrom",
+					"Value":    "2025-09-15",
+					"operator": "greaterOrEqual",
+				},
+				{
+					"Field":    "ValidTo",
+					"Value":    "2025-10-01",
+					"operator": "lessOrEqual",
+				},
+			},
 		},
-		"paging": map[string]int{
-			"page":     1,
-			"pageSize": 100,
-		},
-		"sort": map[string]string{
-			"field": "approvedDate",
-			"order": "desc",
+		"sorting": []map[string]string{
+			{
+				"field":     "recordCreationDate",
+				"direction": "desc",
+			},
 		},
 	}
 
 	b, err := json.Marshal(&data)
-	fmt.Println(fullURL, string(b))
+	// fmt.Println(fullURL, string(b))
 	if err != nil {
 		log.Fatalf("Failed to marshal login request body: %v\n%v", data, err)
 	}
 
 	respStr := makeRequest(fullURL, tokens.AccessToken, bytes.NewBuffer(b))
-	fmt.Println(respStr)
+	// fmt.Println(respStr)
+	_ = respStr
 }
 
 func login(bssConfig BssConfig) BssTokens {
@@ -66,14 +79,14 @@ func login(bssConfig BssConfig) BssTokens {
 	}
 
 	respStr := makeRequest(fullURL, "", bytes.NewBuffer(b))
-	fmt.Println(respStr)
+	// fmt.Println(respStr)
 	var tokens BssTokens
 	err = json.Unmarshal([]byte(respStr), &tokens)
 	if err != nil {
 		log.Fatalf("failed to unmarshal token response: %v", err)
 	}
 
-	fmt.Println(tokens)
+	// fmt.Println(tokens)
 	return tokens
 }
 
@@ -96,12 +109,25 @@ func makeRequest(fullURL, token string, body io.Reader) string {
 	// a user in the parking bot users.json
 	// req.Header.Set("Accept", "application/json")
 
+	reqDump, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("\n\nREQUEST:\n%s\n\n", string(reqDump))
+
 	res, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(res.StatusCode)
+	respDump, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("\n\nRESPONSE:\n%s\n\n", string(respDump))
+
+	// fmt.Println(res.StatusCode)
 	defer res.Body.Close()
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
