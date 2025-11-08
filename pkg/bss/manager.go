@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"time"
@@ -98,8 +96,17 @@ func (m *Manager) Context() string {
 func (m *Manager) handleBss(eventTime time.Time) *common.Response {
 	var actions []event.ResponseAction
 
-	tokens := m.login(user.Quad)
-	slog.Info("bss login", "tokens", tokens)
+	tokens, err := m.login(user.Quad)
+	if err != nil {
+		actions = append(actions, m.reportErrorAction(err.Error()))
+		return common.NewResponseEvent("BSS", actions...)
+	}
+
+	err = m.searchOperations(tokens)
+	if err != nil {
+		actions = append(actions, m.reportErrorAction(err.Error()))
+		return common.NewResponseEvent("BSS", actions...)
+	}
 
 	if len(actions) == 0 {
 		return nil
@@ -113,8 +120,7 @@ type BssTokens struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-// TODO: return error and send it to reportPerson
-func (m *Manager) login(company user.Company) BssTokens {
+func (m *Manager) login(company user.Company) (*BssTokens, error) {
 	fullURL := m.bssConf.Url + LoginEndpoint
 
 	bssCompanyConf := m.bssConf.Quad
@@ -130,28 +136,78 @@ func (m *Manager) login(company user.Company) BssTokens {
 	}
 
 	b, err := json.Marshal(&data)
-	fmt.Println(fullURL, string(b))
 	if err != nil {
-		log.Fatalf("Failed to marshal login request body: %v\n%v", data, err)
+		return nil, fmt.Errorf("failed to marshal login request body: %v\n%v", data, err)
 	}
 
-	respStr := makeRequest(fullURL, "", bytes.NewBuffer(b))
-	// fmt.Println(respStr)
+	resp, err := makeRequest(fullURL, "", bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
 	var tokens BssTokens
-	err = json.Unmarshal([]byte(respStr), &tokens)
+	err = json.Unmarshal(resp, &tokens)
 	if err != nil {
-		log.Fatalf("failed to unmarshal token response: %v", err)
+		return nil, fmt.Errorf(
+			"failed to unmarshal token response: %v\n%s",
+			err,
+			string(resp),
+		)
 	}
 
-	// fmt.Println(tokens)
-	return tokens
+	return &tokens, nil
 }
 
-func makeRequest(fullURL, token string, body io.Reader) string {
+func (m *Manager) searchOperations(tokens *BssTokens) error {
+	fullURL := m.bssConf.Url + SearchOperationsEndpoint
+
+	// TODO: use correct valid from and valid to dates
+	data := map[string]any{
+		"Filtering": map[string]any{
+			"Filters": []map[string]any{
+				{
+					"Field":    "statusCfgNr",
+					"Value":    2, // status: approved
+					"operator": "equal",
+				},
+				{
+					"Field":    "ValidFrom",
+					"Value":    "2025-09-15",
+					"operator": "greaterOrEqual",
+				},
+				{
+					"Field":    "ValidTo",
+					"Value":    "2025-10-01",
+					"operator": "lessOrEqual",
+				},
+			},
+		},
+		"sorting": []map[string]string{
+			{
+				"field":     "recordCreationDate",
+				"direction": "desc",
+			},
+		},
+	}
+
+	b, err := json.Marshal(&data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal search ops request body: %v\n%v", err, data)
+	}
+
+	resp, err := makeRequest(fullURL, tokens.AccessToken, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	_ = resp
+	return nil
+}
+
+func makeRequest(fullURL, token string, body io.Reader) ([]byte, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPost, fullURL, body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to create bss request (%q): %v", fullURL, err)
 	}
 
 	if token != "" {
@@ -159,36 +215,39 @@ func makeRequest(fullURL, token string, body io.Reader) string {
 	}
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("content-type", "application/json")
-	// NOTE: if this is missing the the reply is in XML format
-	// Might be more useful to use the XML format because it contains escape codes
-	// For lithuanian alphabet special characters whereas json returns the literal characters
-	// Might be easiest if i replace the xml espace codes with `.` and perform a regex search to match
-	// a user in the parking bot users.json
-	// req.Header.Set("Accept", "application/json")
 
 	reqDump, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	fmt.Printf("\n\nREQUEST:\n%s\n\n", string(reqDump))
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to do bss request (%q): %v", fullURL, err)
 	}
 
 	respDump, err := httputil.DumpResponse(res, true)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	fmt.Printf("\n\nRESPONSE:\n%s\n\n", string(respDump))
 
 	defer res.Body.Close()
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to read bss response (%q): %v", fullURL, err)
 	}
 
-	return string(b)
+	return b, nil
+}
+
+func (m *Manager) reportErrorAction(errTxt string) *common.PostAction {
+	postAction := common.NewPostAction(
+		m.reportPersonId,
+		errTxt,
+		false,
+	)
+	return postAction
 }
