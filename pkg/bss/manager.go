@@ -169,6 +169,9 @@ func (m *Manager) searchOperations(tokens *BssTokens) (*BssResponse, error) {
 	fullURL := m.bssConf.Url + SearchOperationsEndpoint
 
 	// TODO: use correct valid from and valid to dates
+	// should we instead not care about valid from and valid to but just
+	// sort latest operations and parse whatever its valid from and valid to
+	// we don't care when the vacation is, so long as it is approved
 	data := map[string]any{
 		"Filtering": map[string]any{
 			"Filters": []map[string]any{
