@@ -84,8 +84,8 @@ func NewManager(
 		hcmApiToken:     conf.HcmApiToken,
 		debug:           conf.Debug,
 		reportPersonId:  conf.ReportPersonId,
-		hcmHashFilename: conf.VacationsHashFilename,
-		vacationsHash:   common.LoadVacationsHash(conf.VacationsHashFilename),
+		hcmHashFilename: conf.HcmVacationsHashFilename,
+		vacationsHash:   common.LoadVacationsHash(conf.HcmVacationsHashFilename),
 	}
 }
 
@@ -357,7 +357,7 @@ func (m *Manager) vacationsInfo(
 		var currentVacations []Vacation
 
 		for _, period := range employee.Periods {
-			key := common.MakeVacationHash(
+			key := common.MakeHcmVacationHash(
 				employee.Id,
 				hcmCompany,
 				period.FirstDay,

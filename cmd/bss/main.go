@@ -175,7 +175,7 @@ func parseBssResponse(filename string) {
 		log.Fatal(err)
 	}
 
-	var resp bss.Response
+	var resp bss.BssResponse
 	err = json.Unmarshal(b, &resp)
 	if err != nil {
 		log.Fatal(err)

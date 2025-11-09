@@ -208,6 +208,17 @@ func (m *Manager) GetUserIdFromHcmId(hcmId int, hcmCompany Company) string {
 	return ""
 }
 
+func (m *Manager) GetUserIdFromBssId(bssId string, company Company) string {
+	for _, user := range m.users {
+		for _, bss := range user.BssInfo {
+			if bss.Id == bssId && bss.Company == company {
+				return user.Id
+			}
+		}
+	}
+	return ""
+}
+
 func (m *Manager) AllUserNames() []string {
 	var users []string
 

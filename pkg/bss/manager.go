@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -27,12 +29,13 @@ type Operation struct {
 	MarkingNr   int    `json:"markingNr"`
 	MarkingCode string `json:"markingCode"`
 	MarkingName string `json:"markingName"`
+	TimeboardNr string `json:"timeboardNo"`
 	ValidFrom   string `json:"validFrom"`
 	ValidTo     string `json:"validTo"`
 	StatusCfgNr int    `json:"statusCfgNr"`
 }
 
-type Response struct {
+type BssResponse struct {
 	TotalCount int         `json:"totalCount"`
 	PageSize   int         `json:"pageSize"`
 	PageNumber int         `json:"pageNumber"`
@@ -67,8 +70,8 @@ func NewManager(
 		bssConf:         conf.Bss,
 		debug:           conf.Debug,
 		reportPersonId:  conf.ReportPersonId,
-		bssHashFilename: conf.VacationsHashFilename,
-		vacationsHash:   common.LoadVacationsHash(conf.VacationsHashFilename),
+		bssHashFilename: conf.Bss.VacationsHashFilename,
+		vacationsHash:   common.LoadVacationsHash(conf.Bss.VacationsHashFilename),
 	}
 }
 
@@ -96,17 +99,21 @@ func (m *Manager) Context() string {
 func (m *Manager) handleBss(eventTime time.Time) *common.Response {
 	var actions []event.ResponseAction
 
-	tokens, err := m.login(user.Quad)
+	quadData, err := m.vacationsInfo(user.Quad)
 	if err != nil {
 		actions = append(actions, m.reportErrorAction(err.Error()))
 		return common.NewResponseEvent("BSS", actions...)
 	}
 
-	err = m.searchOperations(tokens)
-	if err != nil {
-		actions = append(actions, m.reportErrorAction(err.Error()))
-		return common.NewResponseEvent("BSS", actions...)
-	}
+	// qdevData, err := m.vacationsInfo(user.Qdev)
+	// if err != nil {
+	// 	actions = append(actions, m.reportErrorAction(err.Error()))
+	// 	return common.NewResponseEvent("BSS", actions...)
+	// }
+	// allData := append(quadData, qdevData...)
+	allData := quadData
+
+	slog.Info("BSS", "allData", allData)
 
 	if len(actions) == 0 {
 		return nil
@@ -158,7 +165,7 @@ func (m *Manager) login(company user.Company) (*BssTokens, error) {
 	return &tokens, nil
 }
 
-func (m *Manager) searchOperations(tokens *BssTokens) error {
+func (m *Manager) searchOperations(tokens *BssTokens) (*BssResponse, error) {
 	fullURL := m.bssConf.Url + SearchOperationsEndpoint
 
 	// TODO: use correct valid from and valid to dates
@@ -192,15 +199,28 @@ func (m *Manager) searchOperations(tokens *BssTokens) error {
 
 	b, err := json.Marshal(&data)
 	if err != nil {
-		return fmt.Errorf("failed to marshal search ops request body: %v\n%v", err, data)
+		return nil, fmt.Errorf(
+			"failed to marshal search ops request body: %v\n%v",
+			err,
+			data,
+		)
 	}
 
 	resp, err := makeRequest(fullURL, tokens.AccessToken, bytes.NewBuffer(b))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_ = resp
-	return nil
+
+	var bssResp BssResponse
+	err = json.Unmarshal(resp, &bssResp)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to unmarshal bss search response: %v\n%s",
+			err,
+			string(resp),
+		)
+	}
+	return &bssResp, nil
 }
 
 func makeRequest(fullURL, token string, body io.Reader) ([]byte, error) {
@@ -250,4 +270,113 @@ func (m *Manager) reportErrorAction(errTxt string) *common.PostAction {
 		false,
 	)
 	return postAction
+}
+
+type Vacation struct {
+	Type     string
+	StartDay time.Time
+	EndDay   time.Time
+	Key      string
+	UserId   string
+}
+
+type VacationData []Vacation
+
+func (m *Manager) vacationsInfo(
+	company user.Company,
+) (VacationData, error) {
+	vacationData := VacationData{}
+
+	tokens, err := m.login(user.Quad)
+	if err != nil {
+		return vacationData, err
+	}
+
+	resp, err := m.searchOperations(tokens)
+	if err != nil {
+		return vacationData, err
+	}
+
+	operations := resp.Data
+
+	// filter only current and future vacations
+	today := common.TodayDate()
+	location := today.Location()
+	for _, operation := range operations {
+		key := common.MakeBssVacationHash(
+			operation.TimeboardNr,
+			company,
+			operation.ValidFrom,
+			operation.ValidTo,
+		)
+		if _, found := m.vacationsHash[key]; found {
+			continue
+		}
+
+		userId := m.data.UserManager.GetUserIdFromBssId(operation.TimeboardNr, company)
+		if userId == "" {
+			// NOTE: we don't add this to vacations hash because if user
+			// gets added later, we should process his vacations
+			continue
+		}
+
+		endDate, parseErr := time.ParseInLocation(
+			"2006-01-02",
+			operation.ValidTo,
+			location,
+		)
+		if parseErr != nil {
+			return nil, fmt.Errorf(
+				"failure to parse validTo format %s: %v",
+				operation.ValidTo,
+				parseErr,
+			)
+		}
+
+		if endDate.Before(today) {
+			m.vacationsHash[key] = true
+			continue
+		}
+
+		startDate, pErr := time.ParseInLocation(
+			"2006-01-02",
+			operation.ValidFrom,
+			location,
+		)
+		if pErr != nil {
+			return nil, fmt.Errorf(
+				"failure to parse firstDay format %s: %v",
+				operation.ValidFrom,
+				pErr,
+			)
+		}
+		vacationData = append(vacationData, Vacation{
+			Type:     operation.MarkingName,
+			StartDay: startDate,
+			EndDay:   endDate,
+			Key:      key,
+			UserId:   userId,
+		})
+	}
+
+	err = m.SynchronizeToFile()
+	return vacationData, err
+}
+
+func (m *Manager) SynchronizeToFile() error {
+	data, err := json.MarshalIndent(m.vacationsHash, "", "\t")
+	if err != nil {
+		return fmt.Errorf("failed to marshall BSS vacations hash data: %v", err)
+	}
+
+	err = os.WriteFile(m.bssHashFilename, data, 0o666)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to write BSS vacations hash file(%s): %v",
+			m.bssHashFilename,
+			err,
+		)
+	}
+	slog.Info("Wrote BSS vacations hashes to file", "file", m.bssHashFilename)
+	return nil
 }

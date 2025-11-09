@@ -45,16 +45,21 @@ func NewBssCompanyConfig(
 }
 
 type BssConfig struct {
-	Url  string
-	Qdev BssCompanyConfig
-	Quad BssCompanyConfig
+	Url                   string
+	VacationsHashFilename string
+	Qdev                  BssCompanyConfig
+	Quad                  BssCompanyConfig
 }
 
-func NewBssConfig(url string, qdev, quad BssCompanyConfig) BssConfig {
+func NewBssConfig(
+	url, vacationsHashFilename string,
+	qdev, quad BssCompanyConfig,
+) BssConfig {
 	return BssConfig{
-		Url:  url,
-		Qdev: qdev,
-		Quad: quad,
+		Url:                   url,
+		VacationsHashFilename: vacationsHashFilename,
+		Qdev:                  qdev,
+		Quad:                  quad,
 	}
 }
 
@@ -75,10 +80,10 @@ type Config struct {
 
 	ReportPersonId string
 
-	HcmQdevUrl            string
-	HcmQuadUrl            string
-	HcmApiToken           string
-	VacationsHashFilename string
+	HcmQdevUrl               string
+	HcmQuadUrl               string
+	HcmApiToken              string
+	HcmVacationsHashFilename string
 
 	Bss BssConfig
 }
@@ -107,6 +112,7 @@ func NewConfigFromEnv(envPath string) *Config {
 
 	bssConfig := NewBssConfig(
 		os.Getenv("BSS_URL"),
+		os.Getenv("BSS_HASH_FILE"),
 		bssQdev,
 		bssQuad,
 	)
@@ -129,10 +135,10 @@ func NewConfigFromEnv(envPath string) *Config {
 
 		ReportPersonId: os.Getenv("REPORT_PERSON_ID"),
 
-		HcmQdevUrl:            os.Getenv("HCM_QDEV_URL"),
-		HcmQuadUrl:            os.Getenv("HCM_QUAD_URL"),
-		HcmApiToken:           os.Getenv("HCM_API_TOKEN"),
-		VacationsHashFilename: os.Getenv("HCM_HASH_FILE"),
+		HcmQdevUrl:               os.Getenv("HCM_QDEV_URL"),
+		HcmQuadUrl:               os.Getenv("HCM_QUAD_URL"),
+		HcmApiToken:              os.Getenv("HCM_API_TOKEN"),
+		HcmVacationsHashFilename: os.Getenv("HCM_HASH_FILE"),
 
 		Bss: bssConfig,
 	}
