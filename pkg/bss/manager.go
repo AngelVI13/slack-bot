@@ -111,9 +111,10 @@ func (m *Manager) handleBss(eventTime time.Time) *common.Response {
 	// 	return common.NewResponseEvent("BSS", actions...)
 	// }
 	// allData := append(quadData, qdevData...)
-	allData := quadData
+	vacationInfo := quadData
 
-	slog.Info("BSS", "allData", allData)
+	slog.Info("BSS", "allData", vacationInfo)
+	actions = append(actions, m.addVacationReleases(vacationInfo)...)
 
 	if len(actions) == 0 {
 		return nil
@@ -167,11 +168,9 @@ func (m *Manager) login(company user.Company) (*BssTokens, error) {
 
 func (m *Manager) searchOperations(tokens *BssTokens) (*BssResponse, error) {
 	fullURL := m.bssConf.Url + SearchOperationsEndpoint
+	today := common.TodayDate()
 
-	// TODO: use correct valid from and valid to dates
-	// should we instead not care about valid from and valid to but just
-	// sort latest operations and parse whatever its valid from and valid to
-	// we don't care when the vacation is, so long as it is approved
+	// NOTE: we want to get list of latest updated records which have status approved
 	data := map[string]any{
 		"Filtering": map[string]any{
 			"Filters": []map[string]any{
@@ -181,13 +180,9 @@ func (m *Manager) searchOperations(tokens *BssTokens) (*BssResponse, error) {
 					"operator": "equal",
 				},
 				{
-					"Field":    "ValidFrom",
-					"Value":    "2025-09-15",
-					"operator": "greaterOrEqual",
-				},
-				{
-					"Field":    "ValidTo",
-					"Value":    "2025-10-01",
+					// "Field":    "recordCreationDate",
+					"Field":    "recordLastUpdateDate",
+					"Value":    today.Format("2006-01-02"),
 					"operator": "lessOrEqual",
 				},
 			},
@@ -283,6 +278,12 @@ type Vacation struct {
 	UserId   string
 }
 
+func (v Vacation) String() string {
+	return fmt.Sprintf("type=%s, period=[%s-%s]",
+		v.Type, v.StartDay.Format("2006-01-02"), v.EndDay.Format("2006-01-02"),
+	)
+}
+
 type VacationData []Vacation
 
 func (m *Manager) vacationsInfo(
@@ -364,6 +365,106 @@ func (m *Manager) vacationsInfo(
 
 	err = m.SynchronizeToFile()
 	return vacationData, err
+}
+
+// addVacationReleases Add any BSS approved records (vacations/sick
+// leaves/remote work/business trips etc) to parking space releases.
+func (m *Manager) addVacationReleases(
+	vacationInfo VacationData,
+) []event.ResponseAction {
+	var actions []event.ResponseAction
+
+	todayDate := common.TodayDate()
+
+	for i, vacation := range vacationInfo {
+		// copy to local variable cause we are taking pointers to it and in
+		// older version of go the loop variable always has the same
+		// address
+		vacation := vacation
+
+		userId := vacation.UserId
+		space := m.data.ParkingLot.OwnsSpace(userId)
+		if space == nil {
+			continue
+		}
+
+		// copy to local variable cause we are taking pointers to it and in
+		// older version of go the loop variable always has the same
+		// address
+		vacation := vacation
+		release := m.data.ParkingLot.ToBeReleased.Add(
+			fmt.Sprintf("bssViewId_%s_%d", vacation.Key, i),
+			"ParkingBot",
+			"ParkingBotId",
+			space,
+		)
+		slog.Info(
+			"processing vacation",
+			"userId",
+			userId,
+			"vacation",
+			vacation,
+		)
+
+		release.StartDate = &vacation.StartDay
+		if release.StartDate.Before(todayDate) {
+			// NOTE: we only create requests for the future. so
+			// if a vacation period started 5 days ago and it continues for
+			// 3 more days then here we create the release from today
+			// till the end of the vacation.
+			release.StartDate = &todayDate
+		}
+		release.EndDate = &vacation.EndDay
+
+		overlaps := m.data.ParkingLot.ToBeReleased.CheckOverlap(release)
+		if len(overlaps) > 0 {
+			slog.Info("vacation overlaps", "overlaps", overlaps, "vacation", vacation)
+			err := m.data.ParkingLot.ToBeReleased.Remove(release)
+			if err != nil {
+				actions = append(actions, m.reportErrorAction(err.Error()))
+			}
+			continue
+		}
+
+		m.vacationsHash[vacation.Key] = true
+		release.MarkSubmitted("BSS")
+
+		if common.EqualDate(*release.StartDate, todayDate) {
+			// Directly release space if release start from today
+			space.Reserved = false
+			release.MarkActive()
+		}
+		m.data.ParkingLot.ToBeReleased.Update(release)
+
+		slog.Info(
+			"BSS add temporary release",
+			"user", m.data.UserManager.GetNameFromId(userId),
+			"space", space.Key(),
+			"BSS request", vacation.Type,
+			"BSS date range (clamped)", release.DateRange(),
+		)
+		info := fmt.Sprintf(
+			"Parking bot added a temporary release for your space (%s): "+
+				"BSS %q request for %s. "+
+				"If that's not correct please contact the system administrator.",
+			space.Key(),
+			vacation.Type,
+			release.DateRange(),
+		)
+		// postAction := common.NewPostAction(userId, info, false)
+		postAction := common.NewPostAction(m.reportPersonId, info, false)
+		actions = append(actions, postAction)
+		m.data.ParkingLot.SynchronizeToFile()
+	}
+
+	syncErr := m.SynchronizeToFile()
+	if syncErr != nil {
+		actions = append(actions, m.reportErrorAction(syncErr.Error()))
+	}
+
+	m.data.ParkingLot.SynchronizeToFile()
+
+	return actions
 }
 
 func (m *Manager) SynchronizeToFile() error {
