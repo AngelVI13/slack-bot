@@ -272,5 +272,11 @@
 		}
 	},
 	"Filename": "workspaces.json",
-	"ToBeReleased": {}
+	"ToBeReleased": {},
+    "FloorPlans": {
+        "4th": "https://ibb.co/1YnCHK87",
+        "5th": "https://ibb.co/N2HzLkQc",
+        "6th": "https://ibb.co/kP6vrJs",
+        "7th": "https://ibb.co/whkDjSH4"
+    }
 }

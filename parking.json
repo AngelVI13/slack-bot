@@ -7433,5 +7433,10 @@
 				}
 			]
 		}
-	}
+	},
+    "FloorPlans": {
+        "-1st": "https://ibb.co/zHw2T9w",
+        "-2nd": "https://ibb.co/mt15xrz",
+        "1st": "https://ibb.co/PFNyGsn"
+    }
 }

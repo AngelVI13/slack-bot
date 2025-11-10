@@ -388,10 +388,6 @@ func (m *Manager) addVacationReleases(
 			continue
 		}
 
-		// copy to local variable cause we are taking pointers to it and in
-		// older version of go the loop variable always has the same
-		// address
-		vacation := vacation
 		release := m.data.ParkingLot.ToBeReleased.Add(
 			fmt.Sprintf("bssViewId_%s_%d", vacation.Key, i),
 			"ParkingBot",

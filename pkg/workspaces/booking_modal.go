@@ -2,6 +2,7 @@ package workspaces
 
 import (
 	"fmt"
+	"log"
 	"slices"
 	"strings"
 	"time"
@@ -150,19 +151,15 @@ func (m *Manager) generateNoWorkspacesBlocks(userId string) []slack.Block {
 	}
 }
 
-func generateWorkspacePlanBlocks(selectedFloor string) []slack.Block {
-	floorPlanLink := ""
-	if strings.HasPrefix(selectedFloor, "4th") {
-		floorPlanLink = "https://ibb.co/1YnCHK87"
-	} else if strings.HasPrefix(selectedFloor, "6th") {
-		floorPlanLink = "https://ibb.co/kP6vrJs"
-	} else if strings.HasPrefix(selectedFloor, "5th") {
-		floorPlanLink = "https://ibb.co/N2HzLkQc"
-	} else if strings.HasPrefix(selectedFloor, "7th") {
-		floorPlanLink = "https://ibb.co/whkDjSH4"
+func (m *Manager) generateWorkspacePlanBlocks(selectedFloor string) []slack.Block {
+	parts := strings.Split(selectedFloor, " ")
+	if len(parts) < 1 {
+		log.Fatalf("failed to split %q by space", selectedFloor)
 	}
 
-	if floorPlanLink == "" {
+	floorPrefix := parts[0]
+	floorPlanLink, found := m.data.WorkspacesLot.FloorPlans[floorPrefix]
+	if !found {
 		return nil
 	}
 
@@ -186,7 +183,7 @@ func (m *Manager) generateWorkspaceInfoBlocks(
 	allBlocks := []slack.Block{}
 	selectedFloor := m.selectedFloorByChannel(userId)
 
-	workspacePlanBlocks := generateWorkspacePlanBlocks(selectedFloor)
+	workspacePlanBlocks := m.generateWorkspacePlanBlocks(selectedFloor)
 	allBlocks = append(allBlocks, workspacePlanBlocks...)
 
 	descriptionBlocks := generateWorkspaceTimeBlocks()
