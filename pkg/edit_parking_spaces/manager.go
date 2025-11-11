@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/config"
@@ -252,6 +253,43 @@ func (m *Manager) handleAddSpaceSubmission(
 	return actions
 }
 
+func (m *Manager) handleChangePlanSubmission(
+	data *slackApi.ViewSubmission,
+) []event.ResponseAction {
+	var actions []event.ResponseAction
+
+	minusTwoPlan := strings.TrimSpace(
+		data.IValueString(changePlanMinusTwoBlockId, changePlanMinusTwoActionId),
+	)
+	minusOnePlan := strings.TrimSpace(
+		data.IValueString(changePlanMinusOneBlockId, changePlanMinusOneActionId),
+	)
+	onePlan := strings.TrimSpace(
+		data.IValueString(changePlanOneBlockId, changePlanOneActionId),
+	)
+
+	// TODO: I really don;t like hardcoding these but they should never change so
+	// maybe its ok
+	if minusTwoPlan != "" {
+		m.data.ParkingLot.FloorPlans["-2nd"] = minusTwoPlan
+	}
+
+	if minusOnePlan != "" {
+		m.data.ParkingLot.FloorPlans["-1st"] = minusOnePlan
+	}
+
+	if onePlan != "" {
+		m.data.ParkingLot.FloorPlans["1st"] = onePlan
+	}
+
+	if minusTwoPlan != "" || minusOnePlan != "" || onePlan != "" {
+		slog.Info("Updated floor plans")
+		m.data.ParkingLot.SynchronizeToFile()
+	}
+
+	return actions
+}
+
 func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
 	var actions []event.ResponseAction
 
@@ -264,6 +302,8 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		actions = append(actions, m.handleRemoveSpaceSubmission(data)...)
 	case addSpaceOption:
 		actions = append(actions, m.handleAddSpaceSubmission(data)...)
+	case changePlansOption:
+		actions = append(actions, m.handleChangePlanSubmission(data)...)
 	case notSelectedOption:
 		return nil // do nothing
 	default:

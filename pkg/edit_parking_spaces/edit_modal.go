@@ -1,8 +1,10 @@
 package edit_parking_spaces
 
 import (
+	"fmt"
 	"log"
 	"slices"
+	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -17,6 +19,17 @@ const (
 	addFloorBlockId     = "addFloorBlockId"
 	addSpaceActionId    = "addSpaceActionId"
 	addSpaceBlockId     = "addSpaceBlockId"
+
+	// NOTE:these are hardcoded cause i don't know how to handle these dynamically
+	// from the block actions side
+	changePlanBlockId          = "changePlanBlockId"
+	changePlanActionId         = "changePlanActionId"
+	changePlanMinusTwoBlockId  = "-2nd" + changePlanBlockId
+	changePlanMinusTwoActionId = "-2nd" + changePlanActionId
+	changePlanMinusOneBlockId  = "-1st" + changePlanBlockId
+	changePlanMinusOneActionId = "-1st" + changePlanActionId
+	changePlanOneBlockId       = "1st" + changePlanBlockId
+	changePlanOneActionId      = "1st" + changePlanActionId
 )
 
 type editOption string
@@ -25,11 +38,13 @@ const (
 	notSelectedOption editOption = "Not Selected"
 	addSpaceOption    editOption = "Add Space"
 	removeSpaceOption editOption = "Remove Space/s"
+	changePlansOption editOption = "Change Plan/s"
 )
 
 var editOptions = []editOption{
 	addSpaceOption,
 	removeSpaceOption,
+	changePlansOption,
 }
 
 var parkSpaceManagementTitle = Identifier
@@ -55,6 +70,8 @@ func (m *Manager) generateAddRemoveBlocks(userId string) []slack.Block {
 		allBlocks = append(allBlocks, m.generateAddSpaceBlocks()...)
 	case removeSpaceOption:
 		allBlocks = append(allBlocks, m.generateRemoveSpaceBlocks()...)
+	case changePlansOption:
+		allBlocks = append(allBlocks, m.generateChangePlansBlocks()...)
 	case notSelectedOption:
 		// do nothing
 	default:
@@ -174,6 +191,55 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 	allBlocks = append(allBlocks, numberInputBlock)
 
 	return allBlocks
+}
+
+func (m *Manager) generateChangePlansBlocks() []slack.Block {
+	var allBlocks []slack.Block
+
+	// NOTE: -2, -1, 1 are the only allowed parking floors
+	for _, floor := range []int{-2, -1, 1} {
+		floorStr := spaces.MakeFloorStr(floor)
+		floorPrefix := strings.Split(floorStr, " ")[0]
+
+		allBlocks = append(allBlocks, m.generateFloorPlanInput(floorPrefix))
+	}
+
+	return allBlocks
+}
+
+func (m *Manager) generateFloorPlanInput(floor string) *slack.InputBlock {
+	var placeholder *slack.TextBlockObject
+
+	planLink, found := m.data.ParkingLot.FloorPlans[floor]
+	if found {
+		placeholder = slack.NewTextBlockObject(
+			slack.PlainTextType,
+			planLink,
+			false,
+			false,
+		)
+	}
+
+	blockId := floor + changePlanBlockId
+	actionId := floor + changePlanActionId
+
+	return common.NewInputBlock(
+		blockId,
+		slack.NewTextBlockObject(
+			slack.PlainTextType,
+			fmt.Sprintf("%s floor plan", floor),
+			false,
+			false,
+		),
+		slack.NewTextBlockObject(
+			slack.PlainTextType,
+			"Leave this blank if you don't want to change it!",
+			false,
+			false,
+		),
+		slack.NewPlainTextInputBlockElement(placeholder, string(actionId)),
+		true,
+	)
 }
 
 func (m *Manager) generateRemoveSpaceBlocks() []slack.Block {
