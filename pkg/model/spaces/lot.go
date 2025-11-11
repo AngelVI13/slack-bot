@@ -33,7 +33,7 @@ type SpacesLot struct {
 	UnitSpaces
 	Filename     string
 	ToBeReleased ReleaseMap
-	FloorPlans   map[string]string
+	FloorPlans   FloorPlansMap
 }
 
 func NewSpacesLot() SpacesLot {
