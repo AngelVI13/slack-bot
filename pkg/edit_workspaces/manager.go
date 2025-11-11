@@ -59,6 +59,10 @@ func NewManager(
 	data *model.Data,
 	conf *config.Config,
 ) *Manager {
+	workSpaceManagementTitle = common.MakeTitle(
+		workSpaceManagementTitle,
+		conf.TestingActive,
+	)
 	return &Manager{
 		eventManager:       eventManager,
 		data:               data,

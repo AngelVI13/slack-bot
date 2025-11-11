@@ -40,6 +40,7 @@ func NewManager(
 	data *model.Data,
 	conf *config.Config,
 ) *Manager {
+	usersManagementTitle = common.MakeTitle(usersManagementTitle, conf.TestingActive)
 	return &Manager{
 		eventManager:  eventManager,
 		data:          data,

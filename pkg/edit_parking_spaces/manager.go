@@ -58,6 +58,10 @@ func NewManager(
 	data *model.Data,
 	conf *config.Config,
 ) *Manager {
+	parkSpaceManagementTitle = common.MakeTitle(
+		parkSpaceManagementTitle,
+		conf.TestingActive,
+	)
 	return &Manager{
 		eventManager:       eventManager,
 		data:               data,

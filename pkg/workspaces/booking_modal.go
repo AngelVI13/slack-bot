@@ -40,7 +40,6 @@ func (m *Manager) generateBookingModalRequest(
 		selectedFloorTaken,
 		errorTxt,
 	)
-	workspaceBookingTitle = common.MakeTitle(workspaceBookingTitle, m.testingActive)
 	return common.GenerateInfoModalRequest(workspaceBookingTitle, spacesSectionBlocks)
 }
 
