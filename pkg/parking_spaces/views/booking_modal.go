@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -181,16 +182,19 @@ func (b *Booking) generateParkingPlanBlocks() []slack.Block {
 
 	allBlocks = append(allBlocks, description)
 
-	for _, prefix := range []string{"1st", "-1st", "-2nd"} {
-		floorPlanLink, found := b.data.ParkingLot.FloorPlans[prefix]
-		if !found {
-			continue
-		}
+	var allFloors []string
+	for floor := range b.data.ParkingLot.FloorPlans {
+		allFloors = append(allFloors, floor)
+	}
+	slices.Sort(allFloors)
+
+	for _, floor := range allFloors {
+		floorPlanLink := b.data.ParkingLot.FloorPlans[floor]
 
 		allBlocks = append(allBlocks, slack.NewSectionBlock(
 			slack.NewTextBlockObject(
 				"mrkdwn",
-				fmt.Sprintf("<%s|%s floor plan>", floorPlanLink, prefix),
+				fmt.Sprintf("<%s|%s floor plan>", floorPlanLink, floor),
 				false,
 				false,
 			),
