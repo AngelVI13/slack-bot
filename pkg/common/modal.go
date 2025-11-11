@@ -41,3 +41,10 @@ func GenerateInfoModalRequest(title string, blocks []slack.Block) slack.ModalVie
 	modalRequest.NotifyOnClose = true
 	return modalRequest
 }
+
+func MakeTitle(title string, testingActive bool) string {
+	if testingActive {
+		title = "[Test] " + title
+	}
+	return title
+}

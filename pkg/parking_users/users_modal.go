@@ -34,6 +34,7 @@ func (m *Manager) generateUsersModalRequest(
 	selectedUserId string,
 ) slack.ModalViewRequest {
 	sectionBlocks := m.generateUsersBlocks(selectedUserId)
+	usersManagementTitle = common.MakeTitle(usersManagementTitle, m.testingActive)
 	return common.GenerateModalRequest(usersManagementTitle, sectionBlocks)
 }
 

@@ -45,12 +45,21 @@ func NewManager(
 	conf *config.Config,
 ) *Manager {
 	parkingData := parkingModel.NewParkingData(data)
+
+	bookingView := views.NewBooking(Identifier, parkingData)
+	releaseView := views.NewRelease(Identifier, parkingData)
+	personalView := views.NewPersonal(Identifier, parkingData)
+
+	bookingView.Title = common.MakeTitle(bookingView.Title, conf.TestingActive)
+	releaseView.Title = common.MakeTitle(releaseView.Title, conf.TestingActive)
+	personalView.Title = common.MakeTitle(personalView.Title, conf.TestingActive)
+
 	return &Manager{
 		eventManager:   eventManager,
 		data:           parkingData,
-		bookingView:    views.NewBooking(Identifier, parkingData),
-		releaseView:    views.NewRelease(Identifier, parkingData),
-		personalView:   views.NewPersonal(Identifier, parkingData),
+		bookingView:    bookingView,
+		releaseView:    releaseView,
+		personalView:   personalView,
 		reportPersonId: conf.ReportPersonId,
 		testingActive:  conf.TestingActive,
 	}

@@ -42,6 +42,7 @@ func (m *Manager) generateEditSpacesModalRequest(
 	userId string,
 ) slack.ModalViewRequest {
 	sectionBlocks := m.generateAddRemoveBlocks(userId)
+	workSpaceManagementTitle = common.MakeTitle(workSpaceManagementTitle, m.testingActive)
 	return common.GenerateModalRequest(workSpaceManagementTitle, sectionBlocks)
 }
 
