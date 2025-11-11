@@ -186,7 +186,16 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 func (m *Manager) generateChangePlansBlocks() []slack.Block {
 	var allBlocks []slack.Block
 
-	for floor, link := range m.data.ParkingLot.FloorPlans {
+	var allFloors []string
+	for floor := range m.data.ParkingLot.FloorPlans {
+		allFloors = append(allFloors, floor)
+	}
+
+	// This is needed to make sure the floor order is deterministic
+	slices.Sort(allFloors)
+
+	for _, floor := range allFloors {
+		link := m.data.ParkingLot.FloorPlans[floor]
 		allBlocks = append(allBlocks, m.generateFloorPlanInput(floor, link))
 	}
 
