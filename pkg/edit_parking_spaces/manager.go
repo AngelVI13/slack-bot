@@ -258,32 +258,33 @@ func (m *Manager) handleChangePlanSubmission(
 ) []event.ResponseAction {
 	var actions []event.ResponseAction
 
-	minusTwoPlan := strings.TrimSpace(
-		data.IValueString(changePlanMinusTwoBlockId, changePlanMinusTwoActionId),
-	)
-	minusOnePlan := strings.TrimSpace(
-		data.IValueString(changePlanMinusOneBlockId, changePlanMinusOneActionId),
-	)
-	onePlan := strings.TrimSpace(
-		data.IValueString(changePlanOneBlockId, changePlanOneActionId),
-	)
-
-	// TODO: I really don;t like hardcoding these but they should never change so
-	// maybe its ok
-	if minusTwoPlan != "" {
-		m.data.ParkingLot.FloorPlans["-2nd"] = minusTwoPlan
+	var allFloors []string
+	for floor := range m.data.ParkingLot.FloorPlans {
+		allFloors = append(allFloors, floor)
 	}
 
-	if minusOnePlan != "" {
-		m.data.ParkingLot.FloorPlans["-1st"] = minusOnePlan
+	saveFile := false
+	for _, floor := range allFloors {
+		newPlanLink := strings.TrimSpace(
+			data.IValueString(floor+changePlanBlockId, floor+changePlanActionId),
+		)
+
+		if newPlanLink != "" {
+			slog.Info(
+				"Updating parking plan",
+				"floor",
+				floor,
+				"newLink",
+				newPlanLink,
+				"oldLink",
+				m.data.ParkingLot.FloorPlans[floor],
+			)
+			saveFile = true
+			m.data.ParkingLot.FloorPlans[floor] = newPlanLink
+		}
 	}
 
-	if onePlan != "" {
-		m.data.ParkingLot.FloorPlans["1st"] = onePlan
-	}
-
-	if minusTwoPlan != "" || minusOnePlan != "" || onePlan != "" {
-		slog.Info("Updated floor plans")
+	if saveFile {
 		m.data.ParkingLot.SynchronizeToFile()
 	}
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"slices"
-	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/AngelVI13/slack-bot/pkg/event"
@@ -19,17 +18,8 @@ const (
 	addFloorBlockId     = "addFloorBlockId"
 	addSpaceActionId    = "addSpaceActionId"
 	addSpaceBlockId     = "addSpaceBlockId"
-
-	// NOTE:these are hardcoded cause i don't know how to handle these dynamically
-	// from the block actions side
-	changePlanBlockId          = "changePlanBlockId"
-	changePlanActionId         = "changePlanActionId"
-	changePlanMinusTwoBlockId  = "-2nd" + changePlanBlockId
-	changePlanMinusTwoActionId = "-2nd" + changePlanActionId
-	changePlanMinusOneBlockId  = "-1st" + changePlanBlockId
-	changePlanMinusOneActionId = "-1st" + changePlanActionId
-	changePlanOneBlockId       = "1st" + changePlanBlockId
-	changePlanOneActionId      = "1st" + changePlanActionId
+	changePlanBlockId   = "changePlanBlockId"
+	changePlanActionId  = "changePlanActionId"
 )
 
 type editOption string
@@ -196,29 +186,15 @@ func (m *Manager) generateAddSpaceBlocks() []slack.Block {
 func (m *Manager) generateChangePlansBlocks() []slack.Block {
 	var allBlocks []slack.Block
 
-	// NOTE: -2, -1, 1 are the only allowed parking floors
-	for _, floor := range []int{-2, -1, 1} {
-		floorStr := spaces.MakeFloorStr(floor)
-		floorPrefix := strings.Split(floorStr, " ")[0]
-
-		allBlocks = append(allBlocks, m.generateFloorPlanInput(floorPrefix))
+	for floor, link := range m.data.ParkingLot.FloorPlans {
+		allBlocks = append(allBlocks, m.generateFloorPlanInput(floor, link))
 	}
 
 	return allBlocks
 }
 
-func (m *Manager) generateFloorPlanInput(floor string) *slack.InputBlock {
-	var placeholder *slack.TextBlockObject
-
-	planLink, found := m.data.ParkingLot.FloorPlans[floor]
-	if found {
-		placeholder = slack.NewTextBlockObject(
-			slack.PlainTextType,
-			planLink,
-			false,
-			false,
-		)
-	}
+func (m *Manager) generateFloorPlanInput(floor, link string) *slack.InputBlock {
+	placeholder := slack.NewTextBlockObject(slack.PlainTextType, link, false, false)
 
 	blockId := floor + changePlanBlockId
 	actionId := floor + changePlanActionId

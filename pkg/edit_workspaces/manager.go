@@ -249,6 +249,44 @@ func (m *Manager) handleAddSpaceSubmission(
 	return actions
 }
 
+func (m *Manager) handleChangePlanSubmission(
+	data *slackApi.ViewSubmission,
+) []event.ResponseAction {
+	var actions []event.ResponseAction
+
+	var allFloors []string
+	for floor := range m.data.WorkspacesLot.FloorPlans {
+		allFloors = append(allFloors, floor)
+	}
+
+	saveFile := false
+	for _, floor := range allFloors {
+		newPlanLink := strings.TrimSpace(
+			data.IValueString(floor+changePlanBlockId, floor+changePlanActionId),
+		)
+
+		if newPlanLink != "" {
+			slog.Info(
+				"Updating workspace plan",
+				"floor",
+				floor,
+				"newLink",
+				newPlanLink,
+				"oldLink",
+				m.data.WorkspacesLot.FloorPlans[floor],
+			)
+			saveFile = true
+			m.data.WorkspacesLot.FloorPlans[floor] = newPlanLink
+		}
+	}
+
+	if saveFile {
+		m.data.WorkspacesLot.SynchronizeToFile()
+	}
+
+	return actions
+}
+
 func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
 	var actions []event.ResponseAction
 
@@ -261,6 +299,8 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 		actions = append(actions, m.handleRemoveSpaceSubmission(data)...)
 	case addSpaceOption:
 		actions = append(actions, m.handleAddSpaceSubmission(data)...)
+	case changePlansOption:
+		actions = append(actions, m.handleChangePlanSubmission(data)...)
 	case notSelectedOption:
 		return nil // do nothing
 	default:
