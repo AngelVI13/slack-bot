@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"time"
 
@@ -234,23 +233,23 @@ func makeRequest(fullURL, token string, body io.Reader) ([]byte, error) {
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("content-type", "application/json")
 
-	reqDump, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("\n\nREQUEST:\n%s\n\n", string(reqDump))
+	// reqDump, err := httputil.DumpRequestOut(req, true)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	// fmt.Printf("\n\nREQUEST:\n%s\n\n", string(reqDump))
 
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to do bss request (%q): %v", fullURL, err)
 	}
 
-	respDump, err := httputil.DumpResponse(res, true)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("\n\nRESPONSE:\n%s\n\n", string(respDump))
+	// respDump, err := httputil.DumpResponse(res, true)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// fmt.Printf("\n\nRESPONSE:\n%s\n\n", string(respDump))
 
 	defer res.Body.Close()
 	b, err := io.ReadAll(res.Body)
