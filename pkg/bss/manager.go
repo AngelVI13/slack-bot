@@ -446,8 +446,8 @@ func (m *Manager) addVacationReleases(
 			vacation.Type,
 			release.DateRange(),
 		)
-		// postAction := common.NewPostAction(userId, info, false)
-		postAction := common.NewPostAction(m.reportPersonId, info, false)
+		postAction := common.NewPostAction(userId, info, false)
+		// postAction := common.NewPostAction(m.reportPersonId, info, false)
 		actions = append(actions, postAction)
 		m.data.ParkingLot.SynchronizeToFile()
 	}
