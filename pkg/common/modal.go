@@ -46,7 +46,7 @@ func GenerateInfoModalRequest(title string, blocks []slack.Block) slack.ModalVie
 
 func MakeTitle(title string, testingActive bool) string {
 	if testingActive {
-		title = "[Test] " + title
+		title = "[T] " + title
 	}
 
 	// NOTE: slack accepts max title length of 25 chars

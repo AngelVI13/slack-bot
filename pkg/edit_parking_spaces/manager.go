@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	Identifier   = "Edit Parking Spaces: "
+	Identifier   = "Edit Parkspaces: "
 	SlashCmd     = "/spaces-parking"
 	TestSlashCmd = "/test-spaces"
 
