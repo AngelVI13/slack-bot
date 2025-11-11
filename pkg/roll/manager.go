@@ -5,31 +5,42 @@ import (
 	"math/rand"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	slackApi "github.com/AngelVI13/slack-bot/pkg/slack"
 )
 
 const (
-	Identifier = "Roll: "
-	SlashCmd   = "/roll"
-	// SlashCmd = "/test-roll"
+	Identifier   = "Roll: "
+	SlashCmd     = "/roll"
+	TestSlashCmd = "/test-roll"
 )
 
 type Manager struct {
-	eventManager *event.EventManager
+	eventManager  *event.EventManager
+	testingActive bool
 }
 
-func NewManager(eventManager *event.EventManager) *Manager {
-	return &Manager{eventManager: eventManager}
+func NewManager(eventManager *event.EventManager, conf *config.Config) *Manager {
+	return &Manager{
+		eventManager:  eventManager,
+		testingActive: conf.TestingActive,
+	}
 }
 
 func (m *Manager) Consume(e event.Event) {
 	switch e.Type() {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
-		if data.Command != SlashCmd {
+		if !common.ShouldProcessSlash(
+			data.Command,
+			SlashCmd,
+			TestSlashCmd,
+			m.testingActive,
+		) {
 			return
 		}
+
 		response := m.handleSlashCmd(data)
 		m.eventManager.Publish(response)
 	}

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strconv"
 
@@ -80,6 +81,8 @@ type Config struct {
 
 	ReportPersonId string
 
+	TestingActive bool
+
 	HcmQdevUrl               string
 	HcmQuadUrl               string
 	HcmApiToken              string
@@ -117,6 +120,11 @@ func NewConfigFromEnv(envPath string) *Config {
 		bssQuad,
 	)
 
+	testingActive := os.Getenv("TESTING") == "1"
+	if testingActive {
+		slog.Info("Testing is ACTIVE! Use slash commands starting with test-")
+	}
+
 	return &Config{
 		SlackAuthToken:   os.Getenv("SLACK_AUTH_TOKEN"),
 		SlackTaChannelId: os.Getenv("SLACK_TA_CHANNEL_ID"),
@@ -134,6 +142,8 @@ func NewConfigFromEnv(envPath string) *Config {
 		ProxyEndpoint:   fmt.Sprintf("%s/proxy", taEndpoint),
 
 		ReportPersonId: os.Getenv("REPORT_PERSON_ID"),
+
+		TestingActive: testingActive,
 
 		HcmQdevUrl:               os.Getenv("HCM_QDEV_URL"),
 		HcmQuadUrl:               os.Getenv("HCM_QUAD_URL"),

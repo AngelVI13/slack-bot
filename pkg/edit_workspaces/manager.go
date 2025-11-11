@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
 	"github.com/AngelVI13/slack-bot/pkg/model/spaces"
@@ -17,9 +18,9 @@ import (
 )
 
 const (
-	Identifier = "Edit Workspaces: "
-	SlashCmd   = "/spaces-workspace"
-	// SlashCmd = "/test-wospaces"
+	Identifier   = "Edit Workspaces: "
+	SlashCmd     = "/spaces-workspace"
+	TestSlashCmd = "/test-wospaces"
 
 	defaultUserOption = ""
 )
@@ -50,16 +51,19 @@ type Manager struct {
 	data               *model.Data
 	slackClient        *slack.Client
 	selectedEditOption selectedEditOptionMap
+	testingActive      bool
 }
 
 func NewManager(
 	eventManager *event.EventManager,
 	data *model.Data,
+	conf *config.Config,
 ) *Manager {
 	return &Manager{
 		eventManager:       eventManager,
 		data:               data,
 		selectedEditOption: selectedEditOptionMap{},
+		testingActive:      conf.TestingActive,
 	}
 }
 
@@ -67,7 +71,12 @@ func (m *Manager) Consume(e event.Event) {
 	switch e.Type() {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
-		if data.Command != SlashCmd {
+		if !common.ShouldProcessSlash(
+			data.Command,
+			SlashCmd,
+			TestSlashCmd,
+			m.testingActive,
+		) {
 			return
 		}
 
@@ -107,7 +116,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	if !m.data.UserManager.IsAdminId(data.UserId) {
 		errTxt := fmt.Sprintf(
 			"You don't have permission to execute '%s' command",
-			SlashCmd,
+			data.Command,
 		)
 		action := common.NewPostAction(data.UserId, errTxt, false)
 		return common.NewResponseEvent(data.UserName, action)

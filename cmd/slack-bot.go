@@ -110,16 +110,16 @@ func main() {
 	workspacesManager := workspaces.NewManager(eventManager, data, config)
 	eventManager.SubscribeWithContext(workspacesManager, event.AnyEvent)
 
-	parkingUsersManager := parking_users.NewManager(eventManager, data)
+	parkingUsersManager := parking_users.NewManager(eventManager, data, config)
 	eventManager.SubscribeWithContext(parkingUsersManager, event.AnyEvent)
 
-	editParkingSpacesManager := edit_parking_spaces.NewManager(eventManager, data)
+	editParkingSpacesManager := edit_parking_spaces.NewManager(eventManager, data, config)
 	eventManager.SubscribeWithContext(editParkingSpacesManager, event.AnyEvent)
 
-	editWorkspacesManager := edit_workspaces.NewManager(eventManager, data)
+	editWorkspacesManager := edit_workspaces.NewManager(eventManager, data, config)
 	eventManager.SubscribeWithContext(editWorkspacesManager, event.AnyEvent)
 
-	rollManager := roll.NewManager(eventManager)
+	rollManager := roll.NewManager(eventManager, config)
 	eventManager.Subscribe(rollManager, event.SlashCmdEvent)
 
 	hcmManager := hcm.NewManager(eventManager, data, config)
