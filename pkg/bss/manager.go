@@ -113,7 +113,7 @@ func (m *Manager) handleBss(eventTime time.Time) *common.Response {
 	// allData := append(quadData, qdevData...)
 	vacationInfo := quadData
 
-	slog.Info("BSS", "allData", vacationInfo)
+	// slog.Info("BSS", "allData", vacationInfo)
 	actions = append(actions, m.addVacationReleases(vacationInfo)...)
 
 	if len(actions) == 0 {
