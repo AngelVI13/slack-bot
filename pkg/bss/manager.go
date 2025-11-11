@@ -176,7 +176,7 @@ func (m *Manager) searchOperations(tokens *BssTokens) (*BssResponse, error) {
 			"Filters": []map[string]any{
 				{
 					"Field":    "statusCfgNr",
-					"Value":    2, // status: approved
+					"Value":    StatusApproved,
 					"operator": "equal",
 				},
 				{
