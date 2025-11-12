@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/AngelVI13/slack-bot/pkg/bss"
+	"github.com/AngelVI13/slack-bot/pkg/common"
 	"github.com/joho/godotenv"
 )
 
@@ -21,8 +22,8 @@ type BssTokens struct {
 }
 
 func searchOperations(bssConfig BssConfig, tokens BssTokens) {
+	today := common.TodayDate()
 	fullURL := bssConfig.url + "/staff/operations/:search"
-	// fullURL := bssConfig.url + "/staff/contracts/:search"
 
 	data := map[string]any{
 		"Filtering": map[string]any{
@@ -33,13 +34,9 @@ func searchOperations(bssConfig BssConfig, tokens BssTokens) {
 					"operator": "equal",
 				},
 				{
-					"Field":    "ValidFrom",
-					"Value":    "2025-09-15",
-					"operator": "greaterOrEqual",
-				},
-				{
-					"Field":    "ValidTo",
-					"Value":    "2025-10-01",
+					// "Field":    "recordCreationDate",
+					"Field":    "recordLastUpdateDate",
+					"Value":    today.Format("2006-01-02"),
 					"operator": "lessOrEqual",
 				},
 			},
