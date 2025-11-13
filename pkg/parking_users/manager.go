@@ -2,8 +2,11 @@ package parking_users
 
 import (
 	"fmt"
+	"log/slog"
+	"strings"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
+	"github.com/AngelVI13/slack-bot/pkg/config"
 	"github.com/AngelVI13/slack-bot/pkg/event"
 	"github.com/AngelVI13/slack-bot/pkg/model"
 	"github.com/AngelVI13/slack-bot/pkg/model/user"
@@ -12,9 +15,9 @@ import (
 )
 
 const (
-	Identifier = "Users: "
-	SlashCmd   = "/users-parking"
-	// SlashCmd = "/test-users"
+	Identifier   = "Users: "
+	SlashCmd     = "/users-parking"
+	TestSlashCmd = "/test-users"
 
 	defaultUserOption = ""
 )
@@ -25,20 +28,24 @@ type selectedUser struct {
 }
 
 type Manager struct {
-	eventManager *event.EventManager
-	data         *model.Data
-	slackClient  *slack.Client
-	selectedUser map[string]*selectedUser
+	eventManager  *event.EventManager
+	data          *model.Data
+	slackClient   *slack.Client
+	selectedUser  map[string]*selectedUser
+	testingActive bool
 }
 
 func NewManager(
 	eventManager *event.EventManager,
 	data *model.Data,
+	conf *config.Config,
 ) *Manager {
+	usersManagementTitle = common.MakeTitle(usersManagementTitle, conf.TestingActive)
 	return &Manager{
-		eventManager: eventManager,
-		data:         data,
-		selectedUser: map[string]*selectedUser{},
+		eventManager:  eventManager,
+		data:          data,
+		selectedUser:  map[string]*selectedUser{},
+		testingActive: conf.TestingActive,
 	}
 }
 
@@ -46,7 +53,12 @@ func (m *Manager) Consume(e event.Event) {
 	switch e.Type() {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
-		if data.Command != SlashCmd {
+		if !common.ShouldProcessSlash(
+			data.Command,
+			SlashCmd,
+			TestSlashCmd,
+			m.testingActive,
+		) {
 			return
 		}
 
@@ -70,11 +82,12 @@ func (m *Manager) Consume(e event.Event) {
 			return
 		}
 
-		// Reset selected user
-		m.selectedUser[data.UserId] = nil
+		response := m.handleViewSubmission(data)
+		if response == nil {
+			return
+		}
 
-		// Changes take place as soon as user clicks checkbox
-		// There is nothing to do on view submission
+		m.eventManager.Publish(response)
 	}
 }
 
@@ -86,7 +99,7 @@ func (m *Manager) handleSlashCmd(data *slackApi.Slash) *common.Response {
 	if !m.data.UserManager.IsAdminId(data.UserId) {
 		errTxt := fmt.Sprintf(
 			"You don't have permission to execute '%s' command",
-			SlashCmd,
+			data.Command,
 		)
 		action := common.NewPostAction(data.UserId, errTxt, false)
 		return common.NewResponseEvent(data.UserName, action)
@@ -166,6 +179,52 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 			))
 		}
 	}
+
+	if len(actions) == 0 {
+		return nil
+	}
+
+	return common.NewResponseEvent(data.UserName, actions...)
+}
+
+func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
+	var actions []event.ResponseAction
+
+	// Reset selected user
+	m.selectedUser[data.UserId] = nil
+
+	// NOTE: For parking rights changes take place as soon as user clicks checkbox
+	// so we don't need to handle those on view submission
+
+	qdevBss := strings.TrimSpace(data.IValueString(qdevBssBlockId, qdevBssActionId))
+	quadBss := strings.TrimSpace(data.IValueString(quadBssBlockId, quadBssActionId))
+
+	// TODO: currently we don't have possibility to remove the BSS ID, do we need this?
+	if qdevBss != "" || quadBss != "" {
+		if !m.data.UserManager.Exists(data.UserId) {
+			m.data.UserManager.
+				InsertUser(data.UserId, data.UserName)
+		}
+
+		if qdevBss != "" {
+			m.data.UserManager.SetBssId(data.UserName, qdevBss, user.Qdev)
+		}
+
+		if quadBss != "" {
+			m.data.UserManager.SetBssId(data.UserName, quadBss, user.Quad)
+		}
+
+		m.data.UserManager.SynchronizeToFile()
+	}
+	slog.Info(
+		"USERS ViewSubmission",
+		"name",
+		data.UserName,
+		"qdev",
+		qdevBss,
+		"quad",
+		quadBss,
+	)
 
 	if len(actions) == 0 {
 		return nil

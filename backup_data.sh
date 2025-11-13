@@ -18,8 +18,10 @@ scp tmt@172.20.2.200:$remote_dir/parking.json "${backup_dir}/parking.json"
 scp tmt@172.20.2.200:$remote_dir/workspaces.json "${backup_dir}/workspaces.json"
 scp tmt@172.20.2.200:$remote_dir/users.json "${backup_dir}/users.json"
 scp tmt@172.20.2.200:$remote_dir/vacations_hash.json "${backup_dir}/vacations_hash.json"
+scp tmt@172.20.2.200:$remote_dir/bss_vacations_hash.json "${backup_dir}/bss_vacations_hash.json"
 scp tmt@172.20.2.200:$remote_dir/slack-bot.log "${backup_dir}/slack-bot.log"
 scp tmt@172.20.2.200:$remote_dir/slack-bot "${backup_dir}/slack-bot"
+scp tmt@172.20.2.200:$remote_dir/.env "${backup_dir}/prod.env"
 
 # Remove some noise from the log
 sed -i 's/tmt-pro.*level=//' "${backup_dir}/parking.log"

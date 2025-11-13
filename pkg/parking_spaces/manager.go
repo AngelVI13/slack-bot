@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	Identifier = "Parking: "
-	SlashCmd   = "/parking"
-	// SlashCmd = "/test-park"
+	Identifier   = "Parking: "
+	SlashCmd     = "/parking"
+	TestSlashCmd = "/test-park"
 
 	ResetParking = "Reset parking status"
 	ResetHour    = parkingModel.ResetHour
@@ -36,6 +36,7 @@ type Manager struct {
 	releaseView    *views.Release
 	personalView   *views.Personal
 	reportPersonId string
+	testingActive  bool
 }
 
 func NewManager(
@@ -44,13 +45,23 @@ func NewManager(
 	conf *config.Config,
 ) *Manager {
 	parkingData := parkingModel.NewParkingData(data)
+
+	bookingView := views.NewBooking(Identifier, parkingData)
+	releaseView := views.NewRelease(Identifier, parkingData)
+	personalView := views.NewPersonal(Identifier, parkingData)
+
+	bookingView.Title = common.MakeTitle(bookingView.Title, conf.TestingActive)
+	releaseView.Title = common.MakeTitle(releaseView.Title, conf.TestingActive)
+	personalView.Title = common.MakeTitle(personalView.Title, conf.TestingActive)
+
 	return &Manager{
 		eventManager:   eventManager,
 		data:           parkingData,
-		bookingView:    views.NewBooking(Identifier, parkingData),
-		releaseView:    views.NewRelease(Identifier, parkingData),
-		personalView:   views.NewPersonal(Identifier, parkingData),
+		bookingView:    bookingView,
+		releaseView:    releaseView,
+		personalView:   personalView,
 		reportPersonId: conf.ReportPersonId,
+		testingActive:  conf.TestingActive,
 	}
 }
 
@@ -58,7 +69,12 @@ func (m *Manager) Consume(e event.Event) {
 	switch e.Type() {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
-		if data.Command != SlashCmd {
+		if !common.ShouldProcessSlash(
+			data.Command,
+			SlashCmd,
+			TestSlashCmd,
+			m.testingActive,
+		) {
 			return
 		}
 		response := m.handleSlashCmd(data)

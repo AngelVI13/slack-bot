@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/AngelVI13/slack-bot/pkg/common"
@@ -165,7 +166,9 @@ func (b *Booking) generateParkingButtons(
 	return buttons
 }
 
-func generateParkingPlanBlocks() []slack.Block {
+func (b *Booking) generateParkingPlanBlocks() []slack.Block {
+	var allBlocks []slack.Block
+
 	description := slack.NewSectionBlock(
 		slack.NewTextBlockObject(
 			"mrkdwn",
@@ -176,36 +179,29 @@ func generateParkingPlanBlocks() []slack.Block {
 		nil,
 		nil,
 	)
-	outsideParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject(
-			"mrkdwn",
-			"<https://ibb.co/PFNyGsn|1st floor plan>",
-			false,
-			false,
-		),
-		nil,
-		nil,
-	)
-	minusOneParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject(
-			"mrkdwn",
-			"<https://ibb.co/zHw2T9w|-1st floor plan>",
-			false,
-			false,
-		),
-		nil,
-		nil,
-	)
-	minusTwoParking := slack.NewSectionBlock(
-		slack.NewTextBlockObject(
-			"mrkdwn",
-			"<https://ibb.co/mt15xrz|-2nd floor plan>",
-			false,
-			false,
-		),
-		nil,
-		nil,
-	)
+
+	allBlocks = append(allBlocks, description)
+
+	var allFloors []string
+	for floor := range b.data.ParkingLot.FloorPlans {
+		allFloors = append(allFloors, floor)
+	}
+	slices.Sort(allFloors)
+
+	for _, floor := range allFloors {
+		floorPlanLink := b.data.ParkingLot.FloorPlans[floor]
+
+		allBlocks = append(allBlocks, slack.NewSectionBlock(
+			slack.NewTextBlockObject(
+				"mrkdwn",
+				fmt.Sprintf("<%s|%s floor plan>", floorPlanLink, floor),
+				false,
+				false,
+			),
+			nil,
+			nil,
+		))
+	}
 
 	now := time.Now()
 
@@ -228,13 +224,9 @@ func generateParkingPlanBlocks() []slack.Block {
 		nil,
 		nil,
 	)
-	return []slack.Block{
-		description,
-		outsideParking,
-		minusOneParking,
-		minusTwoParking,
-		selectionEffectTime,
-	}
+
+	allBlocks = append(allBlocks, selectionEffectTime)
+	return allBlocks
 }
 
 // generateParkingInfoBlocks Generates space block objects to be used as elements in modal
@@ -246,7 +238,7 @@ func (b *Booking) generateParkingInfoBlocks(
 ) []slack.Block {
 	allBlocks := []slack.Block{}
 
-	descriptionBlocks := generateParkingPlanBlocks()
+	descriptionBlocks := b.generateParkingPlanBlocks()
 	allBlocks = append(allBlocks, descriptionBlocks...)
 
 	floorOptionBlocks := b.generateFloorOptions(userId)

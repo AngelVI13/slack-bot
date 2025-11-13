@@ -1,6 +1,8 @@
 package common
 
 import (
+	"log/slog"
+
 	"github.com/slack-go/slack"
 )
 
@@ -40,4 +42,23 @@ func GenerateInfoModalRequest(title string, blocks []slack.Block) slack.ModalVie
 	modalRequest.Blocks = blockSet
 	modalRequest.NotifyOnClose = true
 	return modalRequest
+}
+
+func MakeTitle(title string, testingActive bool) string {
+	if testingActive {
+		title = "[T] " + title
+	}
+
+	// NOTE: slack accepts max title length of 25 chars
+	if len(title) >= 25 {
+		slog.Warn(
+			"Truncating modal title to 24 chars",
+			"title",
+			title,
+			"truncated",
+			title[0:24],
+		)
+		title = title[0:24]
+	}
+	return title
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"slices"
 )
 
 type AccessRight int
@@ -16,24 +17,34 @@ const (
 	ADMIN
 )
 
-type HcmCompany string
+type Company string
 
 const (
-	HcmQdev    HcmCompany = "Qdev"
-	HcmQuad    HcmCompany = "Quad"
-	HcmUnknown HcmCompany = ""
+	Qdev           Company = "Qdev"
+	Quad           Company = "Quad"
+	UnknownCompany Company = ""
 )
 
-type HcmInfo struct {
-	Id      int
-	Company HcmCompany
+var CompanyNameMap = map[Company]string{
+	Qdev: "Qdev Technologies",
+	Quad: "QuaDigi",
+}
+
+type CompanyId interface {
+	int | string
+}
+
+type CompanyInfo[T CompanyId] struct {
+	Id      T
+	Company Company
 }
 
 type User struct {
 	Id                  string
 	Rights              AccessRight
 	HasPermanentParking bool `json:"has_parking"`
-	HcmInfo             []HcmInfo
+	HcmInfo             []CompanyInfo[int]
+	BssInfo             []CompanyInfo[string]
 }
 
 type UsersMap map[string]*User
@@ -123,7 +134,11 @@ func (m *Manager) InsertUser(userId, userName string) error {
 		return fmt.Errorf("UserName (%s) already exists", userName)
 	}
 
-	m.users[userName] = &User{Id: userId, HcmInfo: []HcmInfo{}}
+	m.users[userName] = &User{
+		Id:      userId,
+		HcmInfo: []CompanyInfo[int]{},
+		BssInfo: []CompanyInfo[string]{},
+	}
 	return nil
 }
 
@@ -154,10 +169,49 @@ func (m *Manager) GetNameFromId(userId string) string {
 	return ""
 }
 
-func (m *Manager) GetUserIdFromHcmId(hcmId int, hcmCompany HcmCompany) string {
+func (m *Manager) GetBssInfoFromUserId(userId string) []CompanyInfo[string] {
+	var allBssInfo []CompanyInfo[string]
+
+	for _, user := range m.users {
+		if user.Id == userId {
+			allBssInfo = append(allBssInfo, user.BssInfo...)
+
+			for companyId := range CompanyNameMap {
+				bssPresent := slices.ContainsFunc(
+					allBssInfo,
+					func(bss CompanyInfo[string]) bool {
+						return bss.Company == companyId
+					},
+				)
+
+				if !bssPresent {
+					allBssInfo = append(allBssInfo, CompanyInfo[string]{
+						Id:      "",
+						Company: companyId,
+					})
+				}
+			}
+			return allBssInfo
+		}
+	}
+	return nil
+}
+
+func (m *Manager) GetUserIdFromHcmId(hcmId int, hcmCompany Company) string {
 	for _, user := range m.users {
 		for _, hcm := range user.HcmInfo {
 			if hcm.Id == hcmId && hcm.Company == hcmCompany {
+				return user.Id
+			}
+		}
+	}
+	return ""
+}
+
+func (m *Manager) GetUserIdFromBssId(bssId string, company Company) string {
+	for _, user := range m.users {
+		for _, bss := range user.BssInfo {
+			if bss.Id == bssId && bss.Company == company {
 				return user.Id
 			}
 		}
@@ -174,7 +228,7 @@ func (m *Manager) AllUserNames() []string {
 	return users
 }
 
-func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany HcmCompany) error {
+func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany Company) error {
 	user, found := m.users[userName]
 	if !found {
 		return fmt.Errorf("failed to find user by username: %q", userName)
@@ -194,9 +248,39 @@ func (m *Manager) SetHcmId(userName string, hcmId int, hcmCompany HcmCompany) er
 		return nil
 	}
 
-	user.HcmInfo = append(user.HcmInfo, HcmInfo{
+	user.HcmInfo = append(user.HcmInfo, CompanyInfo[int]{
 		Id:      hcmId,
 		Company: hcmCompany,
+	})
+	return nil
+}
+
+func (m *Manager) SetBssId(userName, bssId string, bssCompany Company) error {
+	user, found := m.users[userName]
+	if !found {
+		return fmt.Errorf("failed to find user by username: %q", userName)
+	}
+
+	for i, bss := range user.BssInfo {
+		if bss.Company == bssCompany {
+			user.BssInfo[i].Id = bssId
+			slog.Info(
+				"Updating BSS ID",
+				"user",
+				userName,
+				"company",
+				bssCompany,
+				"id",
+				bssId,
+			)
+			return nil
+		}
+	}
+
+	slog.Info("Setting BSS ID", "user", userName, "company", bssCompany, "id", bssId)
+	user.BssInfo = append(user.BssInfo, CompanyInfo[string]{
+		Id:      bssId,
+		Company: bssCompany,
 	})
 	return nil
 }

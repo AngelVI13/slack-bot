@@ -24,18 +24,23 @@ const (
 	SpaceAny
 )
 
-type SpacesInfo []*Space
+type (
+	SpacesInfo    []*Space
+	FloorPlansMap map[string]string
+)
 
 type SpacesLot struct {
 	UnitSpaces
 	Filename     string
 	ToBeReleased ReleaseMap
+	FloorPlans   FloorPlansMap
 }
 
 func NewSpacesLot() SpacesLot {
 	return SpacesLot{
 		UnitSpaces:   make(UnitSpaces),
 		ToBeReleased: make(ReleaseMap),
+		FloorPlans:   make(FloorPlansMap),
 	}
 }
 

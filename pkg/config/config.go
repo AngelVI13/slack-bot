@@ -2,10 +2,67 @@ package config
 
 import (
 	"fmt"
+	"log"
+	"log/slog"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
+
+type BssCompanyConfig struct {
+	Username      string
+	Password      string
+	EnvironmentId int
+	CompanyId     int
+}
+
+func NewBssCompanyConfig(
+	username, password, envIdStr, companyIdStr string,
+) BssCompanyConfig {
+	envId, err := strconv.Atoi(envIdStr)
+	if err != nil {
+		log.Fatalf(
+			"Failed to convert BSS ENVIRONMENT_ID to int: %q; %v",
+			envIdStr,
+			err,
+		)
+	}
+
+	companyId, err := strconv.Atoi(companyIdStr)
+	if err != nil {
+		log.Fatalf(
+			"Failed to convert BSS COMPANY_ID to int: %q; %v",
+			companyIdStr,
+			err,
+		)
+	}
+	return BssCompanyConfig{
+		Username:      username,
+		Password:      password,
+		EnvironmentId: envId,
+		CompanyId:     companyId,
+	}
+}
+
+type BssConfig struct {
+	Url                   string
+	VacationsHashFilename string
+	Qdev                  BssCompanyConfig
+	Quad                  BssCompanyConfig
+}
+
+func NewBssConfig(
+	url, vacationsHashFilename string,
+	qdev, quad BssCompanyConfig,
+) BssConfig {
+	return BssConfig{
+		Url:                   url,
+		VacationsHashFilename: vacationsHashFilename,
+		Qdev:                  qdev,
+		Quad:                  quad,
+	}
+}
 
 type Config struct {
 	SlackAuthToken   string
@@ -24,19 +81,49 @@ type Config struct {
 
 	ReportPersonId string
 
-	HcmQdevUrl      string
-	HcmQuadUrl      string
-	HcmApiToken     string
-	HcmHashFilename string
+	TestingActive bool
+
+	HcmQdevUrl               string
+	HcmQuadUrl               string
+	HcmApiToken              string
+	HcmVacationsHashFilename string
+
+	Bss BssConfig
 }
 
-// ConfigFromEnv Creates config instance by reading corresponding ENV variables.
+// NewConfigFromEnv Creates config instance by reading corresponding ENV variables.
 // Make sure godotenv.Load is called beforehand
 func NewConfigFromEnv(envPath string) *Config {
 	// Env variables are used to configure slack client, devices, spaces & users data
 	godotenv.Load(envPath)
 
 	taEndpoint := os.Getenv("SL_TA_ENDPOINT")
+
+	bssQuad := NewBssCompanyConfig(
+		os.Getenv("BSS_QUAD_USERNAME"),
+		os.Getenv("BSS_QUAD_PASSWORD"),
+		os.Getenv("BSS_QUAD_ENVIRONMENT_ID"),
+		os.Getenv("BSS_QUAD_COMPANY_ID"),
+	)
+
+	bssQdev := NewBssCompanyConfig(
+		os.Getenv("BSS_QDEV_USERNAME"),
+		os.Getenv("BSS_QDEV_PASSWORD"),
+		os.Getenv("BSS_QDEV_ENVIRONMENT_ID"),
+		os.Getenv("BSS_QDEV_COMPANY_ID"),
+	)
+
+	bssConfig := NewBssConfig(
+		os.Getenv("BSS_URL"),
+		os.Getenv("BSS_HASH_FILE"),
+		bssQdev,
+		bssQuad,
+	)
+
+	testingActive := os.Getenv("TESTING") == "1"
+	if testingActive {
+		slog.Info("Testing is ACTIVE! Use slash commands starting with test-")
+	}
 
 	return &Config{
 		SlackAuthToken:   os.Getenv("SLACK_AUTH_TOKEN"),
@@ -56,9 +143,13 @@ func NewConfigFromEnv(envPath string) *Config {
 
 		ReportPersonId: os.Getenv("REPORT_PERSON_ID"),
 
-		HcmQdevUrl:      os.Getenv("HCM_QDEV_URL"),
-		HcmQuadUrl:      os.Getenv("HCM_QUAD_URL"),
-		HcmApiToken:     os.Getenv("HCM_API_TOKEN"),
-		HcmHashFilename: os.Getenv("HCM_HASH_FILE"),
+		TestingActive: testingActive,
+
+		HcmQdevUrl:               os.Getenv("HCM_QDEV_URL"),
+		HcmQuadUrl:               os.Getenv("HCM_QUAD_URL"),
+		HcmApiToken:              os.Getenv("HCM_API_TOKEN"),
+		HcmVacationsHashFilename: os.Getenv("HCM_HASH_FILE"),
+
+		Bss: bssConfig,
 	}
 }

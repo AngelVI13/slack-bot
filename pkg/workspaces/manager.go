@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	Identifier = "Workspaces: "
-	SlashCmd   = "/workspace"
-	// SlashCmd         = "/test-workspace"
+	Identifier       = "Workspaces: "
+	SlashCmd         = "/workspace"
+	TestSlashCmd     = "/test-workspace"
 	ChannelNameQDev  = "qdev_technologies"
 	ChannelNameQDigi = "quadigi"
 
@@ -36,6 +36,7 @@ type Manager struct {
 	selectedChannel   map[string]string
 	selectedShowTaken map[string]bool
 	reportPersonId    string
+	testingActive     bool
 }
 
 func NewManager(
@@ -43,6 +44,7 @@ func NewManager(
 	data *model.Data,
 	conf *config.Config,
 ) *Manager {
+	workspaceBookingTitle = common.MakeTitle(workspaceBookingTitle, conf.TestingActive)
 	return &Manager{
 		eventManager:      eventManager,
 		data:              data,
@@ -50,6 +52,7 @@ func NewManager(
 		selectedChannel:   map[string]string{},
 		selectedShowTaken: map[string]bool{},
 		reportPersonId:    conf.ReportPersonId,
+		testingActive:     conf.TestingActive,
 	}
 }
 
@@ -57,7 +60,12 @@ func (m *Manager) Consume(e event.Event) {
 	switch e.Type() {
 	case event.SlashCmdEvent:
 		data := e.(*slackApi.Slash)
-		if data.Command != SlashCmd {
+		if !common.ShouldProcessSlash(
+			data.Command,
+			SlashCmd,
+			TestSlashCmd,
+			m.testingActive,
+		) {
 			return
 		}
 
