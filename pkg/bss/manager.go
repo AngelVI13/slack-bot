@@ -23,7 +23,14 @@ const (
 	StatusCancelled  int = 3
 )
 
+const (
+	PageSize50  int = 50
+	PageSize100 int = 100
+	PageSize200 int = 200
+)
+
 type Operation struct {
+	Name        string `json:"name"`
 	OperationNr int    `json:"operationNr"`
 	MarkingNr   int    `json:"markingNr"`
 	MarkingCode string `json:"markingCode"`
@@ -179,8 +186,10 @@ func (m *Manager) searchOperations(tokens *BssTokens) (*BssResponse, error) {
 					"operator": "equal",
 				},
 				{
-					// "Field":    "recordCreationDate",
-					"Field":    "recordLastUpdateDate",
+					// NOTE: recordLastUpdated can't be used because for some
+					// operations that value in BSS DB will be NULL and it won't
+					// show such operations in the results
+					"Field":    "recordCreationDate",
 					"Value":    today.Format("2006-01-02"),
 					"operator": "lessOrEqual",
 				},
@@ -192,6 +201,8 @@ func (m *Manager) searchOperations(tokens *BssTokens) (*BssResponse, error) {
 				"direction": "desc",
 			},
 		},
+		"pageSize":   PageSize200, // BSS only allows page sizes of: 50, 100, 200
+		"pageNumber": 0,           // page numbers start from 0
 	}
 
 	b, err := json.Marshal(&data)

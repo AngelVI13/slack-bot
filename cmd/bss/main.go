@@ -21,8 +21,9 @@ type BssTokens struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-func searchOperations(bssConfig BssConfig, tokens BssTokens) {
+func searchOperations(bssConfig BssConfig, tokens BssTokens) string {
 	today := common.TodayDate()
+	// today = today.Add(-(30 * 24 * time.Hour))
 	fullURL := bssConfig.url + "/staff/operations/:search"
 
 	data := map[string]any{
@@ -34,8 +35,8 @@ func searchOperations(bssConfig BssConfig, tokens BssTokens) {
 					"operator": "equal",
 				},
 				{
-					// "Field":    "recordCreationDate",
-					"Field":    "recordLastUpdateDate",
+					"Field": "recordCreationDate",
+					// "Field":    "recordLastUpdateDate",
 					"Value":    today.Format("2006-01-02"),
 					"operator": "lessOrEqual",
 				},
@@ -47,6 +48,8 @@ func searchOperations(bssConfig BssConfig, tokens BssTokens) {
 				"direction": "desc",
 			},
 		},
+		"pageSize":   200,
+		"pageNumber": 0,
 	}
 
 	b, err := json.Marshal(&data)
@@ -57,7 +60,7 @@ func searchOperations(bssConfig BssConfig, tokens BssTokens) {
 
 	respStr := makeRequest(fullURL, tokens.AccessToken, bytes.NewBuffer(b))
 	// fmt.Println(respStr)
-	_ = respStr
+	return respStr
 }
 
 func login(bssConfig BssConfig) BssTokens {
@@ -166,19 +169,18 @@ func NewBssConfig(dotfile string) BssConfig {
 	}
 }
 
-func parseBssResponse(filename string) {
-	b, err := os.ReadFile(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func parseBssResponse(respStr string) {
 	var resp bss.BssResponse
-	err = json.Unmarshal(b, &resp)
+	err := json.Unmarshal([]byte(respStr), &resp)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(resp)
+	for _, op := range resp.Data {
+		_ = op
+		// fmt.Println("->", op.OperationNr, op.Name, op.MarkingName)
+		// fmt.Println(op.ValidFrom, op.ValidTo)
+	}
 }
 
 //	curl -X POST "https://erp2.bss.biz/api/auth/" \
@@ -188,6 +190,6 @@ func parseBssResponse(filename string) {
 func main() {
 	bssConfig := NewBssConfig("bss.env")
 	tokens := login(bssConfig)
-	searchOperations(bssConfig, tokens)
-	// parseBssResponse("bss_operations.json")
+	resp := searchOperations(bssConfig, tokens)
+	parseBssResponse(resp)
 }
