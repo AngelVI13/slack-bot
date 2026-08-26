@@ -324,13 +324,13 @@ func (m *Manager) vacationsInfo(
 			operation.ValidTo,
 		)
 		if _, found := m.vacationsHash[key]; found {
-			slog.Info("Skip BSS vacation: vacation already processed", "key", key)
+			// slog.Info("Skip BSS vacation: vacation already processed", "key", key)
 			continue
 		}
 
 		userId := m.data.UserManager.GetUserIdFromBssId(operation.TimeboardNr, company)
 		if userId == "" {
-			slog.Info("Skip BSS vacation: bss ID not in users DB", "key", key)
+			// slog.Info("Skip BSS vacation: bss ID not in users DB", "key", key)
 			// NOTE: we don't add this to vacations hash because if user
 			// gets added later, we should process his vacations
 			continue
@@ -351,7 +351,7 @@ func (m *Manager) vacationsInfo(
 
 		if endDate.Before(today) {
 			m.vacationsHash[key] = true
-			slog.Info("Skip BSS vacation: endDate is before today", "key", key)
+			// slog.Info("Skip BSS vacation: endDate is before today", "key", key)
 			continue
 		}
 
@@ -398,13 +398,13 @@ func (m *Manager) addVacationReleases(
 		userId := vacation.UserId
 		space := m.data.ParkingLot.OwnsSpace(userId)
 		if space == nil {
-			slog.Info(
-				"Skip BSS vacation: user does not own permanent space",
-				"vacation",
-				vacation.String(),
-				"userId",
-				userId,
-			)
+			// slog.Info(
+			// 	"Skip BSS vacation: user does not own permanent space",
+			// 	"vacation",
+			// 	vacation.String(),
+			// 	"userId",
+			// 	userId,
+			// )
 			continue
 		}
 

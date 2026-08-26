@@ -122,13 +122,22 @@ func (m *Manager) handleHcm(eventTime time.Time) *common.Response {
 		}
 
 		usersWithoutHcmId = m.data.UserManager.UsersWithoutHcmId()
-		if len(usersWithoutHcmId) > 0 {
+		msg := ""
+		for _, userID := range usersWithoutHcmId {
+			name := m.data.UserManager.GetNameFromId(userID)
+			// User doesn't have HCM and doesn't have BSS -> build msg for report
+			if len(m.data.UserManager.GetBssInfoFromUserId(userID)) == 0 {
+				msg += fmt.Sprintf("%s ", name)
+			}
+		}
+
+		if msg != "" {
 			actions = append(
 				actions,
 				m.reportErrorAction(
 					fmt.Sprintf(
 						"after updating users' hcm ids, there are still users without HCM id: %v",
-						usersWithoutHcmId,
+						msg,
 					),
 				),
 			)

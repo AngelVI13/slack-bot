@@ -417,12 +417,13 @@ func (l *SpacesLot) ReleaseSpaces(cTime time.Time) error {
 		var allValidReleases []ReleaseInfo
 		for _, release := range allReleases {
 			if !release.DataPresent() || !release.Submitted {
-				err := fmt.Errorf(
-					"[SKIP] ReleaseSpaces release is not fully filled or not submitted. spaceKey=%q; release=%v",
-					spaceKey,
-					release,
-				)
-				errs = append(errs, err)
+				// TODO: uncomment if needed - its very spammy
+				// err := fmt.Errorf(
+				// 	"[SKIP] ReleaseSpaces release is not fully filled or not submitted. spaceKey=%q; release=%v",
+				// 	spaceKey,
+				// 	release,
+				// )
+				// errs = append(errs, err)
 				continue
 			}
 			allValidReleases = append(allValidReleases, release)
@@ -465,7 +466,13 @@ func (l *SpacesLot) ReleaseTemp(
 	} else if releaseInfo.EndDate.Sub(cTime).Hours() < 24 && releaseInfo.EndDate.Before(cTime) {
 		// On the day of the end of release -> reserve back the space
 		// for the correct user
-		slog.Info("TempReserve (return to owner)", "space", spaceKey, "releaseInfo", releaseInfo)
+		slog.Info(
+			"TempReserve (return to owner)",
+			"space",
+			spaceKey,
+			"releaseInfo",
+			releaseInfo,
+		)
 		space.Reserved = true
 		space.AutoRelease = false
 		space.ReservedBy = releaseInfo.OwnerName

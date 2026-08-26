@@ -288,9 +288,9 @@ func (m *Manager) SetBssId(userName, bssId string, bssCompany Company) error {
 func (m *Manager) UsersWithoutHcmId() []string {
 	var users []string
 
-	for name, user := range m.users {
+	for _, user := range m.users {
 		if len(user.HcmInfo) == 0 {
-			users = append(users, name)
+			users = append(users, user.Id)
 		}
 	}
 	return users
