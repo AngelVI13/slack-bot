@@ -190,6 +190,8 @@ func (m *Manager) handleBlockActions(data *slackApi.BlockAction) *common.Respons
 func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Response {
 	var actions []event.ResponseAction
 
+	selectedUser := m.selectedUser[data.UserId]
+
 	// Reset selected user
 	m.selectedUser[data.UserId] = nil
 
@@ -203,23 +205,25 @@ func (m *Manager) handleViewSubmission(data *slackApi.ViewSubmission) *common.Re
 	if qdevBss != "" || quadBss != "" {
 		if !m.data.UserManager.Exists(data.UserId) {
 			m.data.UserManager.
-				InsertUser(data.UserId, data.UserName)
+				InsertUser(selectedUser.UserId, selectedUser.UserName)
 		}
 
 		if qdevBss != "" {
-			m.data.UserManager.SetBssId(data.UserName, qdevBss, user.Qdev)
+			m.data.UserManager.SetBssId(selectedUser.UserName, qdevBss, user.Qdev)
 		}
 
 		if quadBss != "" {
-			m.data.UserManager.SetBssId(data.UserName, quadBss, user.Quad)
+			m.data.UserManager.SetBssId(selectedUser.UserName, quadBss, user.Quad)
 		}
 
 		m.data.UserManager.SynchronizeToFile()
 	}
 	slog.Info(
 		"USERS ViewSubmission",
-		"name",
+		"changeAuthor",
 		data.UserName,
+		"name",
+		selectedUser.UserName,
 		"qdev",
 		qdevBss,
 		"quad",

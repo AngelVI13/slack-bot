@@ -93,7 +93,7 @@ func (m *Manager) SynchronizeToFile() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	slog.Info("Wrote users list to file")
+	slog.Info("Wrote users list to file", "filename", m.usersFilename)
 }
 
 func (m *Manager) IsAdminId(userId string) bool {
